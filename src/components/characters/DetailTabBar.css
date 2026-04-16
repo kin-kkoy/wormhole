@@ -1,0 +1,103 @@
+.detail-tab-bar {
+  flex-shrink: 0;
+  margin-bottom: 12px;
+}
+
+.detail-tab-bar__tabs {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.detail-tab-bar__tab {
+  padding: 8px 16px;
+  border-radius: 6px 6px 0 0;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.detail-tab-bar__tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+.detail-tab-bar__tab--active {
+  background: var(--bg-secondary);
+  color: var(--accent-characters);
+  font-weight: 600;
+  border-color: var(--accent-characters);
+  border-bottom: 2px solid var(--bg-secondary);
+  margin-bottom: -1px;
+}
+
+.detail-tab-bar__tab--drag-over {
+  border-color: var(--accent-characters);
+  box-shadow: 0 0 0 1px var(--accent-characters);
+}
+
+.detail-tab-bar__tab-label {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detail-tab-bar__rename-input {
+  padding: 2px 6px;
+  border: 1px solid var(--accent-characters);
+  border-radius: 3px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  width: 120px;
+}
+
+.detail-tab-bar__tab-delete {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.detail-tab-bar__tab-delete:hover {
+  background: var(--danger);
+  color: #fff;
+}
+
+.detail-tab-bar__add {
+  padding: 8px 14px;
+  border-radius: 6px 6px 0 0;
+  border: 1px dashed var(--border);
+  border-bottom: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.detail-tab-bar__add:hover {
+  border-color: var(--accent-characters);
+  color: var(--accent-characters);
+}

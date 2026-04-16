@@ -1,0 +1,90 @@
+.tiptap-editor {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.tiptap-editor .tiptap {
+  outline: none;
+  min-height: 1.6em;
+}
+
+.tiptap-editor--editable .tiptap {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  transition: border-color 0.15s;
+}
+
+.tiptap-editor--editable .tiptap:focus {
+  border-color: var(--accent-characters);
+}
+
+.tiptap-editor .tiptap p {
+  margin: 0 0 0.5em;
+}
+
+.tiptap-editor .tiptap p:last-child {
+  margin-bottom: 0;
+}
+
+.tiptap-editor .tiptap h1,
+.tiptap-editor .tiptap h2,
+.tiptap-editor .tiptap h3 {
+  margin: 0.8em 0 0.4em;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.tiptap-editor .tiptap h1 {
+  font-size: 1.4em;
+}
+
+.tiptap-editor .tiptap h2 {
+  font-size: 1.2em;
+}
+
+.tiptap-editor .tiptap h3 {
+  font-size: 1.05em;
+}
+
+.tiptap-editor .tiptap ul,
+.tiptap-editor .tiptap ol {
+  margin: 0.4em 0;
+  padding-left: 1.4em;
+}
+
+.tiptap-editor .tiptap li {
+  margin: 0.2em 0;
+}
+
+.tiptap-editor .tiptap blockquote {
+  margin: 0.5em 0;
+  padding-left: 1em;
+  border-left: 3px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.tiptap-editor .tiptap strong {
+  font-weight: 600;
+}
+
+.tiptap-editor .tiptap em {
+  font-style: italic;
+}
+
+.tiptap-editor .tiptap hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1em 0;
+}
+
+/* Placeholder styling */
+.tiptap-editor .tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--text-muted);
+  pointer-events: none;
+  height: 0;
+}

@@ -1,0 +1,32 @@
+.character-card {
+  display: flex;
+  height: 100%;
+  gap: 0;
+}
+
+.character-card--editing {
+  /* card body + dock side by side */
+}
+
+.character-card__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.character-card__loading,
+.character-card__error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.character-card__error {
+  color: var(--danger);
+}

@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Obsidian Graph View Reference</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="workspace">
+      <aside class="pane pane-files">
+        <div class="pane-header">
+          <div>
+            <p class="pane-label">Reference Vault</p>
+            <h1>Files</h1>
+          </div>
+          <button id="add-note-button" class="icon-button" type="button" aria-label="New note">
+            +
+          </button>
+        </div>
+
+        <label class="field compact-field">
+          <span>Open file</span>
+          <input id="search-input" type="search" placeholder="Filter files..." autocomplete="off" />
+        </label>
+
+        <div id="note-list" class="file-list"></div>
+
+        <section class="editor-panel">
+          <div class="section-head">
+            <div>
+              <p class="pane-label">Active File</p>
+              <h2 id="editor-title-label">No selection</h2>
+            </div>
+            <button
+              id="create-missing-note-button"
+              class="soft-button hidden"
+              type="button"
+            >
+              Create file
+            </button>
+          </div>
+
+          <label class="field">
+            <span>File name</span>
+            <input id="title-input" type="text" autocomplete="off" />
+          </label>
+
+          <label class="field">
+            <span>Markdown</span>
+            <textarea
+              id="body-input"
+              rows="12"
+              spellcheck="false"
+              placeholder="Type markdown with [[internal links]] to shape the graph."
+            ></textarea>
+          </label>
+
+          <p id="editor-help" class="field-help">
+            Use `[[Page Name]]` or `[[Page Name|Alias]]` to create graph links automatically.
+          </p>
+        </section>
+      </aside>
+
+      <main class="pane pane-graph">
+        <header class="graph-header">
+          <div class="graph-header-main">
+            <p class="pane-label">Graph</p>
+            <h2>Graph view</h2>
+          </div>
+
+          <div class="graph-toolbar">
+            <button id="center-selection-button" class="soft-button" type="button">
+              Center on file
+            </button>
+            <button id="reset-layout-button" class="soft-button" type="button">Reset layout</button>
+          </div>
+        </header>
+
+        <section class="graph-stage">
+          <canvas id="graph-canvas"></canvas>
+
+          <div class="graph-chip chip-top-left" id="selection-chip">No file selected</div>
+          <div class="graph-chip chip-top-right" id="graph-stats">0 files · 0 links · 0 unresolved</div>
+          <div class="graph-chip chip-bottom-left">Scroll to zoom · Drag background to pan</div>
+          <div class="graph-chip chip-bottom-right">Drag a node to reposition it</div>
+        </section>
+      </main>
+
+      <aside class="pane pane-settings">
+        <div class="pane-header">
+          <div>
+            <p class="pane-label">View Controls</p>
+            <h2>Graph settings</h2>
+          </div>
+        </div>
+
+        <section class="settings-section">
+          <div class="section-head">
+            <h3>Filters</h3>
+          </div>
+
+          <label class="field compact-field">
+            <span>Search files</span>
+            <input
+              id="filter-search-input"
+              type="search"
+              placeholder="Search graph files..."
+              autocomplete="off"
+            />
+          </label>
+
+          <label class="toggle-row">
+            <span>Existing files only</span>
+            <input id="existing-files-toggle" type="checkbox" />
+          </label>
+
+          <label class="toggle-row">
+            <span>Orphans</span>
+            <input id="orphans-toggle" type="checkbox" checked />
+          </label>
+        </section>
+
+        <section class="settings-section">
+          <div class="section-head">
+            <h3>Groups</h3>
+            <button id="add-group-button" class="text-button" type="button">New group</button>
+          </div>
+
+          <div id="group-list" class="group-list"></div>
+        </section>
+
+        <section class="settings-section">
+          <div class="section-head">
+            <h3>Display</h3>
+          </div>
+
+          <label class="toggle-row">
+            <span>Arrows</span>
+            <input id="arrows-toggle" type="checkbox" />
+          </label>
+
+          <label class="toggle-row">
+            <span>Animate</span>
+            <input id="animate-toggle" type="checkbox" checked />
+          </label>
+
+          <label class="range-row">
+            <span>Text fade threshold</span>
+            <output id="text-fade-value">0.52</output>
+          </label>
+          <input id="text-fade-input" class="range-input" type="range" min="0.1" max="1.2" step="0.01" />
+
+          <label class="range-row">
+            <span>Node size</span>
+            <output id="node-size-value">1.00</output>
+          </label>
+          <input id="node-size-input" class="range-input" type="range" min="0.6" max="2.4" step="0.05" />
+
+          <label class="range-row">
+            <span>Link thickness</span>
+            <output id="link-thickness-value">1.00</output>
+          </label>
+          <input
+            id="link-thickness-input"
+            class="range-input"
+            type="range"
+            min="0.4"
+            max="2.4"
+            step="0.05"
+          />
+        </section>
+
+        <section class="settings-section">
+          <div class="section-head">
+            <h3>Forces</h3>
+          </div>
+
+          <label class="range-row">
+            <span>Center force</span>
+            <output id="center-force-value">0.22</output>
+          </label>
+          <input
+            id="center-force-input"
+            class="range-input"
+            type="range"
+            min="0.02"
+            max="0.5"
+            step="0.01"
+          />
+
+          <label class="range-row">
+            <span>Repel force</span>
+            <output id="repel-force-value">0.78</output>
+          </label>
+          <input
+            id="repel-force-input"
+            class="range-input"
+            type="range"
+            min="0.1"
+            max="1.5"
+            step="0.01"
+          />
+
+          <label class="range-row">
+            <span>Link force</span>
+            <output id="link-force-value">0.44</output>
+          </label>
+          <input id="link-force-input" class="range-input" type="range" min="0.1" max="1" step="0.01" />
+
+          <label class="range-row">
+            <span>Link distance</span>
+            <output id="link-distance-value">130</output>
+          </label>
+          <input
+            id="link-distance-input"
+            class="range-input"
+            type="range"
+            min="60"
+            max="220"
+            step="2"
+          />
+        </section>
+      </aside>
+    </div>
+
+    <script src="./script.js"></script>
+  </body>
+</html>

@@ -1,0 +1,113 @@
+.top-dock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 16px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.top-dock__back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  transition: background 0.15s, color 0.15s;
+}
+
+.top-dock__back:hover {
+  background: var(--hover);
+  color: var(--text-primary);
+}
+
+.top-dock__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-right: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.top-dock__tabs {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+  justify-content: center;
+}
+
+.top-dock__tab {
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: background 0.15s, color 0.15s;
+  position: relative;
+}
+
+.top-dock__tab:hover {
+  background: var(--hover);
+  color: var(--text-primary);
+}
+
+.top-dock__tab--active {
+  color: var(--text-primary);
+  background: var(--active);
+}
+
+.top-dock__tab--active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 16px;
+  right: 16px;
+  height: 2px;
+  background: var(--tab-accent, var(--text-primary));
+  border-radius: 1px;
+}
+
+.top-dock__edit-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  transition: background 0.15s, color 0.15s;
+}
+
+.top-dock__edit-toggle:hover {
+  background: var(--hover);
+  color: var(--text-primary);
+}
+
+.top-dock__edit-toggle--active {
+  color: var(--accent-overview);
+  background: var(--active);
+}
+
+.top-dock__theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  transition: background 0.15s, color 0.15s;
+}
+
+.top-dock__theme-toggle:hover {
+  background: var(--hover);
+  color: var(--text-primary);
+}

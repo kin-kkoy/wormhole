@@ -1,0 +1,125 @@
+.card-block-dock {
+  width: 260px;
+  flex-shrink: 0;
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.card-block-dock__header {
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.card-block-dock__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-characters);
+  margin: 0 0 4px;
+}
+
+.card-block-dock__hint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.card-block-dock__section {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.card-block-dock__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.card-block-dock__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  cursor: grab;
+  transition: border-color 0.1s, background 0.1s;
+  font-size: 12px;
+}
+
+.card-block-dock__item:hover:not(.card-block-dock__item--placed) {
+  border-color: var(--accent-characters);
+  background: rgba(167, 139, 250, 0.08);
+}
+
+.card-block-dock__item--placed {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.card-block-dock__item--custom {
+  border-color: var(--accent-characters);
+  background: rgba(167, 139, 250, 0.08);
+}
+
+.card-block-dock__item-icon {
+  color: var(--accent-characters);
+  font-size: 8px;
+}
+
+.card-block-dock__item-label {
+  flex: 1;
+  color: var(--text-primary);
+}
+
+.card-block-dock__item-badge {
+  font-size: 9px;
+  color: var(--text-muted);
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--bg-primary);
+}
+
+.card-block-dock__custom-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card-block-dock__custom-input-row {
+  display: flex;
+  gap: 4px;
+}
+
+.card-block-dock__custom-input {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 12px;
+  outline: none;
+}
+
+.card-block-dock__custom-input:focus {
+  border-color: var(--accent-characters);
+}
+
+.card-block-dock__add-custom {
+  padding: 6px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.card-block-dock__add-custom:hover {
+  border-color: var(--accent-characters);
+  color: var(--accent-characters);
+}

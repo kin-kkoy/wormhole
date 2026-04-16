@@ -1,0 +1,132 @@
+.timeline-section {
+  position: relative;
+  padding-left: 24px;
+}
+
+.timeline-section__line {
+  position: absolute;
+  left: 8px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+
+.timeline-section__entries {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.timeline-section__entry {
+  position: relative;
+}
+
+.timeline-section__dot {
+  position: absolute;
+  left: -20px;
+  top: 6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent-characters);
+  border: 2px solid var(--bg-secondary);
+}
+
+.timeline-section__entry-view {
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.timeline-section__entry-view:hover {
+  background: var(--hover);
+}
+
+.timeline-section__date {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-characters);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.timeline-section__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+
+.timeline-section__desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.timeline-section__entry-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.timeline-section__input,
+.timeline-section__textarea {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 12px;
+  outline: none;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.timeline-section__input:focus,
+.timeline-section__textarea:focus {
+  border-color: var(--accent-characters);
+}
+
+.timeline-section__input--date {
+  width: 200px;
+  font-size: 11px;
+  color: var(--accent-characters);
+}
+
+.timeline-section__entry-actions {
+  display: flex;
+  justify-content: space-between;
+}
+
+.timeline-section__delete-btn {
+  color: var(--danger) !important;
+  font-size: 11px !important;
+}
+
+.timeline-section__add {
+  margin-top: 16px;
+  margin-left: 0;
+  padding: 8px 16px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.15s;
+}
+
+.timeline-section__add:hover {
+  border-color: var(--accent-characters);
+  color: var(--accent-characters);
+}

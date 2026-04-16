@@ -1,0 +1,8 @@
+.prose-section {
+  /* default single column */
+}
+
+.prose-section--two-col .tiptap-editor .tiptap {
+  columns: 2;
+  column-gap: 24px;
+}

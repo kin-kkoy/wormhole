@@ -1,0 +1,251 @@
+.doc-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ─── Header / Title ──────────────────────────────────────────────── */
+
+.doc-editor__header {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+
+.doc-editor__title {
+  display: block;
+  width: 100%;
+  padding: 12px 24px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.doc-editor__title::placeholder {
+  color: var(--text-muted);
+}
+
+/* ─── Toolbar ─────────────────────────────────────────────────────── */
+
+.doc-editor__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 24px 8px;
+  flex-wrap: wrap;
+}
+
+.doc-editor__tool-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: background 0.1s, color 0.1s;
+}
+
+.doc-editor__tool-btn:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--text-primary);
+}
+
+.doc-editor__tool-btn--active {
+  background: var(--active);
+  color: var(--accent-lore);
+}
+
+.doc-editor__tool-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.doc-editor__toolbar-sep {
+  width: 1px;
+  height: 16px;
+  background: var(--border);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+.doc-editor__toolbar-right {
+  margin-left: auto;
+}
+
+.doc-editor__save-btn {
+  font-size: 12px;
+  padding: 4px 12px;
+}
+
+/* ─── Editor content ──────────────────────────────────────────────── */
+
+.doc-editor__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.doc-editor__content .tiptap {
+  outline: none;
+  min-height: 200px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-primary);
+  max-width: 720px;
+}
+
+.doc-editor__content .tiptap:focus {
+  outline: none;
+}
+
+.doc-editor__content .tiptap p {
+  margin: 0 0 0.6em;
+}
+
+.doc-editor__content .tiptap p:last-child {
+  margin-bottom: 0;
+}
+
+.doc-editor__content .tiptap h1,
+.doc-editor__content .tiptap h2,
+.doc-editor__content .tiptap h3 {
+  margin: 1em 0 0.5em;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.doc-editor__content .tiptap h1 {
+  font-size: 1.5em;
+}
+
+.doc-editor__content .tiptap h2 {
+  font-size: 1.25em;
+}
+
+.doc-editor__content .tiptap h3 {
+  font-size: 1.1em;
+}
+
+.doc-editor__content .tiptap ul,
+.doc-editor__content .tiptap ol {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+
+.doc-editor__content .tiptap li {
+  margin: 0.2em 0;
+}
+
+.doc-editor__content .tiptap blockquote {
+  margin: 0.5em 0;
+  padding-left: 1em;
+  border-left: 3px solid var(--accent-lore);
+  color: var(--text-secondary);
+}
+
+.doc-editor__content .tiptap strong {
+  font-weight: 600;
+}
+
+.doc-editor__content .tiptap em {
+  font-style: italic;
+}
+
+.doc-editor__content .tiptap hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.5em 0;
+}
+
+/* Placeholder */
+.doc-editor__content .tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--text-muted);
+  pointer-events: none;
+  height: 0;
+}
+
+/* Inline links */
+.doc-editor__content .inline-link {
+  font-weight: 500;
+}
+
+.doc-editor__content .inline-link:hover {
+  text-decoration-style: solid;
+}
+
+/* ─── Autocomplete dropdown ───────────────────────────────────────── */
+
+.doc-editor__autocomplete {
+  position: fixed;
+  z-index: 200;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px;
+  min-width: 220px;
+  max-width: 320px;
+  max-height: 300px;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+}
+
+.doc-editor__autocomplete-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--text-primary);
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.doc-editor__autocomplete-item:hover,
+.doc-editor__autocomplete-item--selected {
+  background: var(--hover);
+}
+
+.doc-editor__autocomplete-badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.doc-editor__autocomplete-badge[data-type="character"] {
+  background: rgba(167, 139, 250, 0.15);
+  color: var(--accent-characters);
+}
+
+.doc-editor__autocomplete-badge[data-type="map_entity"] {
+  background: rgba(74, 158, 255, 0.15);
+  color: var(--accent-atlas);
+}
+
+.doc-editor__autocomplete-badge[data-type="lore_document"] {
+  background: rgba(245, 166, 35, 0.15);
+  color: var(--accent-lore);
+}
+
+.doc-editor__autocomplete-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

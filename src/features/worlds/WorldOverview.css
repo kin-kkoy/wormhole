@@ -1,0 +1,32 @@
+.world-overview {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.world-overview--loading {
+  align-items: center;
+  justify-content: center;
+}
+
+.world-overview__loading-text {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.world-overview__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  flex-shrink: 0;
+  gap: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.world-overview__content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}

@@ -1,0 +1,48 @@
+.section-create-dialog {
+  max-width: 460px;
+  width: 90%;
+}
+
+.section-create-dialog__types {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.section-create-dialog__type {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-tertiary);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s;
+}
+
+.section-create-dialog__type:hover {
+  border-color: var(--accent-characters);
+}
+
+.section-create-dialog__type--active {
+  border-color: var(--accent-characters);
+  background: rgba(167, 139, 250, 0.08);
+}
+
+.section-create-dialog__type-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.section-create-dialog__type--active .section-create-dialog__type-label {
+  color: var(--accent-characters);
+}
+
+.section-create-dialog__type-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+}

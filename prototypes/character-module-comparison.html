@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wormhole — Character Card Comparison</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap');
+
+  :root {
+    --card-bg: #3b5f8a;
+    --card-bg-light: #4a7199;
+    --card-border: rgba(255,255,255,0.12);
+    --card-inner-bg: rgba(0,0,0,0.18);
+    --card-inner-border: rgba(255,255,255,0.08);
+    --text-primary: rgba(255,255,255,0.92);
+    --text-secondary: rgba(255,255,255,0.6);
+    --text-muted: rgba(255,255,255,0.35);
+    --accent: #5cb85c;
+    --accent-glow: rgba(92,184,92,0.2);
+    --link-color: #7abfff;
+    --module-bg: rgba(0,0,0,0.12);
+    --module-header-bg: rgba(0,0,0,0.1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #0e0e18;
+    color: #d4d4e0;
+    min-height: 100vh;
+  }
+
+  /* ── Controls Bar ── */
+  .controls-bar {
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    background: rgba(14,14,24,0.95);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    backdrop-filter: blur(16px);
+  }
+  .control-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    padding: 3px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .control-group button {
+    padding: 6px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    font-family: 'Inter', system-ui, sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #555;
+    background: transparent;
+    letter-spacing: 0.3px;
+  }
+  .control-group button.active {
+    background: rgba(100,100,180,0.15);
+    color: #aaa;
+  }
+  .control-label {
+    font-size: 0.6rem;
+    color: #444;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    margin-right: 4px;
+    padding-left: 8px;
+  }
+
+  /* ── Page ── */
+  .page {
+    max-width: 1340px;
+    margin: 0 auto;
+    padding: 36px 24px 80px;
+  }
+  .comparison {
+    display: flex;
+    gap: 32px;
+    justify-content: center;
+    align-items: flex-start;
+  }
+  .option-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .option-header {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .option-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #8888bb;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+  .option-desc {
+    font-size: 0.68rem;
+    color: #444;
+    line-height: 1.4;
+    max-width: 360px;
+  }
+  .vs-divider {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin-top: 100px;
+    flex-shrink: 0;
+  }
+  .vs-line { width: 1px; height: 40px; background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.08), transparent); }
+  .vs-text { font-size: 0.6rem; color: #333; font-weight: 600; letter-spacing: 2px; }
+
+  /* ════════════════════════════════════════
+     THE CARD
+     ════════════════════════════════════════ */
+  .char-card {
+    position: relative;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow:
+      0 12px 40px rgba(0,0,0,0.5),
+      0 0 0 1px rgba(255,255,255,0.06);
+  }
+  /* Gradient background */
+  .char-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(155deg, var(--card-bg-light) 0%, var(--card-bg) 40%, #2e4d6e 100%);
+    z-index: 0;
+  }
+  /* Subtle texture overlay */
+  .char-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 0%, rgba(255,255,255,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 100%, rgba(0,0,0,0.15) 0%, transparent 60%);
+    z-index: 1;
+    pointer-events: none;
+  }
+  .card-inner {
+    position: relative;
+    z-index: 2;
+    padding: 18px;
+  }
+
+  /* ── LANDSCAPE ── */
+  .char-card.landscape { width: 540px; }
+  .char-card.landscape .card-inner {
+    display: flex;
+    gap: 16px;
+  }
+  .char-card.landscape .card-image-wrap {
+    width: 175px;
+    flex-shrink: 0;
+  }
+  .char-card.landscape .card-image {
+    width: 100%;
+    height: 240px;
+    background: linear-gradient(135deg, #5a6a7a 0%, #4a5868 50%, #3d4d5d 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+      inset 0 2px 8px rgba(0,0,0,0.25),
+      0 2px 6px rgba(0,0,0,0.15);
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .char-card.landscape .card-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  /* ── PORTRAIT ── */
+  .char-card.portrait { width: 440px; }
+  .char-card.portrait .card-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .char-card.portrait .card-image {
+    width: 100%;
+    height: 170px;
+    background: linear-gradient(135deg, #5a6a7a 0%, #4a5868 50%, #3d4d5d 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .img-placeholder {
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.25);
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  /* ── Name Banner ── */
+  .char-name-banner {
+    background: linear-gradient(135deg, var(--accent), #4aa84a);
+    padding: 7px 14px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,0.15);
+  }
+  .char-name-banner h2 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.4px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+
+  /* ── Ribbon accent line ── */
+  .char-ribbon {
+    height: 2px;
+    border-radius: 1px;
+    background: linear-gradient(90deg, #8b6bb5, #5b8db5, transparent);
+    opacity: 0.5;
+    margin: -2px 0;
+  }
+
+  /* ── Details Box ── */
+  .char-details-box {
+    background: var(--card-inner-bg);
+    border: 1px solid var(--card-inner-border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    backdrop-filter: blur(4px);
+  }
+  .detail-row {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    line-height: 1.7;
+  }
+  .detail-key {
+    color: var(--text-muted);
+    font-weight: 600;
+    min-width: 44px;
+    font-size: 0.58rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .detail-val {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+  }
+
+  /* ── Content Box ── */
+  .char-content-box {
+    background: var(--card-inner-bg);
+    border: 1px solid var(--card-inner-border);
+    border-radius: 12px;
+    flex: 1;
+    min-height: 180px;
+    overflow-y: auto;
+    backdrop-filter: blur(4px);
+  }
+  .char-content-box::-webkit-scrollbar { width: 4px; }
+  .char-content-box::-webkit-scrollbar-track { background: transparent; }
+  .char-content-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+
+  /* ════════════════════════════════════════
+     EDIT MODE — MARKDOWN
+     ════════════════════════════════════════ */
+  .markdown-editor {
+    width: 100%;
+    min-height: 180px;
+    background: transparent;
+    color: var(--text-primary);
+    border: none;
+    padding: 14px 16px;
+    font-family: 'Lora', Georgia, serif;
+    font-size: 0.82rem;
+    line-height: 1.75;
+    resize: none;
+    outline: none;
+  }
+  .markdown-editor::selection { background: rgba(255,255,255,0.12); }
+
+  /* ════════════════════════════════════════
+     EDIT MODE — LEGO BLOCKS
+     ════════════════════════════════════════ */
+  .lego-content {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .module-block {
+    background: var(--module-bg);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 9px;
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+  .module-block:hover { border-color: rgba(255,255,255,0.12); }
+  .module-block.dragging { opacity: 0.35; transform: scale(0.98); }
+  .module-block.drag-over { border-color: rgba(255,255,255,0.22); }
+
+  .module-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 10px;
+    background: var(--module-header-bg);
+    cursor: grab;
+    user-select: none;
+  }
+  .module-header:active { cursor: grabbing; }
+  .module-title {
+    font-size: 0.62rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+  }
+  .drag-handle { color: rgba(255,255,255,0.12); font-size: 0.75rem; }
+  .module-header:hover .drag-handle { color: rgba(255,255,255,0.3); }
+  .module-actions button {
+    background: none; border: none;
+    color: rgba(255,255,255,0.15);
+    cursor: pointer; font-size: 0.8rem;
+    padding: 2px 5px; border-radius: 3px;
+    line-height: 1;
+  }
+  .module-actions button:hover { color: #d55; background: rgba(200,60,60,0.12); }
+
+  .module-body { padding: 6px 10px 8px; }
+  .module-body textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-family: 'Lora', Georgia, serif;
+    font-size: 0.8rem;
+    line-height: 1.65;
+    padding: 2px 0;
+    resize: none;
+    outline: none;
+    overflow: hidden;
+  }
+
+  .add-module-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px;
+    border: 1px dashed rgba(255,255,255,0.08);
+    border-radius: 9px;
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .add-module-btn:hover {
+    border-color: rgba(255,255,255,0.18);
+    color: var(--text-secondary);
+    background: rgba(255,255,255,0.02);
+  }
+
+  /* ════════════════════════════════════════
+     VIEW MODE — RENDERED CONTENT
+     ════════════════════════════════════════ */
+  .view-content {
+    padding: 16px 18px;
+    font-family: 'Lora', Georgia, serif;
+    font-size: 0.82rem;
+    line-height: 1.8;
+    color: var(--text-primary);
+    display: none;
+  }
+  .view-content h3 {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 16px;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .view-content h3:first-child { margin-top: 0; }
+  .view-content ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .view-content li {
+    padding: 2px 0;
+    padding-left: 14px;
+    position: relative;
+    color: var(--text-secondary);
+  }
+  .view-content li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 10px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+  }
+  .view-content p {
+    color: var(--text-secondary);
+    margin: 4px 0;
+  }
+  .view-content .wh-link {
+    color: var(--link-color);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(122,191,255,0.2);
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .view-content .wh-link:hover {
+    border-bottom-color: rgba(122,191,255,0.5);
+  }
+
+  /* ── View mode for lego ── */
+  .view-lego-content {
+    padding: 10px;
+    display: none;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .view-module-block {
+    background: var(--module-bg);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 9px;
+    overflow: hidden;
+  }
+  .view-module-header {
+    padding: 5px 12px;
+    background: var(--module-header-bg);
+  }
+  .view-module-title {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.62rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+  }
+  .view-module-body {
+    padding: 8px 12px 10px;
+    font-family: 'Lora', Georgia, serif;
+    font-size: 0.8rem;
+    line-height: 1.7;
+    color: var(--text-secondary);
+  }
+  .view-module-body ul {
+    list-style: none;
+    padding: 0; margin: 0;
+  }
+  .view-module-body li {
+    padding: 2px 0 2px 14px;
+    position: relative;
+  }
+  .view-module-body li::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 10px;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+  }
+  .view-module-body p { margin: 3px 0; }
+  .view-module-body .wh-link {
+    color: var(--link-color);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(122,191,255,0.2);
+    cursor: pointer;
+  }
+  .view-module-body .wh-link:hover { border-bottom-color: rgba(122,191,255,0.5); }
+
+  /* ── State toggles ── */
+  body.show-portrait .layout-landscape { display: none !important; }
+  body.show-portrait .layout-portrait { display: flex !important; }
+  body:not(.show-portrait) .layout-landscape { display: flex; }
+  body:not(.show-portrait) .layout-portrait { display: none; }
+
+  body.show-view .edit-only { display: none !important; }
+  body.show-view .view-content { display: block !important; }
+  body.show-view .view-lego-content { display: flex !important; }
+  body.show-view .lego-content { display: none !important; }
+
+  body:not(.show-view) .view-content { display: none !important; }
+  body:not(.show-view) .view-lego-content { display: none !important; }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 100;
+    align-items: center; justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: linear-gradient(155deg, #3a5a7a, #2e4a64);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    padding: 22px;
+    width: 320px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  }
+  .modal h3 { font-size: 0.82rem; font-weight: 600; margin-bottom: 14px; color: var(--text-secondary); }
+  .modal input[type="text"] {
+    width: 100%; padding: 10px 12px;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px; color: #ddd;
+    font-size: 0.8rem; font-family: 'Inter', system-ui, sans-serif;
+    outline: none; margin-bottom: 10px;
+  }
+  .modal input:focus { border-color: rgba(255,255,255,0.2); }
+  .modal input::placeholder { color: rgba(255,255,255,0.2); }
+  .preset-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 16px; }
+  .preset-tag {
+    padding: 4px 10px;
+    background: rgba(0,0,0,0.12);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    font-size: 0.65rem; color: rgba(255,255,255,0.35);
+    cursor: pointer; font-weight: 500;
+  }
+  .preset-tag:hover { border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.6); }
+  .modal-btns { display: flex; justify-content: flex-end; gap: 8px; }
+  .modal-btns button {
+    padding: 7px 16px; border-radius: 8px; border: none;
+    font-size: 0.75rem; font-weight: 500; cursor: pointer;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  .btn-cancel { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.35); }
+  .btn-cancel:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); }
+  .btn-confirm { background: var(--accent); color: #fff; }
+  .btn-confirm:hover { background: #5abf5e; }
+</style>
+</head>
+<body>
+
+<div class="controls-bar">
+  <div class="control-group">
+    <span class="control-label">Layout</span>
+    <button class="active" onclick="setLayout('landscape',this)">Landscape</button>
+    <button onclick="setLayout('portrait',this)">Portrait</button>
+  </div>
+  <div class="control-group">
+    <span class="control-label">Mode</span>
+    <button class="active" onclick="setMode('edit',this)">Edit</button>
+    <button onclick="setMode('view',this)">View</button>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- ════ LANDSCAPE ════ -->
+  <div class="comparison layout-landscape">
+    <div class="option-column">
+      <div class="option-header">
+        <div class="option-label">Markdown</div>
+        <div class="option-desc">One continuous surface. Sections via headings.</div>
+      </div>
+      <div class="char-card landscape" id="cardMarkdownLand">
+        <div class="card-inner">
+          <div class="card-image-wrap">
+            <div class="card-image"><span class="img-placeholder">Image</span></div>
+          </div>
+          <div class="card-right">
+            <div class="char-name-banner"><h2>Captain Voss</h2></div>
+            <div class="char-ribbon"></div>
+            <div class="char-details-box">
+              <div class="detail-row"><span class="detail-key">Title</span><span class="detail-val">Fleet Commander</span></div>
+              <div class="detail-row"><span class="detail-key">Born</span><span class="detail-val">Year 412, Ashenmoor</span></div>
+              <div class="detail-row"><span class="detail-key">Status</span><span class="detail-val">Active</span></div>
+            </div>
+            <div class="char-content-box">
+              <textarea class="markdown-editor edit-only" data-view="viewMarkdownLand">## Relationships
+- [[Kira]] — Rival turned ally after the siege
+- [[Marcus]] — Mentor, killed in Act 2
+- [[Admiral Thane]] — Estranged former CO
+
+## Personality
+Cold and calculated on the surface, but fiercely protective of her crew. Taps her ring finger on hard surfaces — a leftover from her navigator's ring.
+
+## Arc Notes
+- Act 1: Antagonist in the Shattered Straits
+- Act 2: Reluctant alliance at the Breach
+- Act 3: Sacrifice — "Someone has to hold the line."
+
+## Powers
+- Void Navigation — senses spatial distortions
+- Tactical genius in asymmetric combat
+
+## Secrets
+- Knows the cause of the Ashenmoor Collapse
+- Carries an unopened letter from Marcus</textarea>
+              <div class="view-content" id="viewMarkdownLand"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vs-divider"><div class="vs-line"></div><div class="vs-text">vs</div><div class="vs-line"></div></div>
+
+    <div class="option-column">
+      <div class="option-header">
+        <div class="option-label">Lego Blocks</div>
+        <div class="option-desc">Named modules you add, remove, reorder.</div>
+      </div>
+      <div class="char-card landscape">
+        <div class="card-inner">
+          <div class="card-image-wrap">
+            <div class="card-image"><span class="img-placeholder">Image</span></div>
+          </div>
+          <div class="card-right">
+            <div class="char-name-banner"><h2>Captain Voss</h2></div>
+            <div class="char-ribbon"></div>
+            <div class="char-details-box">
+              <div class="detail-row"><span class="detail-key">Title</span><span class="detail-val">Fleet Commander</span></div>
+              <div class="detail-row"><span class="detail-key">Born</span><span class="detail-val">Year 412, Ashenmoor</span></div>
+              <div class="detail-row"><span class="detail-key">Status</span><span class="detail-val">Active</span></div>
+            </div>
+            <div class="char-content-box">
+              <div class="lego-content edit-only" id="legoLand">
+                <div class="module-block" draggable="true"><div class="module-header"><span class="module-title"><span class="drag-handle">&#9776;</span> Relationships</span><div class="module-actions"><button onclick="removeModule(this)">&times;</button></div></div><div class="module-body"><textarea>- [[Kira]] — Rival turned ally after the siege
+- [[Marcus]] — Mentor, killed in Act 2
+- [[Admiral Thane]] — Estranged former CO</textarea></div></div>
+                <div class="module-block" draggable="true"><div class="module-header"><span class="module-title"><span class="drag-handle">&#9776;</span> Personality</span><div class="module-actions"><button onclick="removeModule(this)">&times;</button></div></div><div class="module-body"><textarea>Cold and calculated on the surface, but fiercely protective of her crew. Taps her ring finger on hard surfaces — a leftover from her navigator's ring.</textarea></div></div>
+                <div class="module-block" draggable="true"><div class="module-header"><span class="module-title"><span class="drag-handle">&#9776;</span> Arc Notes</span><div class="module-actions"><button onclick="removeModule(this)">&times;</button></div></div><div class="module-body"><textarea>- Act 1: Antagonist in the Shattered Straits
+- Act 2: Reluctant alliance at the Breach
+- Act 3: Sacrifice — "Someone has to hold the line."</textarea></div></div>
+                <div class="module-block" draggable="true"><div class="module-header"><span class="module-title"><span class="drag-handle">&#9776;</span> Powers</span><div class="module-actions"><button onclick="removeModule(this)">&times;</button></div></div><div class="module-body"><textarea>- Void Navigation — senses spatial distortions
+- Tactical genius in asymmetric combat</textarea></div></div>
+                <div class="module-block" draggable="true"><div class="module-header"><span class="module-title"><span class="drag-handle">&#9776;</span> Secrets</span><div class="module-actions"><button onclick="removeModule(this)">&times;</button></div></div><div class="module-body"><textarea>- Knows the cause of the Ashenmoor Collapse
+- Carries an unopened letter from Marcus</textarea></div></div>
+                <div class="add-module-btn" onclick="openAddModal('legoLand')">+ Add Module</div>
+              </div>
+              <div class="view-lego-content" id="viewLegoLand"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ PORTRAIT ════ -->
+  <div class="comparison layout-portrait">
+    <div class="option-column">
+      <div class="option-header">
+        <div class="option-label">Markdown</div>
+        <div class="option-desc">One continuous surface. Sections via headings.</div>
+      </div>
+      <div class="char-card portrait">
+        <div class="card-inner">
+          <div class="card-image"><span class="img-placeholder">Image</span></div>
+          <div class="card-right">
+            <div class="char-name-banner"><h2>Captain Voss</h2></div>
+            <div class="char-ribbon"></div>
+            <div class="char-details-box">
+              <div class="detail-row"><span class="detail-key">Title</span><span class="detail-val">Fleet Commander</span></div>
+              <div class="detail-row"><span class="detail-key">Born</span><span class="detail-val">Year 412, Ashenmoor</span></div>
+              <div class="detail-row"><span class="detail-key">Status</span><span class="detail-val">Active</span></div>
+            </div>
+            <div class="char-content-box">
+              <textarea class="markdown-editor edit-only" data-view="viewMarkdownPort">## Relationships
+- [[Kira]] — Rival turned ally after the siege
+- [[Marcus]] — Mentor, killed in Act 2
+
+## Personality
+Cold and calculated, but fiercely protective of her crew.
+
+## Arc Notes
+- Act 1: Antagonist in the Shattered Straits
+- Act 2: Reluctant alliance at the Breach
+- Act 3: Sacrifice — "Someone has to hold the line."
+
+## Powers
+- Void Navigation — senses spatial distortions
+- Tactical genius in asymmetric combat
+
+## Secrets
+- Knows the cause of the Ashenmoor Collapse</textarea>
+              <div class="view-content" id="viewMarkdownPort"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vs-divider"><div class="vs-line"></div><div class="vs-text">vs</div><div class="vs-line"></div></div>
+
+    <div class="option-column">
+      <div class="option-header">
+        <div class="option-label">Lego Blocks</div>
+        <div class="option-desc">Named modules you add, remove, reorder.</div>
+      </div>
+      <div class="char-card portrait">
+        <div class="card-inner">
+          <div class="card-image"><span class="img-placeholder">Image</span></div>
+          <div class="card-right">
+            <div class="char-name-banner"><h2>Captain Voss</h2></div>
+            <div class="char-ribbon"></div>
+            <div class="char-details-box">
+              <div class="detail-row"><span class="detail-key">Title</span><span class="detail-val">Fleet Commander</span></div>
+              <div class="detail-row"><span class="detail-key">Born</span><span class="detail-val">Year 412, Ashenmoor</span></div>
+              <div class="detail-row"><span class="detail-key">Status</span><span class="detail-val">Active</span></div>
+            </div>
+            <div class="char-content-box">
+              <div class="lego-content edit-only" id="legoPort">
+                <div class="module-block" draggable="true"><div class="module-header"><span class="module-title"><span class="drag-handle">&#9776;</span> Relationships</span><div class="module-actions"><button onclick="removeModule(this)">&times;</button></div></div><div class="module-body"><textarea>- [[Kira]] — Rival turned ally after the siege
+- [[Marcus]] — Mentor, killed in Act 2</textarea></div></div>
+                <div class="module-block" draggable="true"><div class="module-header"><span class="module-title"><span class="drag-handle">&#9776;</span> Personality</span><div class="module-actions"><button onclick="removeModule(this)">&times;</button></div></div><div class="module-body"><textarea>Cold and calculated, but fiercely protective of her crew.</textarea></div></div>
+                <div class="module-block" draggable="true"><div class="module-header"><span class="module-title"><span class="drag-handle">&#9776;</span> Arc Notes</span><div class="module-actions"><button onclick="removeModule(this)">&times;</button></div></div><div class="module-body"><textarea>- Act 1: Antagonist in the Shattered Straits
+- Act 2: Reluctant alliance at the Breach
+- Act 3: Sacrifice — "Someone has to hold the line."</textarea></div></div>
+                <div class="module-block" draggable="true"><div class="module-header"><span class="module-title"><span class="drag-handle">&#9776;</span> Powers</span><div class="module-actions"><button onclick="removeModule(this)">&times;</button></div></div><div class="module-body"><textarea>- Void Navigation — senses spatial distortions
+- Tactical genius in asymmetric combat</textarea></div></div>
+                <div class="module-block" draggable="true"><div class="module-header"><span class="module-title"><span class="drag-handle">&#9776;</span> Secrets</span><div class="module-actions"><button onclick="removeModule(this)">&times;</button></div></div><div class="module-body"><textarea>- Knows the cause of the Ashenmoor Collapse</textarea></div></div>
+                <div class="add-module-btn" onclick="openAddModal('legoPort')">+ Add Module</div>
+              </div>
+              <div class="view-lego-content" id="viewLegoPort"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ Modal ═══ -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <h3>Add a Module</h3>
+    <input type="text" id="moduleNameInput" placeholder="Module name..." />
+    <div class="preset-tags">
+      <span class="preset-tag" onclick="pickPreset('Powers')">Powers</span>
+      <span class="preset-tag" onclick="pickPreset('Secrets')">Secrets</span>
+      <span class="preset-tag" onclick="pickPreset('Inventory')">Inventory</span>
+      <span class="preset-tag" onclick="pickPreset('Backstory')">Backstory</span>
+      <span class="preset-tag" onclick="pickPreset('Quotes')">Quotes</span>
+      <span class="preset-tag" onclick="pickPreset('Goals')">Goals</span>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeAddModal()">Cancel</button>
+      <button class="btn-confirm" onclick="confirmAddModule()">Add</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let activeLegoContainer = 'legoLand';
+
+  /* ── Layout & Mode toggles ── */
+  function setLayout(layout, btn) {
+    btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.body.classList.toggle('show-portrait', layout === 'portrait');
+  }
+
+  function setMode(mode, btn) {
+    btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (mode === 'view') {
+      renderAllViews();
+      document.body.classList.add('show-view');
+    } else {
+      document.body.classList.remove('show-view');
+    }
+  }
+
+  /* ── Render markdown text → HTML ── */
+  function renderMarkdown(raw) {
+    const lines = raw.split('\n');
+    let html = '';
+    let inList = false;
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        if (inList) { html += '</ul>'; inList = false; }
+        continue;
+      }
+      if (trimmed.startsWith('## ')) {
+        if (inList) { html += '</ul>'; inList = false; }
+        html += `<h3>${trimmed.slice(3)}</h3>`;
+      } else if (trimmed.startsWith('- ')) {
+        if (!inList) { html += '<ul>'; inList = true; }
+        html += `<li>${renderInline(trimmed.slice(2))}</li>`;
+      } else {
+        if (inList) { html += '</ul>'; inList = false; }
+        html += `<p>${renderInline(trimmed)}</p>`;
+      }
+    }
+    if (inList) html += '</ul>';
+    return html;
+  }
+
+  function renderInline(text) {
+    // [[links]]
+    text = text.replace(/\[\[([^\]]+)\]\]/g, '<span class="wh-link">$1</span>');
+    // **bold**
+    text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    // *italic*
+    text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    return text;
+  }
+
+  function renderLegoView(editId, viewId) {
+    const editContainer = document.getElementById(editId);
+    const viewContainer = document.getElementById(viewId);
+    if (!editContainer || !viewContainer) return;
+    viewContainer.innerHTML = '';
+
+    editContainer.querySelectorAll('.module-block').forEach(block => {
+      const title = block.querySelector('.module-title').textContent.replace('☰', '').trim();
+      const ta = block.querySelector('textarea');
+      const content = ta ? ta.value : '';
+
+      const viewBlock = document.createElement('div');
+      viewBlock.className = 'view-module-block';
+      viewBlock.innerHTML = `
+        <div class="view-module-header"><span class="view-module-title">${title}</span></div>
+        <div class="view-module-body">${renderMarkdown(content)}</div>
+      `;
+      viewContainer.appendChild(viewBlock);
+    });
+  }
+
+  function renderAllViews() {
+    // Markdown views
+    document.querySelectorAll('.markdown-editor').forEach(ta => {
+      const viewId = ta.dataset.view;
+      if (viewId) {
+        document.getElementById(viewId).innerHTML = renderMarkdown(ta.value);
+      }
+    });
+    // Lego views
+    renderLegoView('legoLand', 'viewLegoLand');
+    renderLegoView('legoPort', 'viewLegoPort');
+  }
+
+  /* ── Module CRUD ── */
+  function openAddModal(containerId) {
+    activeLegoContainer = containerId;
+    document.getElementById('addModal').classList.add('active');
+    const input = document.getElementById('moduleNameInput');
+    input.value = '';
+    setTimeout(() => input.focus(), 100);
+  }
+  function closeAddModal() { document.getElementById('addModal').classList.remove('active'); }
+  function pickPreset(name) { document.getElementById('moduleNameInput').value = name; }
+
+  function confirmAddModule() {
+    const name = document.getElementById('moduleNameInput').value.trim();
+    if (!name) return;
+    const container = document.getElementById(activeLegoContainer);
+    const addBtn = container.querySelector('.add-module-btn');
+    const block = document.createElement('div');
+    block.className = 'module-block';
+    block.draggable = true;
+    block.innerHTML = `<div class="module-header"><span class="module-title"><span class="drag-handle">&#9776;</span> ${name}</span><div class="module-actions"><button onclick="removeModule(this)">&times;</button></div></div><div class="module-body"><textarea placeholder="Write about ${name.toLowerCase()}..."></textarea></div>`;
+    container.insertBefore(block, addBtn);
+    initDrag(block);
+    autoSize(block.querySelector('textarea'));
+    closeAddModal();
+    block.style.opacity = '0'; block.style.transform = 'translateY(-4px)';
+    block.style.transition = 'opacity 0.2s, transform 0.2s';
+    requestAnimationFrame(() => { block.style.opacity = '1'; block.style.transform = 'none'; });
+    setTimeout(() => block.querySelector('textarea').focus(), 120);
+  }
+
+  function removeModule(btn) {
+    const block = btn.closest('.module-block');
+    block.style.transition = 'opacity 0.15s, transform 0.15s';
+    block.style.opacity = '0'; block.style.transform = 'scale(0.97)';
+    setTimeout(() => block.remove(), 150);
+  }
+
+  /* ── Drag & Drop ── */
+  let draggedEl = null;
+  function initDrag(block) {
+    block.addEventListener('dragstart', e => {
+      draggedEl = block; block.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', '');
+    });
+    block.addEventListener('dragend', () => {
+      block.classList.remove('dragging');
+      document.querySelectorAll('.module-block').forEach(b => b.classList.remove('drag-over'));
+      draggedEl = null;
+    });
+    block.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (!draggedEl || draggedEl === block) return;
+      block.classList.add('drag-over');
+      const rect = block.getBoundingClientRect();
+      const mid = rect.top + rect.height / 2;
+      const container = block.parentElement;
+      if (e.clientY < mid) container.insertBefore(draggedEl, block);
+      else if (block.nextSibling) container.insertBefore(draggedEl, block.nextSibling);
+    });
+    block.addEventListener('dragleave', () => block.classList.remove('drag-over'));
+  }
+
+  function autoSize(ta) {
+    ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px';
+    ta.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px'; });
+  }
+
+  /* ── Init ── */
+  document.querySelectorAll('.module-block').forEach(initDrag);
+  document.querySelectorAll('.module-body textarea').forEach(autoSize);
+
+  document.getElementById('moduleNameInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') confirmAddModule();
+    if (e.key === 'Escape') closeAddModal();
+  });
+  document.getElementById('addModal').addEventListener('click', e => {
+    if (e.target === document.getElementById('addModal')) closeAddModal();
+  });
+</script>
+
+</body>
+</html>

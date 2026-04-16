@@ -1,0 +1,22 @@
+.world-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.world-shell__content {
+  flex: 1;
+  overflow: hidden;
+}
+
+.world-shell__loading,
+.world-shell__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+  color: var(--text-muted);
+  font-size: 15px;
+}

@@ -1,0 +1,36 @@
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  gap: 8px;
+  flex: 1;
+  min-height: 200px;
+  position: relative;
+}
+
+.card-grid--editing {
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.card-grid__cell {
+  border-radius: 6px;
+  border: 1px dashed transparent;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.card-grid--editing .card-grid__cell {
+  border-color: var(--border-subtle);
+  background: rgba(167, 139, 250, 0.02);
+}
+
+.card-grid__cell--valid {
+  background: rgba(74, 222, 128, 0.15) !important;
+  border-color: #4ade80 !important;
+}
+
+.card-grid__cell--invalid {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: #ef4444 !important;
+}
