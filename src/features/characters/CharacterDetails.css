@@ -23,33 +23,8 @@
   flex: 1;
   display: flex;
   align-items: stretch;
-  gap: 8px;
   min-height: 0;
   position: relative;
-}
-
-.character-details__nav-btn {
-  width: 32px;
-  flex-shrink: 0;
-  background: transparent;
-  border: 1px solid var(--border-subtle);
-  border-radius: 6px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-}
-
-.character-details__nav-btn:hover:not(:disabled) {
-  border-color: var(--accent-characters);
-  color: var(--accent-characters);
-}
-
-.character-details__nav-btn:disabled {
-  opacity: 0.3;
-  cursor: default;
 }
 
 .character-details__panel-viewport {
@@ -62,29 +37,10 @@
   padding: 20px;
 }
 
-.character-details__dots {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  padding: 12px 0 4px;
+/* Persistent footer below the active section — renders LinkedRecords.
+   LinkedRecords returns null when empty, so nothing visual shows up for
+   characters without links. */
+.character-details__linked-footer {
   flex-shrink: 0;
-}
-
-.character-details__dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  border: none;
-  background: var(--border);
-  cursor: pointer;
-  transition: background 0.15s, transform 0.15s;
-}
-
-.character-details__dot:hover {
-  background: var(--text-muted);
-}
-
-.character-details__dot--active {
-  background: var(--accent-characters);
-  transform: scale(1.3);
+  margin-top: 16px;
 }

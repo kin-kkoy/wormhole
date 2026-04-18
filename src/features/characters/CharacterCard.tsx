@@ -1,9 +1,9 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { commands } from '../../lib/commands';
-import type { CharacterFull, CardBlock } from '../../lib/commands';
+import type { CharacterFull, CardBlock, BlockType } from '../../lib/commands';
 import { useAppStore } from '../../state/store';
+import { CardImage } from '../../components/characters/CardImage';
 import { CardHeader } from '../../components/characters/CardHeader';
-import { CardInCharacterIntro } from '../../components/characters/CardInCharacterIntro';
 import { CardGrid } from '../../components/characters/CardGrid';
 import { CardBlockDock } from '../../components/characters/CardBlockDock';
 import { LinkedRecords } from '../../components/characters/LinkedRecords';
@@ -18,6 +18,10 @@ export function CharacterCard({ characterId }: CharacterCardProps) {
   const [blocks, setBlocks] = useState<CardBlock[]>([]);
   const [error, setError] = useState<string | null>(null);
   const editMode = useAppStore((s) => s.editMode);
+  // Shared between CardBlockDock (writes on dragstart) and CardGrid (reads
+  // during dragover) so the placement preview shows the preset's true size
+  // and label.
+  const presetDragRef = useRef<{ cols: number; rows: number; title: string; blockType: BlockType } | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -65,13 +69,28 @@ export function CharacterCard({ characterId }: CharacterCardProps) {
   return (
     <div className={`character-card ${editMode ? 'character-card--editing' : ''}`}>
       <div className="character-card__body">
-        <CardHeader character={character} onUpdate={handleCharacterUpdate} editMode={editMode} />
-        <CardInCharacterIntro character={character} onUpdate={handleCharacterUpdate} editMode={editMode} />
-        <CardGrid blocks={blocks} characterId={characterId} editMode={editMode} onRefresh={refreshBlocks} />
-        <LinkedRecords characterId={characterId} />
+        <div className="character-card__image-col">
+          <CardImage character={character} onUpdate={handleCharacterUpdate} editMode={editMode} />
+        </div>
+        <div className="character-card__content-col">
+          <CardHeader character={character} onUpdate={handleCharacterUpdate} editMode={editMode} />
+          <CardGrid
+            blocks={blocks}
+            characterId={characterId}
+            editMode={editMode}
+            onRefresh={refreshBlocks}
+            presetDragRef={presetDragRef}
+          />
+          <LinkedRecords characterId={characterId} />
+        </div>
       </div>
       {editMode && (
-        <CardBlockDock characterId={characterId} blocks={blocks} onRefresh={refreshBlocks} />
+        <CardBlockDock
+          characterId={characterId}
+          blocks={blocks}
+          onRefresh={refreshBlocks}
+          presetDragRef={presetDragRef}
+        />
       )}
     </div>
   );

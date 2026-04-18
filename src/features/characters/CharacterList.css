@@ -118,7 +118,11 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 16px;
-  flex: 1;
+  /* Cards stay at their natural height (image aspect + info row) instead of
+     stretching to fill the whole viewport. The parent .character-list handles
+     scroll when the grid overflows. */
+  align-content: start;
+  align-items: start;
 }
 
 .character-list__card {

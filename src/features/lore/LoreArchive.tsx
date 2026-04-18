@@ -94,33 +94,37 @@ export function LoreArchive() {
         />
       </div>
 
-      <div className="lore-archive__editor-panel">
-        {activeDocument ? (
-          <DocumentEditor
-            document={activeDocument}
-            onDocumentUpdated={handleDocumentUpdated}
-          />
-        ) : (
-          <div className="lore-archive__empty">
-            <span style={{ fontSize: '32px', opacity: 0.3 }}>&#9998;</span>
-            <span style={{ fontSize: '14px', color: 'var(--accent-lore)' }}>
-              Select or create a document
-            </span>
-            <span style={{ fontSize: '12px' }}>
-              Right-click the folder tree to get started
-            </span>
+      {/* Contents panel — groups editor + linked records in one detached
+          rounded container, with an internal divider between the two. */}
+      <div className="lore-archive__content-panel">
+        <div className="lore-archive__editor-pane">
+          {activeDocument ? (
+            <DocumentEditor
+              document={activeDocument}
+              onDocumentUpdated={handleDocumentUpdated}
+            />
+          ) : (
+            <div className="lore-archive__empty">
+              <span style={{ fontSize: '32px', opacity: 0.3 }}>&#9998;</span>
+              <span style={{ fontSize: '14px', color: 'var(--accent-lore)' }}>
+                Select or create a document
+              </span>
+              <span style={{ fontSize: '12px' }}>
+                Right-click the folder tree to get started
+              </span>
+            </div>
+          )}
+        </div>
+
+        {activeDocument && (
+          <div className="lore-archive__links-pane">
+            <LinkedRecordsPanel
+              documentId={activeDocument.id}
+              onRefresh={refresh}
+            />
           </div>
         )}
       </div>
-
-      {activeDocument && (
-        <div className="lore-archive__links-panel">
-          <LinkedRecordsPanel
-            documentId={activeDocument.id}
-            onRefresh={refresh}
-          />
-        </div>
-      )}
     </div>
   );
 }

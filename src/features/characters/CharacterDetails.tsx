@@ -1,17 +1,25 @@
 import { useEffect, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { commands } from '../../lib/commands';
 import type { CharacterFull, DetailSection } from '../../lib/commands';
 import { useAppStore } from '../../state/store';
 import { DetailTabBar } from '../../components/characters/DetailTabBar';
 import { DetailSectionPanel } from '../../components/characters/DetailSectionPanel';
 import { SectionCreateDialog } from '../../components/characters/SectionCreateDialog';
+import { LinkedRecords } from '../../components/characters/LinkedRecords';
 import './CharacterDetails.css';
 
 interface CharacterDetailsProps {
   characterId: string;
+  /**
+   * DOM element in the flip toolbar where the DetailTabBar should be
+   * rendered via portal. When null, the tab bar is not rendered (e.g.
+   * during initial mount before the slot ref is populated).
+   */
+  tabBarSlot: HTMLElement | null;
 }
 
-export function CharacterDetails({ characterId }: CharacterDetailsProps) {
+export function CharacterDetails({ characterId, tabBarSlot }: CharacterDetailsProps) {
   const [character, setCharacter] = useState<CharacterFull | null>(null);
   const [sections, setSections] = useState<DetailSection[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -116,31 +124,24 @@ export function CharacterDetails({ characterId }: CharacterDetailsProps) {
 
   const activeSection = sections[activeIndex];
 
+  const tabBar = (
+    <DetailTabBar
+      sections={sections}
+      activeIndex={activeIndex}
+      onSelect={setActiveIndex}
+      editMode={editMode}
+      onDelete={handleDeleteSection}
+      onRename={handleRenameSection}
+      onReorder={handleReorderSections}
+      onAdd={() => setShowCreateDialog(true)}
+    />
+  );
+
   return (
     <div className="character-details">
-      <DetailTabBar
-        sections={sections}
-        activeIndex={activeIndex}
-        onSelect={setActiveIndex}
-        editMode={editMode}
-        onDelete={handleDeleteSection}
-        onRename={handleRenameSection}
-        onReorder={handleReorderSections}
-        onAdd={() => setShowCreateDialog(true)}
-      />
+      {tabBarSlot ? createPortal(tabBar, tabBarSlot) : null}
 
       <div className="character-details__panel-container">
-        <button
-          className="character-details__nav-btn character-details__nav-btn--prev"
-          onClick={() => setActiveIndex((i) => Math.max(0, i - 1))}
-          disabled={activeIndex === 0}
-          title="Previous section"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </button>
-
         <div className="character-details__panel-viewport">
           {activeSection && (
             <DetailSectionPanel
@@ -152,31 +153,11 @@ export function CharacterDetails({ characterId }: CharacterDetailsProps) {
             />
           )}
         </div>
-
-        <button
-          className="character-details__nav-btn character-details__nav-btn--next"
-          onClick={() => setActiveIndex((i) => Math.min(sections.length - 1, i + 1))}
-          disabled={activeIndex >= sections.length - 1}
-          title="Next section"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </button>
       </div>
 
-      {/* Navigation dots */}
-      {sections.length > 1 && (
-        <div className="character-details__dots">
-          {sections.map((_, i) => (
-            <button
-              key={i}
-              className={`character-details__dot ${i === activeIndex ? 'character-details__dot--active' : ''}`}
-              onClick={() => setActiveIndex(i)}
-            />
-          ))}
-        </div>
-      )}
+      <div className="character-details__linked-footer">
+        <LinkedRecords characterId={characterId} />
+      </div>
 
       {showCreateDialog && (
         <SectionCreateDialog

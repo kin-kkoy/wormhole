@@ -30,6 +30,9 @@ pub struct CharacterFull {
     pub brief_details_json: Option<String>,
     pub tags_text: Option<String>,
     pub sort_order: Option<i64>,
+    /// When true, the codex opens this character directly into the cinematic
+    /// (full-bleed image) view instead of the default card view.
+    pub cinematic_preview_locked: bool,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -62,14 +65,15 @@ fn row_to_full(row: &rusqlite::Row) -> rusqlite::Result<CharacterFull> {
         brief_details_json: row.get(10)?,
         tags_text: row.get(11)?,
         sort_order: row.get(12)?,
-        created_at: row.get(13)?,
-        updated_at: row.get(14)?,
+        cinematic_preview_locked: row.get(13)?,
+        created_at: row.get(14)?,
+        updated_at: row.get(15)?,
     })
 }
 
 const FULL_COLUMNS: &str = "id, world_id, image_asset_id, name, short_role, objective_summary, \
     in_character_intro, decorative_ribbon, traits_text, card_layout_variant, \
-    brief_details_json, tags_text, sort_order, created_at, updated_at";
+    brief_details_json, tags_text, sort_order, cinematic_preview_locked, created_at, updated_at";
 
 fn query_character_full(
     conn: &rusqlite::Connection,
@@ -199,6 +203,7 @@ pub fn update_character(
     brief_details_json: Option<String>,
     image_asset_id: Option<String>,
     tags_text: Option<String>,
+    cinematic_preview_locked: Option<bool>,
     state: State<Mutex<AppDatabase>>,
 ) -> Result<CharacterFull, String> {
     let db = state.lock().map_err(|e| format!("Lock error: {}", e))?;
@@ -233,6 +238,7 @@ pub fn update_character(
     add_field!("brief_details_json", brief_details_json);
     add_field!("image_asset_id", image_asset_id);
     add_field!("tags_text", tags_text);
+    add_field!("cinematic_preview_locked", cinematic_preview_locked);
 
     let _ = idx;
 
@@ -333,6 +339,96 @@ pub fn reorder_characters(
         )
         .map_err(|e| format!("Failed to reorder character: {}", e))?;
     }
+
+    Ok(())
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DeletedCharacter {
+    pub id: String,
+    pub name: String,
+    pub deleted_at: String,
+}
+
+#[tauri::command]
+pub fn list_deleted_characters(
+    state: State<Mutex<AppDatabase>>,
+) -> Result<Vec<DeletedCharacter>, String> {
+    let db = state.lock().map_err(|e| format!("Lock error: {}", e))?;
+    let (_, conn) = db
+        .active_world
+        .as_ref()
+        .ok_or("No world is currently open")?;
+
+    let mut stmt = conn
+        .prepare(
+            "SELECT id, name, deleted_at FROM characters \
+             WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC",
+        )
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let rows = stmt
+        .query_map([], |row| {
+            Ok(DeletedCharacter {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                deleted_at: row.get(2)?,
+            })
+        })
+        .map_err(|e| format!("Failed to query deleted characters: {}", e))?;
+
+    Ok(rows.flatten().collect())
+}
+
+#[tauri::command]
+pub fn purge_character(
+    character_id: String,
+    state: State<Mutex<AppDatabase>>,
+) -> Result<(), String> {
+    let mut db = state.lock().map_err(|e| format!("Lock error: {}", e))?;
+    let (_, conn) = db
+        .active_world
+        .as_mut()
+        .ok_or("No world is currently open")?;
+
+    let tx = conn
+        .transaction()
+        .map_err(|e| format!("Failed to start transaction: {}", e))?;
+
+    tx.execute(
+        "DELETE FROM entity_links WHERE \
+         (source_type = 'character' AND source_id = ?1) OR \
+         (target_type = 'character' AND target_id = ?1)",
+        [&character_id],
+    )
+    .map_err(|e| format!("Failed to purge entity links: {}", e))?;
+
+    tx.execute(
+        "DELETE FROM character_card_blocks WHERE character_id = ?1",
+        [&character_id],
+    )
+    .map_err(|e| format!("Failed to purge card blocks: {}", e))?;
+
+    tx.execute(
+        "DELETE FROM character_detail_sections WHERE character_id = ?1",
+        [&character_id],
+    )
+    .map_err(|e| format!("Failed to purge detail sections: {}", e))?;
+
+    tx.execute(
+        "DELETE FROM graph_shared_node_members WHERE entity_type = 'character' AND entity_id = ?1",
+        [&character_id],
+    )
+    .map_err(|e| format!("Failed to remove shared node membership: {}", e))?;
+
+    tx.execute(
+        "DELETE FROM characters WHERE id = ?1",
+        [&character_id],
+    )
+    .map_err(|e| format!("Failed to purge character: {}", e))?;
+
+    tx.commit()
+        .map_err(|e| format!("Failed to commit purge: {}", e))?;
 
     Ok(())
 }

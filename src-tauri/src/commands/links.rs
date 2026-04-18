@@ -33,6 +33,20 @@ pub struct LinkableRecord {
     pub name: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct InlineLinkRef {
+    pub entity_type: String,
+    pub entity_id: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct InlineLinkResolution {
+    pub entity_type: String,
+    pub entity_id: String,
+    pub exists: bool,
+    pub name: String,
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 fn resolve_entity_name(
@@ -151,9 +165,34 @@ pub fn create_entity_link(
         return Err("A link between these entities already exists".to_string());
     }
 
+    if source_type == target_type && source_id == target_id {
+        return Err("Cannot link an entity to itself".to_string());
+    }
+
+    let valid_types = ["character", "map_entity", "lore_document"];
+    if !valid_types.contains(&source_type.as_str())
+        || !valid_types.contains(&target_type.as_str())
+    {
+        return Err("Invalid entity type".to_string());
+    }
+
     let link_id = uuid::Uuid::new_v4().to_string();
     let now = chrono::Utc::now().to_rfc3339();
-    let lt = link_type.unwrap_or_else(|| "related_to".to_string());
+    let raw_lt = link_type
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| "related_to".to_string());
+
+    if raw_lt.len() > 50 {
+        return Err("Link type must be 50 characters or fewer".to_string());
+    }
+    if !raw_lt
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+    {
+        return Err("Link type may only contain letters, numbers, underscore, or hyphen".to_string());
+    }
+    let lt = raw_lt;
 
     conn.execute(
         "INSERT INTO entity_links (id, world_id, source_type, source_id, target_type, target_id, link_type, created_at) \
@@ -294,4 +333,65 @@ pub fn search_linkable_records(
     results.truncate(10);
 
     Ok(results)
+}
+
+/// Resolve a batch of inline-link references to (exists, name) tuples so the
+/// frontend can render broken links as grayed-out text. A reference is
+/// considered "broken" if the target row does not exist OR is soft-deleted.
+#[tauri::command]
+pub fn resolve_inline_links(
+    refs: Vec<InlineLinkRef>,
+    state: State<Mutex<AppDatabase>>,
+) -> Result<Vec<InlineLinkResolution>, String> {
+    let db = state.lock().map_err(|e| format!("Lock error: {}", e))?;
+    let (_, conn) = db
+        .active_world
+        .as_ref()
+        .ok_or("No world is currently open")?;
+
+    let mut out: Vec<InlineLinkResolution> = Vec::with_capacity(refs.len());
+
+    for r in refs.into_iter() {
+        let lookup: Option<String> = match r.entity_type.as_str() {
+            "character" => conn
+                .query_row(
+                    "SELECT name FROM characters WHERE id = ?1 AND deleted_at IS NULL",
+                    [&r.entity_id],
+                    |row| row.get::<_, String>(0),
+                )
+                .ok(),
+            "map_entity" => conn
+                .query_row(
+                    "SELECT title FROM map_entities WHERE id = ?1 AND deleted_at IS NULL",
+                    [&r.entity_id],
+                    |row| row.get::<_, String>(0),
+                )
+                .ok(),
+            "lore_document" => conn
+                .query_row(
+                    "SELECT title FROM lore_documents WHERE id = ?1 AND deleted_at IS NULL",
+                    [&r.entity_id],
+                    |row| row.get::<_, String>(0),
+                )
+                .ok(),
+            _ => None,
+        };
+
+        out.push(match lookup {
+            Some(name) => InlineLinkResolution {
+                entity_type: r.entity_type,
+                entity_id: r.entity_id,
+                exists: true,
+                name,
+            },
+            None => InlineLinkResolution {
+                entity_type: r.entity_type,
+                entity_id: r.entity_id,
+                exists: false,
+                name: String::new(),
+            },
+        });
+    }
+
+    Ok(out)
 }

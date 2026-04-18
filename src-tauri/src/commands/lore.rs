@@ -632,3 +632,180 @@ pub fn move_lore_document(
 
     Ok(())
 }
+
+// ─── Recycle Bin ─────────────────────────────────────────────────────────────
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DeletedLoreDocument {
+    pub id: String,
+    pub title: String,
+    pub deleted_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DeletedLoreFolder {
+    pub id: String,
+    pub title: String,
+    pub deleted_at: String,
+}
+
+#[tauri::command]
+pub fn list_deleted_lore_documents(
+    state: State<Mutex<AppDatabase>>,
+) -> Result<Vec<DeletedLoreDocument>, String> {
+    let db = state.lock().map_err(|e| format!("Lock error: {}", e))?;
+    let (_, conn) = db
+        .active_world
+        .as_ref()
+        .ok_or("No world is currently open")?;
+
+    let mut stmt = conn
+        .prepare(
+            "SELECT id, title, deleted_at FROM lore_documents \
+             WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC",
+        )
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let rows = stmt
+        .query_map([], |row| {
+            Ok(DeletedLoreDocument {
+                id: row.get(0)?,
+                title: row.get(1)?,
+                deleted_at: row.get(2)?,
+            })
+        })
+        .map_err(|e| format!("Failed to query deleted documents: {}", e))?;
+
+    Ok(rows.flatten().collect())
+}
+
+#[tauri::command]
+pub fn list_deleted_lore_folders(
+    state: State<Mutex<AppDatabase>>,
+) -> Result<Vec<DeletedLoreFolder>, String> {
+    let db = state.lock().map_err(|e| format!("Lock error: {}", e))?;
+    let (_, conn) = db
+        .active_world
+        .as_ref()
+        .ok_or("No world is currently open")?;
+
+    let mut stmt = conn
+        .prepare(
+            "SELECT id, title, deleted_at FROM lore_folders \
+             WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC",
+        )
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let rows = stmt
+        .query_map([], |row| {
+            Ok(DeletedLoreFolder {
+                id: row.get(0)?,
+                title: row.get(1)?,
+                deleted_at: row.get(2)?,
+            })
+        })
+        .map_err(|e| format!("Failed to query deleted folders: {}", e))?;
+
+    Ok(rows.flatten().collect())
+}
+
+#[tauri::command]
+pub fn restore_lore_folder(
+    folder_id: String,
+    state: State<Mutex<AppDatabase>>,
+) -> Result<LoreFolder, String> {
+    let db = state.lock().map_err(|e| format!("Lock error: {}", e))?;
+    let (_, conn) = db
+        .active_world
+        .as_ref()
+        .ok_or("No world is currently open")?;
+
+    let now = chrono::Utc::now().to_rfc3339();
+
+    // If the folder's original parent was also soft-deleted, move the restored
+    // folder to root so the user can always see it.
+    let parent_missing: bool = conn
+        .query_row(
+            "SELECT EXISTS(SELECT 1 FROM lore_folders f \
+             WHERE f.id = (SELECT parent_folder_id FROM lore_folders WHERE id = ?1) \
+             AND f.deleted_at IS NULL)",
+            [&folder_id],
+            |row| row.get::<_, i64>(0),
+        )
+        .unwrap_or(1)
+        == 0;
+
+    if parent_missing {
+        conn.execute(
+            "UPDATE lore_folders SET parent_folder_id = NULL, deleted_at = NULL, updated_at = ?1 \
+             WHERE id = ?2",
+            rusqlite::params![now, folder_id],
+        )
+        .map_err(|e| format!("Failed to restore folder: {}", e))?;
+    } else {
+        conn.execute(
+            "UPDATE lore_folders SET deleted_at = NULL, updated_at = ?1 WHERE id = ?2",
+            rusqlite::params![now, folder_id],
+        )
+        .map_err(|e| format!("Failed to restore folder: {}", e))?;
+    }
+
+    query_folder(conn, &folder_id)
+}
+
+#[tauri::command]
+pub fn purge_lore_document(
+    document_id: String,
+    state: State<Mutex<AppDatabase>>,
+) -> Result<(), String> {
+    let mut db = state.lock().map_err(|e| format!("Lock error: {}", e))?;
+    let (_, conn) = db
+        .active_world
+        .as_mut()
+        .ok_or("No world is currently open")?;
+
+    let tx = conn
+        .transaction()
+        .map_err(|e| format!("Failed to start transaction: {}", e))?;
+
+    tx.execute(
+        "DELETE FROM entity_links WHERE \
+         (source_type = 'lore_document' AND source_id = ?1) OR \
+         (target_type = 'lore_document' AND target_id = ?1)",
+        [&document_id],
+    )
+    .map_err(|e| format!("Failed to purge entity links: {}", e))?;
+
+    tx.execute(
+        "DELETE FROM graph_shared_node_members WHERE entity_type = 'lore_document' AND entity_id = ?1",
+        [&document_id],
+    )
+    .map_err(|e| format!("Failed to remove shared node membership: {}", e))?;
+
+    tx.execute("DELETE FROM lore_documents WHERE id = ?1", [&document_id])
+        .map_err(|e| format!("Failed to purge document: {}", e))?;
+
+    tx.commit()
+        .map_err(|e| format!("Failed to commit purge: {}", e))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn purge_lore_folder(
+    folder_id: String,
+    state: State<Mutex<AppDatabase>>,
+) -> Result<(), String> {
+    let db = state.lock().map_err(|e| format!("Lock error: {}", e))?;
+    let (_, conn) = db
+        .active_world
+        .as_ref()
+        .ok_or("No world is currently open")?;
+
+    // Children were re-parented to root at soft-delete time, so a simple
+    // DELETE is enough. Folders are not link participants.
+    conn.execute("DELETE FROM lore_folders WHERE id = ?1", [&folder_id])
+        .map_err(|e| format!("Failed to purge folder: {}", e))?;
+
+    Ok(())
+}

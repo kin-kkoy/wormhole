@@ -1,4 +1,27 @@
 import { invoke } from '@tauri-apps/api/core';
+import { invalidateBrokenLinks } from '../components/linking/useBrokenLinkResolver';
+
+/** Fire-and-forget: after the invocation succeeds, nudge every mounted
+ *  broken-link resolver to re-scan. Used to wrap delete / restore / purge
+ *  commands so inline `[[links]]` flip to their new state without waiting
+ *  for a DOM mutation or window refocus. */
+function withLinkInvalidation<T>(p: Promise<T>): Promise<T> {
+  return p.then((r) => {
+    invalidateBrokenLinks();
+    return r;
+  });
+}
+
+function uint8ToBase64(bytes: Uint8Array): string {
+  // Chunked conversion to avoid call-stack overflow on large arrays.
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    binary += String.fromCharCode.apply(null, Array.from(chunk));
+  }
+  return btoa(binary);
+}
 
 export interface AppConfig {
   storage_folder: string | null;
@@ -157,9 +180,14 @@ export interface CharacterFull {
   brief_details_json: string | null;
   tags_text: string | null;
   sort_order: number | null;
+  /** When true, opening this character from the codex opens the cinematic
+   *  (full-bleed image) view instead of the default card view. */
+  cinematic_preview_locked: boolean;
   created_at: string;
   updated_at: string;
 }
+
+export type BlockType = 'standard' | 'label' | 'text';
 
 export interface CardBlock {
   id: string;
@@ -171,6 +199,7 @@ export interface CardBlock {
   col_span: number;
   row_span: number;
   sort_order: number;
+  block_type: BlockType;
   created_at: string;
   updated_at: string;
 }
@@ -226,6 +255,39 @@ export interface LoreDocumentFull {
   updated_at: string;
 }
 
+// ─── Atlas types (Stage 5) ───────────────────────────────────────────────────
+
+export interface MapEntityFull {
+  id: string;
+  world_id: string;
+  parent_map_entity_id: string | null;
+  entity_type: string;
+  title: string;
+  description: string | null;
+  x: number;
+  y: number;
+  width: number | null;
+  height: number | null;
+  style_token: string | null;
+  tags_text: string | null;
+  image_asset_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PaintLayerData {
+  data_base64: string | null;
+  mime_type: string;
+  updated_at: string | null;
+}
+
+export type MapEntityType =
+  | 'region'
+  | 'settlement'
+  | 'landmark'
+  | 'district'
+  | 'infrastructure';
+
 // ─── Entity Link types ──────────────────────────────────────────────────────
 
 export interface EntityLink {
@@ -251,6 +313,53 @@ export interface LinkableRecord {
   id: string;
   entity_type: string;
   name: string;
+}
+
+export interface InlineLinkRef {
+  entity_type: string;
+  entity_id: string;
+}
+
+export interface InlineLinkResolution {
+  entity_type: string;
+  entity_id: string;
+  exists: boolean;
+  name: string;
+}
+
+// ─── Search & Recycle Bin ─────────────────────────────────────────────────────
+
+export type SearchRecordType = 'character' | 'map_entity' | 'lore_document';
+
+export interface SearchResult {
+  record_type: SearchRecordType;
+  id: string;
+  title: string;
+  snippet: string;
+}
+
+export interface DeletedCharacter {
+  id: string;
+  name: string;
+  deleted_at: string;
+}
+
+export interface DeletedMapEntity {
+  id: string;
+  title: string;
+  deleted_at: string;
+}
+
+export interface DeletedLoreDocument {
+  id: string;
+  title: string;
+  deleted_at: string;
+}
+
+export interface DeletedLoreFolder {
+  id: string;
+  title: string;
+  deleted_at: string;
 }
 
 // ─── Commands ─────────────────────────────────────────────────────────────────
@@ -289,11 +398,17 @@ export const commands = {
       coverAssetId: params.coverAssetId ?? null,
     }),
 
-  importAsset: (filePath: string) =>
-    invoke<string>('import_asset', { filePath }),
+  importAsset: (filePath: string, maxBytes?: number) =>
+    invoke<string>('import_asset', { filePath, maxBytes: maxBytes ?? null }),
 
   getAsset: (assetId: string) =>
     invoke<AssetData>('get_asset', { assetId }),
+
+  /** Binary fetch — returns the raw asset bytes as an ArrayBuffer.
+   *  Prefer this over getAsset for image display: skips base64 encoding
+   *  and the multi-MB JSON string parsing that makes `getAsset` slow. */
+  getAssetBytes: (assetId: string) =>
+    invoke<ArrayBuffer>('get_asset_bytes', { assetId }),
 
   getWorldOverview: () =>
     invoke<WorldOverviewData>('get_world_overview'),
@@ -391,6 +506,7 @@ export const commands = {
     briefDetailsJson?: string;
     imageAssetId?: string;
     tagsText?: string;
+    cinematicPreviewLocked?: boolean;
   }) =>
     invoke<CharacterFull>('update_character', {
       characterId: params.characterId,
@@ -404,13 +520,14 @@ export const commands = {
       briefDetailsJson: params.briefDetailsJson ?? null,
       imageAssetId: params.imageAssetId ?? null,
       tagsText: params.tagsText ?? null,
+      cinematicPreviewLocked: params.cinematicPreviewLocked ?? null,
     }),
 
   deleteCharacter: (characterId: string) =>
-    invoke<void>('delete_character', { characterId }),
+    withLinkInvalidation(invoke<void>('delete_character', { characterId })),
 
   restoreCharacter: (characterId: string) =>
-    invoke<CharacterFull>('restore_character', { characterId }),
+    withLinkInvalidation(invoke<CharacterFull>('restore_character', { characterId })),
 
   reorderCharacters: (characterIds: string[]) =>
     invoke<void>('reorder_characters', { characterIds }),
@@ -427,6 +544,7 @@ export const commands = {
     gridRow: number;
     colSpan?: number;
     rowSpan?: number;
+    blockType?: BlockType;
   }) =>
     invoke<CardBlock>('create_card_block', {
       characterId: params.characterId,
@@ -435,6 +553,7 @@ export const commands = {
       gridRow: params.gridRow,
       colSpan: params.colSpan ?? null,
       rowSpan: params.rowSpan ?? null,
+      blockType: params.blockType ?? null,
     }),
 
   updateCardBlock: (params: {
@@ -557,10 +676,10 @@ export const commands = {
     }),
 
   deleteLoreDocument: (documentId: string) =>
-    invoke<void>('delete_lore_document', { documentId }),
+    withLinkInvalidation(invoke<void>('delete_lore_document', { documentId })),
 
   restoreLoreDocument: (documentId: string) =>
-    invoke<LoreDocumentFull>('restore_lore_document', { documentId }),
+    withLinkInvalidation(invoke<LoreDocumentFull>('restore_lore_document', { documentId })),
 
   moveLoreDocument: (documentId: string, folderId: string | null) =>
     invoke<void>('move_lore_document', { documentId, folderId }),
@@ -594,4 +713,116 @@ export const commands = {
       excludeType: params.excludeType ?? null,
       excludeId: params.excludeId ?? null,
     }),
+
+  resolveInlineLinks: (refs: InlineLinkRef[]) =>
+    invoke<InlineLinkResolution[]>('resolve_inline_links', { refs }),
+
+  // ─── Atlas Canvas (Stage 5) ────────────────────────────────────────────────
+
+  listMapEntities: () =>
+    invoke<MapEntityFull[]>('list_map_entities'),
+
+  getMapEntity: (entityId: string) =>
+    invoke<MapEntityFull>('get_map_entity', { entityId }),
+
+  createMapEntity: (params: {
+    entityType: MapEntityType;
+    title: string;
+    x: number;
+    y: number;
+    parentMapEntityId?: string;
+    description?: string;
+    tagsText?: string;
+    imageAssetId?: string;
+  }) =>
+    invoke<MapEntityFull>('create_map_entity', {
+      entityType: params.entityType,
+      title: params.title,
+      x: params.x,
+      y: params.y,
+      parentMapEntityId: params.parentMapEntityId ?? null,
+      description: params.description ?? null,
+      tagsText: params.tagsText ?? null,
+      imageAssetId: params.imageAssetId ?? null,
+    }),
+
+  updateMapEntity: (params: {
+    entityId: string;
+    title?: string;
+    entityType?: MapEntityType;
+    description?: string;
+    parentMapEntityId?: string;
+    clearParent?: boolean;
+    x?: number;
+    y?: number;
+    tagsText?: string;
+    imageAssetId?: string;
+    clearImage?: boolean;
+  }) =>
+    invoke<MapEntityFull>('update_map_entity', {
+      entityId: params.entityId,
+      title: params.title ?? null,
+      entityType: params.entityType ?? null,
+      description: params.description ?? null,
+      parentMapEntityId: params.parentMapEntityId ?? null,
+      clearParent: params.clearParent ?? null,
+      x: params.x ?? null,
+      y: params.y ?? null,
+      tagsText: params.tagsText ?? null,
+      imageAssetId: params.imageAssetId ?? null,
+      clearImage: params.clearImage ?? null,
+    }),
+
+  updateMapEntityPosition: (entityId: string, x: number, y: number) =>
+    invoke<void>('update_map_entity_position', { entityId, x, y }),
+
+  deleteMapEntity: (entityId: string) =>
+    withLinkInvalidation(invoke<void>('delete_map_entity', { entityId })),
+
+  restoreMapEntity: (entityId: string) =>
+    withLinkInvalidation(invoke<MapEntityFull>('restore_map_entity', { entityId })),
+
+  getPaintLayer: () =>
+    invoke<PaintLayerData>('get_paint_layer'),
+
+  savePaintLayer: (pngBytes: Uint8Array) =>
+    invoke<void>('save_paint_layer', { pngBase64: uint8ToBase64(pngBytes) }),
+
+  clearPaintLayer: () =>
+    invoke<void>('clear_paint_layer'),
+
+  getAtlasBaseMap: () =>
+    invoke<string | null>('get_atlas_base_map'),
+
+  setAtlasBaseMap: (assetId: string) =>
+    invoke<void>('set_atlas_base_map', { assetId }),
+
+  clearAtlasBaseMap: () =>
+    invoke<void>('clear_atlas_base_map'),
+
+  // ─── Search ──────────────────────────────────────────────────────────────
+  searchWorld: (query: string) =>
+    invoke<SearchResult[]>('search_world', { query }),
+
+  // ─── Recycle Bin ─────────────────────────────────────────────────────────
+  listDeletedCharacters: () =>
+    invoke<DeletedCharacter[]>('list_deleted_characters'),
+  listDeletedMapEntities: () =>
+    invoke<DeletedMapEntity[]>('list_deleted_map_entities'),
+  listDeletedLoreDocuments: () =>
+    invoke<DeletedLoreDocument[]>('list_deleted_lore_documents'),
+  listDeletedLoreFolders: () =>
+    invoke<DeletedLoreFolder[]>('list_deleted_lore_folders'),
+
+  restoreLoreFolder: (folderId: string) =>
+    invoke<LoreFolder>('restore_lore_folder', { folderId }),
+
+  purgeCharacter: (characterId: string) =>
+    withLinkInvalidation(invoke<void>('purge_character', { characterId })),
+  purgeMapEntity: (entityId: string) =>
+    withLinkInvalidation(invoke<void>('purge_map_entity', { entityId })),
+  purgeLoreDocument: (documentId: string) =>
+    withLinkInvalidation(invoke<void>('purge_lore_document', { documentId })),
+  purgeLoreFolder: (folderId: string) =>
+    invoke<void>('purge_lore_folder', { folderId }),
 };

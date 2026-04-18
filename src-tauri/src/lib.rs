@@ -6,7 +6,10 @@ use std::sync::Mutex;
 
 use tauri::Manager;
 
-use commands::{assets, character_blocks, character_sections, characters, graph, links, lore, worlds};
+use commands::{
+    assets, atlas, character_blocks, character_sections, characters, graph, links, lore, search,
+    worlds,
+};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -44,6 +47,7 @@ pub fn run() {
             worlds::get_world_overview,
             assets::import_asset,
             assets::get_asset,
+            assets::get_asset_bytes,
             graph::get_atlas_graph_data,
             graph::get_characters_graph_data,
             graph::get_lore_graph_data,
@@ -62,6 +66,8 @@ pub fn run() {
             characters::delete_character,
             characters::restore_character,
             characters::reorder_characters,
+            characters::list_deleted_characters,
+            characters::purge_character,
             // Character card blocks
             character_blocks::list_card_blocks,
             character_blocks::create_card_block,
@@ -89,11 +95,35 @@ pub fn run() {
             lore::delete_lore_document,
             lore::restore_lore_document,
             lore::move_lore_document,
+            lore::list_deleted_lore_documents,
+            lore::list_deleted_lore_folders,
+            lore::restore_lore_folder,
+            lore::purge_lore_document,
+            lore::purge_lore_folder,
             // Entity Links
             links::list_entity_links,
             links::create_entity_link,
             links::delete_entity_link,
             links::search_linkable_records,
+            links::resolve_inline_links,
+            // Atlas Canvas (Stage 5)
+            atlas::list_map_entities,
+            atlas::get_map_entity,
+            atlas::create_map_entity,
+            atlas::update_map_entity,
+            atlas::update_map_entity_position,
+            atlas::delete_map_entity,
+            atlas::restore_map_entity,
+            atlas::get_paint_layer,
+            atlas::save_paint_layer,
+            atlas::clear_paint_layer,
+            atlas::get_atlas_base_map,
+            atlas::set_atlas_base_map,
+            atlas::clear_atlas_base_map,
+            atlas::list_deleted_map_entities,
+            atlas::purge_map_entity,
+            // Search
+            search::search_world,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

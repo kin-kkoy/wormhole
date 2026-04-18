@@ -28,14 +28,21 @@ export function DetailTabBar({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
 
-  const handleDragStart = useCallback((index: number) => {
-    if (index === 0) return;
+  const handleDragStart = useCallback((e: React.DragEvent, index: number) => {
+    if (index === 0) {
+      e.preventDefault();
+      return;
+    }
+    // Some browsers require dataTransfer payload for drop events to fire.
+    e.dataTransfer.setData('text/plain', String(index));
+    e.dataTransfer.effectAllowed = 'move';
     setDragIndex(index);
   }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
     e.preventDefault();
     if (index === 0) return;
+    e.dataTransfer.dropEffect = 'move';
     setDragOverIndex(index);
   }, []);
 
@@ -77,9 +84,10 @@ export function DetailTabBar({
             className={`detail-tab-bar__tab ${index === activeIndex ? 'detail-tab-bar__tab--active' : ''} ${dragOverIndex === index ? 'detail-tab-bar__tab--drag-over' : ''}`}
             onClick={() => onSelect(index)}
             draggable={editMode && index > 0 && renamingId !== section.id}
-            onDragStart={() => handleDragStart(index)}
+            onDragStart={(e) => handleDragStart(e, index)}
             onDragOver={(e) => handleDragOver(e, index)}
-            onDrop={() => handleDrop(index)}
+            onDragLeave={() => { if (dragOverIndex === index) setDragOverIndex(null); }}
+            onDrop={(e) => { e.preventDefault(); handleDrop(index); }}
             onDragEnd={() => { setDragIndex(null); setDragOverIndex(null); }}
           >
             {renamingId === section.id ? (

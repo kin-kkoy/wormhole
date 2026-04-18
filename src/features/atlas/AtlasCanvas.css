@@ -1,0 +1,365 @@
+.atlas-canvas-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+.atlas-canvas {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+}
+
+.atlas-canvas__world {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 10000px;
+  height: 10000px;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.atlas-canvas__entities {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+}
+
+/* ─── Ocean backdrop ───────────────────────────────────────────────────── */
+
+/*
+ * Viewport-sized ambient layer sitting behind the transformed world.
+ *
+ * The base colour is painted on this element (cheap — viewport-sized only).
+ * The animated wave pattern lives on a slightly-oversized pseudo-element and
+ * moves via `transform`, which is compositor-only and keeps the main thread
+ * free. We intentionally avoid `will-change: background-position` and giant
+ * 10000×10000 gradient elements, both of which cause massive GPU memory
+ * pressure on lower-spec machines.
+ */
+.atlas-ocean {
+  position: absolute;
+  inset: 0;
+  background-color: #0d4e7f;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.atlas-ocean::before {
+  content: '';
+  position: absolute;
+  /* Over-extend so the translate never reveals an empty edge. */
+  top: -160px;
+  left: -160px;
+  right: -160px;
+  bottom: -160px;
+  background-image:
+    radial-gradient(
+      ellipse at 20% 35%,
+      rgba(255, 255, 255, 0.05),
+      transparent 55%
+    ),
+    repeating-linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.035) 0 2px,
+      transparent 2px 140px
+    );
+  animation: atlas-wave 20s linear infinite;
+  will-change: transform;
+}
+
+@keyframes atlas-wave {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    /* Translate by the pattern period so the loop is seamless. */
+    transform: translate3d(80px, 140px, 0);
+  }
+}
+
+/* ─── Base map layer ──────────────────────────────────────────────────── */
+
+.atlas-basemap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.atlas-basemap__img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  opacity: 0.95;
+}
+
+/* ─── Paint layer ──────────────────────────────────────────────────────── */
+
+.atlas-paint {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  image-rendering: auto;
+}
+
+/* ─── Entity markers ──────────────────────────────────────────────────── */
+
+.atlas-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: grab;
+  user-select: none;
+}
+
+.atlas-marker:active {
+  cursor: grabbing;
+}
+
+.atlas-marker__disc {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  border: 3px solid rgba(255, 255, 255, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  transition: border-color 0.15s ease, transform 0.12s ease;
+}
+
+.atlas-marker:hover .atlas-marker__disc {
+  transform: scale(1.06);
+}
+
+.atlas-marker--selected .atlas-marker__disc {
+  border-color: #4a9eff;
+  box-shadow: 0 0 0 4px rgba(74, 158, 255, 0.25), 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+
+.atlas-marker--ghost {
+  cursor: grabbing;
+}
+
+.atlas-marker--ghost .atlas-marker__disc {
+  border-style: dashed;
+  opacity: 0.85;
+}
+
+.atlas-marker__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.atlas-marker__icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.atlas-marker__label {
+  background: rgba(15, 17, 23, 0.88);
+  color: #e8e8ed;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.atlas-marker__actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+/* ─── Toolbar ─────────────────────────────────────────────────────────── */
+
+.atlas-toolbar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
+  z-index: 5;
+  box-shadow: var(--shadow);
+  flex-wrap: wrap;
+}
+
+.atlas-toolbar__group {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.atlas-toolbar__right {
+  margin-left: auto;
+  gap: 10px;
+}
+
+.atlas-toolbar__tool {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.atlas-toolbar__tool:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--text-primary);
+}
+
+.atlas-toolbar__tool:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.atlas-toolbar__tool--active {
+  background: rgba(74, 158, 255, 0.12);
+  color: #4a9eff;
+  border-color: rgba(74, 158, 255, 0.35);
+}
+
+.atlas-toolbar__icon {
+  font-size: 15px;
+}
+
+.atlas-toolbar__paint {
+  border-left: 1px solid var(--border-subtle);
+  padding-left: 10px;
+  gap: 10px;
+}
+
+.atlas-toolbar__swatches {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.atlas-toolbar__swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  cursor: pointer;
+  padding: 0;
+}
+
+.atlas-toolbar__swatch--active {
+  border-color: #4a9eff;
+  box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.35);
+}
+
+.atlas-toolbar__color-picker {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.atlas-toolbar__size {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.atlas-toolbar__size input[type='range'] {
+  width: 100px;
+}
+
+.atlas-toolbar__size-value {
+  min-width: 28px;
+  text-align: right;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.atlas-toolbar__basemap {
+  display: flex;
+  gap: 6px;
+}
+
+/* ─── Placement hint ──────────────────────────────────────────────────── */
+
+.atlas-canvas__placement-hint {
+  position: absolute;
+  top: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  z-index: 4;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+}
+
+/* ─── Empty state ────────────────────────────────────────────────────── */
+
+.atlas-canvas__empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 20px 28px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-align: center;
+  color: var(--text-secondary);
+  pointer-events: auto;
+  box-shadow: var(--shadow);
+  z-index: 4;
+}
+
+.atlas-canvas__empty p {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+}
+
+/* ─── Tiny button modifier (shared) ──────────────────────────────────── */
+
+.btn--tiny {
+  padding: 4px 10px;
+  font-size: 11px;
+}

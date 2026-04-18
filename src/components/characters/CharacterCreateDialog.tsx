@@ -23,7 +23,6 @@ export function CharacterCreateDialog({ worldType, onClose, onCreate }: Characte
   const [shortRole, setShortRole] = useState('');
   const [imageAssetId, setImageAssetId] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [layoutVariant, setLayoutVariant] = useState<'landscape' | 'portrait'>('landscape');
   const [tagsInput, setTagsInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -109,7 +108,6 @@ export function CharacterCreateDialog({ worldType, onClose, onCreate }: Characte
         name: name.trim(),
         shortRole: shortRole.trim() || undefined,
         imageAssetId: imageAssetId ?? undefined,
-        cardLayoutVariant: layoutVariant,
         tagsText: tags,
       });
       onCreate(character.id);
@@ -164,34 +162,6 @@ export function CharacterCreateDialog({ worldType, onClose, onCreate }: Characte
               onChange={(e) => setShortRole(e.target.value)}
               placeholder="e.g. Fleet Commander, Village Elder"
             />
-          </div>
-
-          <div className="dialog__field">
-            <label className="dialog__label">Layout Variant</label>
-            <div className="character-create-dialog__variants">
-              <button
-                type="button"
-                className={`character-create-dialog__variant ${layoutVariant === 'landscape' ? 'character-create-dialog__variant--active' : ''}`}
-                onClick={() => setLayoutVariant('landscape')}
-              >
-                <div className="character-create-dialog__variant-icon character-create-dialog__variant-icon--landscape">
-                  <div className="character-create-dialog__variant-img" />
-                  <div className="character-create-dialog__variant-text" />
-                </div>
-                <span>Landscape</span>
-              </button>
-              <button
-                type="button"
-                className={`character-create-dialog__variant ${layoutVariant === 'portrait' ? 'character-create-dialog__variant--active' : ''}`}
-                onClick={() => setLayoutVariant('portrait')}
-              >
-                <div className="character-create-dialog__variant-icon character-create-dialog__variant-icon--portrait">
-                  <div className="character-create-dialog__variant-img" />
-                  <div className="character-create-dialog__variant-text" />
-                </div>
-                <span>Portrait</span>
-              </button>
-            </div>
           </div>
 
           <div className="dialog__field">

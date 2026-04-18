@@ -1,16 +1,25 @@
 .card-block {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 8px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
   z-index: 1;
+  border-radius: 8px;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
+/* Edit-mode blocks have a visible frame so you can see + manipulate them. */
 .card-block--editable {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
   cursor: pointer;
+}
+
+/* View mode: blocks render as inline content — no frame, no fill, no header
+   border. The header (if any) just acts as a small section label. */
+.card-block--view {
+  background: transparent;
+  border: 1px solid transparent;
 }
 
 .card-block--selected {
@@ -18,14 +27,42 @@
   box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.3);
 }
 
+/* While being dragged, the source block fades so the ghost preview
+   reads as the canonical position. */
+.card-block--dragging {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Same idea while the block is being drag-resized — the live ghost (rendered
+   by CardGrid) shows the new footprint, so the real block fades. */
+.card-block--resizing,
+.card-block--rearranging {
+  opacity: 0.25;
+}
+
 .card-block__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 6px 10px;
-  border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
   min-height: 30px;
+  gap: 8px;
+}
+
+/* Border between header and content only in edit mode. The hamburger
+   button is the drag source now — the header itself is no longer draggable,
+   so leave its cursor default. */
+.card-block--editable .card-block__header {
+  border-bottom: 1px solid var(--border-subtle);
+  user-select: none;
+}
+
+/* Header without a title still needs to occupy room in edit mode (so you can
+   see the controls) — keep the row but tighten the empty-side padding. */
+.card-block__header--no-title {
+  justify-content: flex-end;
 }
 
 .card-block__title {
@@ -34,11 +71,53 @@
   color: var(--accent-characters);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-block__title--placeholder {
+  color: var(--text-muted);
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  font-style: italic;
+}
+
+.card-block__title-input {
+  flex: 1;
+  min-width: 0;
+  padding: 2px 6px;
+  border: 1px solid var(--accent-characters);
+  border-radius: 3px;
+  background: var(--bg-primary);
+  color: var(--accent-characters);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  outline: none;
 }
 
 .card-block__controls {
   display: flex;
   gap: 2px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  /* Controls sit above the resize handles so clicking the hamburger / delete
+     doesn't get captured by the right-edge resize strip underneath. */
+  position: relative;
+  z-index: 6;
+}
+
+/* Controls fade in on block hover or while the block is selected. Keeping
+   them hidden by default cuts visual clutter on grids with many blocks. */
+.card-block--editable:hover .card-block__controls,
+.card-block--selected .card-block__controls {
+  opacity: 1;
 }
 
 .card-block__control-btn {
@@ -62,11 +141,137 @@
   color: var(--danger);
 }
 
+/* Hamburger = drag handle. Grab/grabbing cursor, and it's the only element
+   with draggable=true so the rest of the block stays click/select-friendly. */
+.card-block__drag-handle {
+  cursor: grab;
+  font-size: 12px;
+  padding: 0 6px;
+}
+
+.card-block__drag-handle:active {
+  cursor: grabbing;
+}
+
 .card-block__content {
   flex: 1;
   overflow-y: auto;
   padding: 6px 10px;
   min-height: 0;
+}
+
+/* In view mode the grid uses auto-sized rows (see CardGrid.css), so blocks
+   already grow to fit their content — no internal scrollbar is ever needed.
+   Force overflow visible here too in case any long inline word would force
+   a scrollbar despite the row growing. Edit mode keeps the fixed cell +
+   internal scroll to preserve drag/drop alignment. */
+.card-block--view {
+  overflow: visible;
+}
+
+.card-block--view .card-block__content {
+  overflow-y: visible;
+}
+
+/* ─── Label blocks ──────────────────────────────────────────────────────────
+   A title-only strip. The header fills the block and the text reads as a
+   section divider: centered, slightly larger, with a thin accent underline
+   in view mode. */
+.card-block--label .card-block__header {
+  flex: 1;
+  justify-content: center;
+  padding: 8px 12px;
+}
+
+.card-block--label .card-block__title {
+  flex: 0 0 auto;
+  text-align: center;
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+
+.card-block--view.card-block--label .card-block__header {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* ─── Text blocks ───────────────────────────────────────────────────────────
+   No title ever. The edit-mode header is a thin empty strip that still acts
+   as a control anchor. In view mode there's no header at all so content fills
+   the whole block. */
+.card-block--text .card-block__header {
+  min-height: 22px;
+  padding: 4px 8px;
+}
+
+/* ─── Resize handles ────────────────────────────────────────────────────────
+   Absolutely-positioned strips along the block border. Invisible at rest,
+   appear on block hover. Mousedown on one starts a drag-resize tracked at
+   window level by CardGrid. Handles are deliberately wide (12px) and extend
+   slightly outside the block for a forgiving hit target. */
+.card-block__resize-handle {
+  position: absolute;
+  opacity: 0;
+  transition: opacity 0.12s ease, background 0.12s ease;
+  z-index: 4;
+}
+
+.card-block--editable:hover .card-block__resize-handle,
+.card-block--selected .card-block__resize-handle,
+.card-block--resizing .card-block__resize-handle {
+  opacity: 1;
+}
+
+.card-block__resize-handle:hover {
+  background: rgba(167, 139, 250, 0.35);
+}
+
+.card-block__resize-handle--right {
+  top: 0;
+  right: -6px;
+  width: 12px;
+  height: 100%;
+  cursor: ew-resize;
+}
+
+.card-block__resize-handle--left {
+  top: 0;
+  left: -6px;
+  width: 12px;
+  height: 100%;
+  cursor: ew-resize;
+}
+
+.card-block__resize-handle--bottom {
+  left: 0;
+  bottom: -6px;
+  height: 12px;
+  width: 100%;
+  cursor: ns-resize;
+}
+
+.card-block__resize-handle--top {
+  left: 0;
+  top: -6px;
+  height: 12px;
+  width: 100%;
+  cursor: ns-resize;
+}
+
+/* Corner wins over the edge handles in the overlap zone. */
+.card-block__resize-handle--corner {
+  right: -8px;
+  bottom: -8px;
+  width: 20px;
+  height: 20px;
+  cursor: se-resize;
+  z-index: 5;
+  border-radius: 0 0 8px 0;
+}
+
+/* In view mode, content sits flush with no inset so it reads as inline
+   prose rather than a card. */
+.card-block--view .card-block__content {
+  padding: 4px 0;
 }
 
 .card-block__content .tiptap-editor {

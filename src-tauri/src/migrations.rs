@@ -32,5 +32,20 @@ pub fn run_world_migrations(conn: &Connection) -> Result<(), rusqlite::Error> {
             "migrations/world/002_graph_shared_nodes.sql"
         ))?;
     }
+    if version < 3 {
+        conn.execute_batch(include_str!(
+            "migrations/world/003_atlas_canvas.sql"
+        ))?;
+    }
+    if version < 4 {
+        conn.execute_batch(include_str!(
+            "migrations/world/004_card_block_type.sql"
+        ))?;
+    }
+    if version < 5 {
+        conn.execute_batch(include_str!(
+            "migrations/world/005_cinematic_preview.sql"
+        ))?;
+    }
     Ok(())
 }

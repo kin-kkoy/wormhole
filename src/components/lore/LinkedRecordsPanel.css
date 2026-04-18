@@ -7,10 +7,30 @@
 .linked-records__header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
   padding: 10px 12px;
+  background: transparent;
+  border: none;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+}
+
+.linked-records__header:hover {
+  background: var(--hover);
+}
+
+.linked-records__chev {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.linked-records__chev--open {
+  transform: rotate(90deg);
 }
 
 .linked-records__title {
@@ -19,6 +39,21 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--text-muted);
+}
+
+.linked-records__count {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  padding: 1px 6px;
+  border-radius: 10px;
+  margin-right: auto;
+}
+
+.linked-records__body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .linked-records__add-btn {

@@ -11,10 +11,30 @@
 .character-card__body {
   flex: 1;
   min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 35% 1fr;
+  grid-template-rows: 1fr;
+  gap: 20px;
+  padding: 20px;
+}
+
+/* Left column — image stretches to span the full height of the row */
+.character-card__image-col {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Right column — header + block grid stack vertically. No overflow: the card
+   face is a fixed-size "business card" layout; content compresses with the
+   grid's 1fr rows when the window shrinks rather than introducing a scrollbar. */
+.character-card__content-col {
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
-  padding: 20px;
+  min-width: 0;
+  min-height: 0;
+  gap: 16px;
 }
 
 .character-card__loading,

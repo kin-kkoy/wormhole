@@ -2,6 +2,7 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { useEffect, useRef, useCallback } from 'react';
+import { InlineLinkNode } from './InlineLinkExtension';
 import './TipTapEditor.css';
 
 interface TipTapEditorProps {
@@ -33,6 +34,7 @@ export function TipTapEditor({
   const editor = useEditor({
     extensions: [
       StarterKit,
+      InlineLinkNode,
       ...(placeholder
         ? [Placeholder.configure({ placeholder })]
         : []),

@@ -1,13 +1,28 @@
 .top-dock {
   display: flex;
   align-items: center;
-  gap: 8px;
-  height: 48px;
+  justify-content: center;
+  height: 56px;
   padding: 0 16px;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   user-select: none;
+}
+
+/* Floating pill — transparent; button hover states supply affordance */
+.top-dock__cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
+  border-radius: 14px;
+}
+
+.top-dock__divider {
+  width: 1px;
+  height: 22px;
+  background: var(--border);
+  margin: 0 4px;
+  flex-shrink: 0;
 }
 
 .top-dock__back {
@@ -16,7 +31,7 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--text-secondary);
   transition: background 0.15s, color 0.15s;
 }
@@ -26,27 +41,14 @@
   color: var(--text-primary);
 }
 
-.top-dock__title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-right: 8px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 200px;
-}
-
 .top-dock__tabs {
   display: flex;
   gap: 2px;
-  flex: 1;
-  justify-content: center;
 }
 
 .top-dock__tab {
-  padding: 6px 16px;
-  border-radius: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
   color: var(--text-secondary);
@@ -67,12 +69,28 @@
 .top-dock__tab--active::after {
   content: '';
   position: absolute;
-  bottom: -1px;
-  left: 16px;
-  right: 16px;
+  bottom: 2px;
+  left: 14px;
+  right: 14px;
   height: 2px;
   background: var(--tab-accent, var(--text-primary));
   border-radius: 1px;
+}
+
+.top-dock__icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  transition: background 0.15s, color 0.15s;
+}
+
+.top-dock__icon-btn:hover {
+  background: var(--hover);
+  color: var(--text-primary);
 }
 
 .top-dock__edit-toggle {
@@ -81,7 +99,7 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--text-secondary);
   transition: background 0.15s, color 0.15s;
 }
@@ -102,7 +120,7 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--text-secondary);
   transition: background 0.15s, color 0.15s;
 }

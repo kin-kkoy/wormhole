@@ -45,7 +45,10 @@ export const InlineLinkNode = Node.create({
         'data-entity-type': HTMLAttributes.entityType,
         'data-entity-id': HTMLAttributes.entityId,
         class: 'inline-link',
-        style: `color: ${color}; cursor: pointer; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 2px;`,
+        // Color alone is the affordance — no underline. The broken-link
+        // visual (strikethrough + darker tint) is handled in the global
+        // TipTapEditor stylesheet via `[data-broken="1"]` selectors.
+        style: `color: ${color}; cursor: pointer;`,
         title: `${HTMLAttributes.entityType}: ${HTMLAttributes.label}`,
       }),
       HTMLAttributes.label || '[unknown]',

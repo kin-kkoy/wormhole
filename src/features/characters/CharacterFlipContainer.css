@@ -7,9 +7,17 @@
 
 .flip-toolbar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 24px;
+  align-items: flex-end;
+  gap: 16px;
+  padding: 10px 24px 0;
+  flex-shrink: 0;
+}
+
+.flip-toolbar__back,
+.flip-toolbar__toggle,
+.flip-toolbar__cine-preview,
+.flip-toolbar__cine-lock {
+  align-self: center;
   flex-shrink: 0;
 }
 
@@ -20,16 +28,42 @@
   font-size: 13px;
 }
 
-.flip-toolbar__toggle {
+.flip-toolbar__toggle,
+.flip-toolbar__cine-preview,
+.flip-toolbar__cine-lock {
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 13px;
 }
 
-.flip-toolbar__toggle--flipped {
+.flip-toolbar__toggle--flipped,
+.flip-toolbar__cine-preview--active,
+.flip-toolbar__cine-lock--active {
   color: var(--accent-characters);
   border-color: var(--accent-characters);
+}
+
+/* Slot where CharacterDetails portals its tab bar. Takes middle space,
+   tabs sit visually along the bottom of the toolbar row so they feel
+   anchored (even though there is no content panel directly beneath). */
+.flip-toolbar__tab-slot {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 0;
+}
+
+/* Only show the tab bar when we're on the Details face.
+   Using opacity + pointer-events rather than `visibility: hidden` because a
+   focused input inside the slot (e.g. a leftover tab rename caret) can still
+   render its blinking caret through `visibility: hidden` in some WebViews.
+   `opacity: 0` hides the rendering layer entirely — caret included — while
+   preserving layout so Back / Details stay in their positions. */
+.flip-toolbar[data-face="card"] .flip-toolbar__tab-slot {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .flip-container {
@@ -62,10 +96,30 @@
 .flip-back {
   position: absolute;
   inset: 0;
+  background: var(--bg-primary);
   backface-visibility: hidden;
-  overflow-y: auto;
+  -webkit-backface-visibility: hidden;
+  /* The real fix for backface bleed: manually toggle `visibility` on the
+     non-visible face with a delay equal to half the flip duration. At
+     200ms / 400ms, both faces are edge-on (90°) so the hard visibility
+     cutover is imperceptible. backface-visibility is kept as a safety net
+     but this WebView leaks descendant layers through the hidden face,
+     so we can't rely on it alone. */
+  transition: visibility 0s ease 200ms;
+}
+
+.flip-container:not([data-flipped="true"]) .flip-back {
+  visibility: hidden;
+}
+
+.flip-container[data-flipped="true"] .flip-front {
+  visibility: hidden;
 }
 
 .flip-back {
   transform: rotateY(180deg);
 }
+
+/* Note: do NOT put `overflow: auto/hidden` on .flip-front / .flip-back —
+   that flattens the 3D context in some WebViews. The inner CharacterCard /
+   CharacterDetails handle their own internal scrolling. */

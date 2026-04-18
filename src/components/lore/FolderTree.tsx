@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import type { LoreFolder, LoreDocumentSummary } from '../../lib/commands';
 import { commands } from '../../lib/commands';
 import { ContextMenu } from '../common/ContextMenu';
@@ -153,7 +153,17 @@ export function FolderTree({
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [dragOver, setDragOver] = useState<DragOverState | null>(null);
+  // Local search: click the magnifier → header swaps to a filter input. The
+  // tree flattens to matching documents while `searchQuery` is non-empty;
+  // folders are hidden in search mode for readability.
+  const [searchMode, setSearchMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const treeRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (searchMode) searchInputRef.current?.focus();
+  }, [searchMode]);
 
   const { roots, rootDocs, folderMap } = buildTree(folders, documents);
 
@@ -503,19 +513,76 @@ export function FolderTree({
     );
   }
 
+  const trimmedQuery = searchQuery.trim().toLowerCase();
+  const isFiltering = searchMode && trimmedQuery.length > 0;
+  const filteredDocs = isFiltering
+    ? documents
+        .filter((d) => d.title.toLowerCase().includes(trimmedQuery))
+        .sort((a, b) => a.title.localeCompare(b.title))
+    : [];
+
   return (
     <div className="folder-tree" ref={treeRef}>
-      <div className="folder-tree__header">
-        <span className="folder-tree__title">Lore Archive</span>
-        <button
-          className="folder-tree__add-btn"
-          title="New Document"
-          onClick={() => setDocumentDialog({ mode: 'create' })}
-        >
-          <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14">
-            <path d="M8 2a.5.5 0 01.5.5v5h5a.5.5 0 010 1h-5v5a.5.5 0 01-1 0v-5h-5a.5.5 0 010-1h5v-5A.5.5 0 018 2z" />
-          </svg>
-        </button>
+      <div className={`folder-tree__header ${searchMode ? 'folder-tree__header--searching' : ''}`}>
+        {searchMode ? (
+          <>
+            <input
+              ref={searchInputRef}
+              className="folder-tree__search-input"
+              type="text"
+              placeholder="Search documents…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onBlur={() => {
+                // Only revert if the user leaves with an empty box; otherwise
+                // they may be clicking into a result and we want the query kept.
+                if (searchQuery.trim() === '') setSearchMode(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  setSearchQuery('');
+                  setSearchMode(false);
+                }
+              }}
+            />
+            <button
+              className="folder-tree__icon-btn"
+              title="Close search"
+              onMouseDown={(e) => e.preventDefault() /* keep input focus */}
+              onClick={() => {
+                setSearchQuery('');
+                setSearchMode(false);
+              }}
+            >
+              <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
+                <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </button>
+          </>
+        ) : (
+          <>
+            <span className="folder-tree__title">Lore Archive</span>
+            <button
+              className="folder-tree__add-btn"
+              title="New Document"
+              onClick={() => setDocumentDialog({ mode: 'create' })}
+            >
+              <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14">
+                <path d="M8 2a.5.5 0 01.5.5v5h5a.5.5 0 010 1h-5v5a.5.5 0 01-1 0v-5h-5a.5.5 0 010-1h5v-5A.5.5 0 018 2z" />
+              </svg>
+            </button>
+            <button
+              className="folder-tree__icon-btn"
+              title="Search"
+              onClick={() => setSearchMode(true)}
+            >
+              <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
+                <circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M10.5 10.5L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </button>
+          </>
+        )}
       </div>
 
       <div
@@ -525,16 +592,28 @@ export function FolderTree({
             handleContextMenu(e, { type: 'root', x: 0, y: 0 });
           }
         }}
-        onDragOver={handleRootDragOver}
-        onDrop={handleRootDrop}
+        onDragOver={isFiltering ? undefined : handleRootDragOver}
+        onDrop={isFiltering ? undefined : handleRootDrop}
       >
-        {roots.map((folder) => renderFolder(folder))}
-        {rootDocs.map((doc) => renderDocument(doc, 0))}
-        {roots.length === 0 && rootDocs.length === 0 && (
-          <div className="folder-tree__empty">
-            <span>No folders or documents</span>
-            <span>Right-click to create</span>
-          </div>
+        {isFiltering ? (
+          filteredDocs.length === 0 ? (
+            <div className="folder-tree__empty">
+              <span>No matches for &ldquo;{searchQuery}&rdquo;</span>
+            </div>
+          ) : (
+            filteredDocs.map((doc) => renderDocument(doc, 0))
+          )
+        ) : (
+          <>
+            {roots.map((folder) => renderFolder(folder))}
+            {rootDocs.map((doc) => renderDocument(doc, 0))}
+            {roots.length === 0 && rootDocs.length === 0 && (
+              <div className="folder-tree__empty">
+                <span>No folders or documents</span>
+                <span>Right-click to create</span>
+              </div>
+            )}
+          </>
         )}
       </div>
 

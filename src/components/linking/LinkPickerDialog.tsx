@@ -3,28 +3,58 @@ import type { LinkableRecord } from '../../lib/commands';
 import { commands } from '../../lib/commands';
 import './LinkPickerDialog.css';
 
+export type EntityType = 'character' | 'map_entity' | 'lore_document';
+
 interface LinkPickerDialogProps {
-  sourceType: string;
+  sourceType: EntityType;
   sourceId: string;
+  /** Restrict picker to these target entity types. Omit to allow all. */
+  allowedTargetTypes?: EntityType[];
+  /** Variant button styling for the primary "Link" action. */
+  primaryVariant?: 'lore' | 'characters' | 'atlas' | 'default';
   onClose: () => void;
   onLinkCreated: () => void;
 }
 
 const SUGGESTED_LINK_TYPES = [
   'related_to',
-  'appears_in',
-  'mentioned_in',
   'ruler_of',
   'resident_in',
   'born_in',
   'active_in',
+  'appears_in',
   'located_in',
   'tied_to_event',
+  'reference',
 ];
+
+const LINK_TYPE_PATTERN = /^[A-Za-z0-9_-]+$/;
+const LINK_TYPE_MAX = 50;
+
+function validateLinkType(value: string): string | null {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return null;
+  if (trimmed.length > LINK_TYPE_MAX) {
+    return `Link type must be ${LINK_TYPE_MAX} characters or fewer`;
+  }
+  if (!LINK_TYPE_PATTERN.test(trimmed)) {
+    return 'Use letters, numbers, underscore, or hyphen only';
+  }
+  return null;
+}
+
+const PRIMARY_VARIANT_CLASS: Record<NonNullable<LinkPickerDialogProps['primaryVariant']>, string> = {
+  lore: 'btn--lore-primary',
+  characters: 'btn--primary',
+  atlas: 'btn--primary',
+  default: 'btn--primary',
+};
 
 export function LinkPickerDialog({
   sourceType,
   sourceId,
+  allowedTargetTypes,
+  primaryVariant = 'default',
   onClose,
   onLinkCreated,
 }: LinkPickerDialogProps) {
@@ -32,7 +62,9 @@ export function LinkPickerDialog({
   const [results, setResults] = useState<LinkableRecord[]>([]);
   const [selected, setSelected] = useState<LinkableRecord | null>(null);
   const [linkType, setLinkType] = useState('related_to');
+  const [linkTypeError, setLinkTypeError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -49,7 +81,7 @@ export function LinkPickerDialog({
   // Load initial results
   useEffect(() => {
     doSearch('');
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const doSearch = useCallback(
@@ -62,13 +94,16 @@ export function LinkPickerDialog({
             excludeType: sourceType,
             excludeId: sourceId,
           });
-          setResults(r);
+          const filtered = allowedTargetTypes
+            ? r.filter((rec) => allowedTargetTypes.includes(rec.entity_type as EntityType))
+            : r;
+          setResults(filtered);
         } catch (e) {
           console.error('Search failed:', e);
         }
       }, 200);
     },
-    [sourceType, sourceId],
+    [sourceType, sourceId, allowedTargetTypes],
   );
 
   function handleQueryChange(value: string) {
@@ -77,9 +112,20 @@ export function LinkPickerDialog({
     doSearch(value);
   }
 
+  function handleLinkTypeChange(value: string) {
+    setLinkType(value);
+    setLinkTypeError(validateLinkType(value));
+  }
+
   async function handleLink() {
     if (!selected) return;
+    const validationError = validateLinkType(linkType);
+    if (validationError) {
+      setLinkTypeError(validationError);
+      return;
+    }
     setSaving(true);
+    setErrorMsg(null);
     try {
       await commands.createEntityLink({
         sourceType,
@@ -90,7 +136,7 @@ export function LinkPickerDialog({
       });
       onLinkCreated();
     } catch (e) {
-      console.error('Failed to create link:', e);
+      setErrorMsg(String(e));
     }
     setSaving(false);
   }
@@ -145,25 +191,31 @@ export function LinkPickerDialog({
               className="dialog__input"
               type="text"
               value={linkType}
-              onChange={(e) => setLinkType(e.target.value)}
+              onChange={(e) => handleLinkTypeChange(e.target.value)}
               placeholder="related_to"
               list="link-type-suggestions"
+              maxLength={LINK_TYPE_MAX}
             />
             <datalist id="link-type-suggestions">
               {SUGGESTED_LINK_TYPES.map((lt) => (
                 <option key={lt} value={lt} />
               ))}
             </datalist>
+            {linkTypeError && (
+              <div className="link-picker__field-error">{linkTypeError}</div>
+            )}
           </div>
         )}
+
+        {errorMsg && <div className="link-picker__field-error">{errorMsg}</div>}
 
         <div className="dialog__actions">
           <button type="button" className="btn btn--ghost" onClick={onClose}>
             Cancel
           </button>
           <button
-            className="btn btn--lore-primary"
-            disabled={!selected || saving}
+            className={`btn ${PRIMARY_VARIANT_CLASS[primaryVariant]}`}
+            disabled={!selected || saving || linkTypeError !== null}
             onClick={handleLink}
           >
             {saving ? 'Linking...' : 'Link'}

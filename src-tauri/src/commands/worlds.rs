@@ -373,18 +373,85 @@ pub fn seed_example_world(
         ],
     ).map_err(|e| format!("Failed to insert block 2: {}", e))?;
 
-    // Insert character detail section for Kira
-    let section_id = uuid::Uuid::new_v4().to_string();
+    // ---- Character detail sections for Kira (showcases all 4 layout types) ----
+
+    // 1. Overview (prose) — always-present base tab, sort_order = 0
+    let kira_overview_id = uuid::Uuid::new_v4().to_string();
     conn.execute(
         "INSERT INTO character_detail_sections (id, character_id, title, layout_type, content, sort_order, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
         rusqlite::params![
-            section_id, char1_id,
+            kira_overview_id, char1_id,
             "Overview",
             "prose",
             r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Kira Voss is the current Fleet Commander of the Thornwatch Rangers, stationed at Thornwatch Keep on the edge of the Ashenmoor Expanse. She earned her position through years of service and a legendary defense of the keep."}]}]}"#,
             0, now, now
         ],
-    ).map_err(|e| format!("Failed to insert section: {}", e))?;
+    ).map_err(|e| format!("Failed to insert Kira Overview: {}", e))?;
+
+    // 2. Background (prose)
+    let kira_background_id = uuid::Uuid::new_v4().to_string();
+    conn.execute(
+        "INSERT INTO character_detail_sections (id, character_id, title, layout_type, content, sort_order, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        rusqlite::params![
+            kira_background_id, char1_id,
+            "Background",
+            "prose",
+            r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Born to a family of saltmarsh fishers along the eastern coast, Kira grew up watching the corruption of the Ashenmoor creep closer to her village each year. By the time she was sixteen, the marsh had swallowed her family's docks and most of their livelihood."}]},{"type":"paragraph","content":[{"type":"text","text":"She enlisted with the Thornwatch Rangers the day she turned eighteen — not out of patriotism, but out of a quiet, sustained anger at what she had watched the marsh take. Her superiors quickly noted her composure under fire and her refusal to abandon a position once committed to it."}]}]}"#,
+            1, now, now
+        ],
+    ).map_err(|e| format!("Failed to insert Kira Background: {}", e))?;
+
+    // 3. Relationships (cards)
+    let kira_relationships_id = uuid::Uuid::new_v4().to_string();
+    conn.execute(
+        "INSERT INTO character_detail_sections (id, character_id, title, layout_type, structured_content_json, sort_order, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        rusqlite::params![
+            kira_relationships_id, char1_id,
+            "Relationships",
+            "cards",
+            r#"[{"id":"k-rel-1","title":"Captain Selene Marsh","subtitle":"Second-in-Command","description":"Kira's right hand and oldest friend in the Rangers. Quietly disagrees with about half of Kira's decisions but follows them to the letter."},{"id":"k-rel-2","title":"Vorn Hask","subtitle":"Rival Commander","description":"Commander of the Stoneward Garrison to the north. They have a long-running cold war over jurisdiction and resource allocation."},{"id":"k-rel-3","title":"Old Wren","subtitle":"Mentor","description":"The previous Fleet Commander, now retired to a fishing shack. Kira visits her once a season to argue about strategy and drink terrible tea."}]"#,
+            2, now, now
+        ],
+    ).map_err(|e| format!("Failed to insert Kira Relationships: {}", e))?;
+
+    // 4. Timeline (timeline)
+    let kira_timeline_id = uuid::Uuid::new_v4().to_string();
+    conn.execute(
+        "INSERT INTO character_detail_sections (id, character_id, title, layout_type, structured_content_json, sort_order, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        rusqlite::params![
+            kira_timeline_id, char1_id,
+            "Timeline",
+            "timeline",
+            r#"[{"id":"k-tl-1","date":"Year 430","title":"Enlistment","description":"Joins the Thornwatch Rangers at age eighteen. Posted to a remote watch-tower on the marsh's edge."},{"id":"k-tl-2","date":"Year 435","title":"The Defense of the Keep","description":"Leads a holding action during a sudden marshland incursion. The keep holds; Kira is one of only nineteen survivors from the original eighty-strong garrison."},{"id":"k-tl-3","date":"Year 439","title":"Promoted to Fleet Commander","description":"Appointed against the wishes of two competing factions. Old Wren reportedly says only \"finally\" before going back to her tea."}]"#,
+            3, now, now
+        ],
+    ).map_err(|e| format!("Failed to insert Kira Timeline: {}", e))?;
+
+    // 5. Vitals (grid / key-value)
+    let kira_vitals_id = uuid::Uuid::new_v4().to_string();
+    conn.execute(
+        "INSERT INTO character_detail_sections (id, character_id, title, layout_type, structured_content_json, sort_order, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        rusqlite::params![
+            kira_vitals_id, char1_id,
+            "Vitals",
+            "grid",
+            r#"[{"id":"k-v-1","label":"Height","value":"5'9\""},{"id":"k-v-2","label":"Eye Color","value":"Slate gray"},{"id":"k-v-3","label":"Dominant Hand","value":"Left"},{"id":"k-v-4","label":"Weapon","value":"Ranger's saber, fitted for left-hand draw"},{"id":"k-v-5","label":"Allegiance","value":"Thornwatch Rangers"},{"id":"k-v-6","label":"Distinguishing Mark","value":"Burn scar across the right forearm from the Defense of the Keep"}]"#,
+            4, now, now
+        ],
+    ).map_err(|e| format!("Failed to insert Kira Vitals: {}", e))?;
+
+    // ---- Thane's mandatory Overview section (was missing in earlier seed) ----
+    let thane_overview_id = uuid::Uuid::new_v4().to_string();
+    conn.execute(
+        "INSERT INTO character_detail_sections (id, character_id, title, layout_type, content, sort_order, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        rusqlite::params![
+            thane_overview_id, char2_id,
+            "Overview",
+            "prose",
+            r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Thane Ashford has served as Keeper of the Great Archive for thirty-one years. He was apprenticed to the previous Keeper at fourteen and has not slept above ground for any prolonged stretch since. He insists this is a coincidence."}]},{"type":"paragraph","content":[{"type":"text","text":"His role is officially apolitical, but in practice he has refused four kings access to specific shelves and outlived two of them. The remaining two no longer ask."}]}]}"#,
+            0, now, now
+        ],
+    ).map_err(|e| format!("Failed to insert Thane Overview: {}", e))?;
 
     // Insert lore folder and documents
     let folder_id = uuid::Uuid::new_v4().to_string();

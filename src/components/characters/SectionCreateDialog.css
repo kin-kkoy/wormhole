@@ -1,48 +1,256 @@
 .section-create-dialog {
-  max-width: 460px;
-  width: 90%;
+  max-width: 720px;
+  width: 92%;
 }
 
-.section-create-dialog__types {
+/* =========================================================================
+   Layout type picker — horizontal row of tiles with hover-expand behaviour.
+   On hover of any tile, non-hovered tiles shrink and fade.
+   ========================================================================= */
+
+/* Smooth cubic-bezier matches the browser-native "menu-item" feel */
+.layout-type-picker {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  gap: 10px;
   margin-top: 4px;
+  align-items: stretch;
+  /* Fixed height — tiles never grow vertically, so the modal stays stable */
+  height: 210px;
 }
 
-.section-create-dialog__type {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 10px 14px;
+.layout-type-tile {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 12px;
   border: 2px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--bg-tertiary);
   cursor: pointer;
   text-align: left;
-  transition: border-color 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+  /* Horizontal-only growth on hover — no vertical resize, smooth easing */
+  transition:
+    flex-grow 280ms cubic-bezier(0.25, 0.8, 0.3, 1),
+    opacity 220ms cubic-bezier(0.25, 0.8, 0.3, 1),
+    border-color 150ms ease,
+    background 150ms ease;
 }
 
-.section-create-dialog__type:hover {
+.layout-type-tile:hover {
   border-color: var(--accent-characters);
 }
 
-.section-create-dialog__type--active {
-  border-color: var(--accent-characters);
-  background: rgba(167, 139, 250, 0.08);
+/* Shrink + fade non-hovered siblings when any tile is hovered */
+.layout-type-picker:hover .layout-type-tile:not(:hover) {
+  flex-grow: 0.4;
+  opacity: 0.55;
 }
 
-.section-create-dialog__type-label {
+.layout-type-picker:hover .layout-type-tile:hover {
+  flex-grow: 3;
+}
+
+/* Selected state persists independent of hover */
+.layout-type-tile--selected {
+  border-color: var(--accent-characters);
+  background: rgba(167, 139, 250, 0.1);
+}
+
+.layout-type-tile__check {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent-characters);
+  color: #fff;
+  font-size: 12px;
+  line-height: 20px;
+  text-align: center;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.layout-type-tile__preview-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  border-radius: 6px;
+  padding: 10px;
+  overflow: hidden;
+}
+
+.layout-type-tile__info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+  /* Reserve space for label + 3 lines of description so description can
+     fade in without changing layout */
+  min-height: 68px;
+}
+
+.layout-type-tile__label {
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.section-create-dialog__type--active .section-create-dialog__type-label {
+.layout-type-tile--selected .layout-type-tile__label {
   color: var(--accent-characters);
 }
 
-.section-create-dialog__type-desc {
+.layout-type-tile__desc {
   font-size: 11px;
   color: var(--text-muted);
+  line-height: 1.35;
+  /* Description stays in the layout — space is reserved. Only opacity toggles. */
+  opacity: 0;
+  transition: opacity 200ms cubic-bezier(0.25, 0.8, 0.3, 1);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.layout-type-tile:hover .layout-type-tile__desc,
+.layout-type-tile--selected .layout-type-tile__desc {
+  opacity: 1;
+}
+
+/* =========================================================================
+   Mini-previews — structural mocks built with plain divs.
+   ========================================================================= */
+
+.layout-preview {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  pointer-events: none;
+}
+
+/* Prose: stack of horizontal text-bar lines */
+.layout-preview--prose {
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+}
+
+.layout-preview-prose__line {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--text-muted);
+  opacity: 0.5;
+}
+
+/* Cards: 3x2 grid of small rounded rectangles */
+.layout-preview--cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 4px;
+}
+
+.layout-preview-cards__card {
+  background: var(--text-muted);
+  opacity: 0.4;
+  border-radius: 3px;
+  min-height: 20px;
+}
+
+/* Timeline: left spine with dots + rows of title/desc bars */
+.layout-preview--timeline {
+  position: relative;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  padding-left: 12px;
+}
+
+.layout-preview-timeline__spine {
+  position: absolute;
+  left: 4px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: var(--text-muted);
+  opacity: 0.35;
+  border-radius: 1px;
+}
+
+.layout-preview-timeline__row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.layout-preview-timeline__dot {
+  position: absolute;
+  left: -10px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-characters);
+  opacity: 0.85;
+}
+
+.layout-preview-timeline__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.layout-preview-timeline__title {
+  height: 3px;
+  width: 60%;
+  border-radius: 2px;
+  background: var(--text-muted);
+  opacity: 0.7;
+}
+
+.layout-preview-timeline__desc {
+  height: 3px;
+  width: 85%;
+  border-radius: 2px;
+  background: var(--text-muted);
+  opacity: 0.4;
+}
+
+/* Key-Value (grid): label:value rows */
+.layout-preview--grid {
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+}
+
+.layout-preview-grid__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.layout-preview-grid__label {
+  flex: 0 0 30%;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--text-muted);
+  opacity: 0.65;
+}
+
+.layout-preview-grid__value {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--text-muted);
+  opacity: 0.35;
 }

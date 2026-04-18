@@ -88,3 +88,45 @@
   pointer-events: none;
   height: 0;
 }
+
+/* Inline cross-system links rendered by InlineLinkExtension. The base inline
+ * style (color + dotted underline) is inlined on the span, so we only need to
+ * style the broken state and add a hover affordance here. Applied globally so
+ * any TipTap surface (lore, atlas description, character sections, peek panel)
+ * gets consistent broken-link rendering. */
+.tiptap-editor [data-inline-link] {
+  border-radius: 2px;
+  transition: background-color 0.1s;
+}
+
+.tiptap-editor [data-inline-link]:hover {
+  background-color: rgba(127, 127, 127, 0.12);
+}
+
+/* Broken inline links: target record was deleted (or never existed).
+   Keep the original entity-type color but darken it substantially and add a
+   strikethrough so the state reads as "was a link, not anymore" without
+   losing the visual type identity.
+   These rules are NOT scoped to a specific editor wrapper (no `.tiptap-editor`
+   ancestor) so they also apply inside the Lore document editor, which uses
+   its own `.doc-editor__content` wrapper. `!important` is used so the
+   strikethrough beats any editor-local rules like `:hover` decorating
+   `text-decoration-style: solid`. `color-mix` is supported on all modern
+   WebKitGTK builds Tauri 2 ships with. */
+[data-inline-link][data-broken="1"] {
+  cursor: not-allowed !important;
+  text-decoration: line-through !important;
+  text-decoration-thickness: 1.5px !important;
+}
+
+[data-inline-link][data-broken="1"][data-entity-type="character"] {
+  color: color-mix(in srgb, var(--accent-characters) 55%, #000) !important;
+}
+
+[data-inline-link][data-broken="1"][data-entity-type="map_entity"] {
+  color: color-mix(in srgb, var(--accent-atlas) 55%, #000) !important;
+}
+
+[data-inline-link][data-broken="1"][data-entity-type="lore_document"] {
+  color: color-mix(in srgb, var(--accent-lore) 55%, #000) !important;
+}

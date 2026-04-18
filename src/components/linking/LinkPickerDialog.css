@@ -69,3 +69,9 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.link-picker__field-error {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--accent-danger, #f87171);
+}

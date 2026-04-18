@@ -14,6 +14,9 @@ pub struct CardBlock {
     pub col_span: i32,
     pub row_span: i32,
     pub sort_order: i32,
+    /// 'standard' (title + content), 'label' (title-only), or 'text'
+    /// (content-only). Fixed at creation — not changed by update_card_block.
+    pub block_type: String,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -38,13 +41,14 @@ fn row_to_block(row: &rusqlite::Row) -> rusqlite::Result<CardBlock> {
         col_span: row.get(6)?,
         row_span: row.get(7)?,
         sort_order: row.get(8)?,
-        created_at: row.get(9)?,
-        updated_at: row.get(10)?,
+        block_type: row.get(9)?,
+        created_at: row.get(10)?,
+        updated_at: row.get(11)?,
     })
 }
 
 const BLOCK_COLUMNS: &str = "id, character_id, title, content, grid_column, grid_row, \
-    col_span, row_span, sort_order, created_at, updated_at";
+    col_span, row_span, sort_order, block_type, created_at, updated_at";
 
 fn query_block(conn: &rusqlite::Connection, block_id: &str) -> Result<CardBlock, String> {
     conn.query_row(
@@ -90,6 +94,7 @@ pub fn create_card_block(
     grid_row: i32,
     col_span: Option<i32>,
     row_span: Option<i32>,
+    block_type: Option<String>,
     state: State<Mutex<AppDatabase>>,
 ) -> Result<CardBlock, String> {
     let db = state.lock().map_err(|e| format!("Lock error: {}", e))?;
@@ -102,6 +107,11 @@ pub fn create_card_block(
     let now = chrono::Utc::now().to_rfc3339();
     let cs = col_span.unwrap_or(1);
     let rs = row_span.unwrap_or(1);
+    let bt = match block_type.as_deref() {
+        Some("label") => "label",
+        Some("text") => "text",
+        _ => "standard",
+    };
 
     let max_sort: Option<i32> = conn
         .query_row(
@@ -114,8 +124,8 @@ pub fn create_card_block(
 
     conn.execute(
         "INSERT INTO character_card_blocks (id, character_id, title, content, grid_column, \
-         grid_row, col_span, row_span, sort_order, created_at, updated_at) \
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+         grid_row, col_span, row_span, sort_order, block_type, created_at, updated_at) \
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
         rusqlite::params![
             block_id,
             character_id,
@@ -126,6 +136,7 @@ pub fn create_card_block(
             cs,
             rs,
             sort_order,
+            bt,
             now,
             now
         ],

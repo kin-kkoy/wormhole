@@ -74,6 +74,13 @@
   color: var(--text-primary);
 }
 
+.card-block-dock__item-size {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.4px;
+}
+
 .card-block-dock__item-badge {
   font-size: 9px;
   color: var(--text-muted);
@@ -122,4 +129,39 @@
 .card-block-dock__add-custom:hover {
   border-color: var(--accent-characters);
   color: var(--accent-characters);
+}
+
+/* Transient drag-image element. Attached to <body> off-screen at dragstart,
+   snapshotted by the browser as the HTML5 drag ghost, then removed on the
+   next tick. Styled to look like a real card block so the floating cursor
+   ghost reads as the block being moved. */
+.card-block-preset-ghost {
+  position: fixed;
+  top: -9999px;
+  left: -9999px;
+  background: var(--bg-secondary);
+  border: 2px solid var(--accent-characters);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+  font-family: inherit;
+}
+
+.card-block-preset-ghost__header {
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent-characters);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+}
+
+.card-block-preset-ghost__body {
+  flex: 1;
+  background: var(--bg-primary);
 }

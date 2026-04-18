@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { LinkedRecordDisplay } from '../../lib/commands';
 import { commands } from '../../lib/commands';
-import { LinkPickerDialog } from './LinkPickerDialog';
+import { LinkPickerDialog } from '../linking/LinkPickerDialog';
 import './LinkedRecordsPanel.css';
 
 interface LinkedRecordsPanelProps {
@@ -13,6 +13,7 @@ export function LinkedRecordsPanel({ documentId, onRefresh }: LinkedRecordsPanel
   const [links, setLinks] = useState<LinkedRecordDisplay[]>([]);
   const [loading, setLoading] = useState(true);
   const [showPicker, setShowPicker] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const loadLinks = useCallback(async () => {
     try {
@@ -50,51 +51,77 @@ export function LinkedRecordsPanel({ documentId, onRefresh }: LinkedRecordsPanel
   const documentLinks = links.filter((l) => l.entity_type === 'lore_document');
 
   return (
-    <div className="linked-records">
-      <div className="linked-records__header">
+    <div className={`linked-records ${expanded ? 'linked-records--expanded' : ''}`}>
+      <button
+        type="button"
+        className="linked-records__header"
+        onClick={() => setExpanded((e) => !e)}
+        aria-expanded={expanded}
+      >
+        <svg
+          className={`linked-records__chev ${expanded ? 'linked-records__chev--open' : ''}`}
+          width="12"
+          height="12"
+          viewBox="0 0 12 12"
+          fill="none"
+        >
+          <path d="M4 2l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
         <span className="linked-records__title">Linked Records</span>
-        <button
+        {!loading && links.length > 0 && (
+          <span className="linked-records__count">{links.length}</span>
+        )}
+        <span
           className="linked-records__add-btn"
+          role="button"
           title="Add Link"
-          onClick={() => setShowPicker(true)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setExpanded(true);
+            setShowPicker(true);
+          }}
         >
           <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14">
             <path d="M8 2a.5.5 0 01.5.5v5h5a.5.5 0 010 1h-5v5a.5.5 0 01-1 0v-5h-5a.5.5 0 010-1h5v-5A.5.5 0 018 2z" />
           </svg>
-        </button>
-      </div>
+        </span>
+      </button>
 
-      {loading ? (
-        <div className="linked-records__empty">Loading...</div>
-      ) : links.length === 0 ? (
-        <div className="linked-records__empty">
-          <span>No linked records</span>
-          <span>Click + to add one</span>
-        </div>
-      ) : (
-        <div className="linked-records__content">
-          {characterLinks.length > 0 && (
-            <div className="linked-records__section">
-              <div className="linked-records__section-title">Characters</div>
-              {characterLinks.map((link) => (
-                <LinkItem key={link.link_id} link={link} onRemove={handleRemoveLink} />
-              ))}
+      {expanded && (
+        <div className="linked-records__body">
+          {loading ? (
+            <div className="linked-records__empty">Loading...</div>
+          ) : links.length === 0 ? (
+            <div className="linked-records__empty">
+              <span>No linked records</span>
+              <span>Click + to add one</span>
             </div>
-          )}
-          {locationLinks.length > 0 && (
-            <div className="linked-records__section">
-              <div className="linked-records__section-title">Locations</div>
-              {locationLinks.map((link) => (
-                <LinkItem key={link.link_id} link={link} onRemove={handleRemoveLink} />
-              ))}
-            </div>
-          )}
-          {documentLinks.length > 0 && (
-            <div className="linked-records__section">
-              <div className="linked-records__section-title">Documents</div>
-              {documentLinks.map((link) => (
-                <LinkItem key={link.link_id} link={link} onRemove={handleRemoveLink} />
-              ))}
+          ) : (
+            <div className="linked-records__content">
+              {characterLinks.length > 0 && (
+                <div className="linked-records__section">
+                  <div className="linked-records__section-title">Characters</div>
+                  {characterLinks.map((link) => (
+                    <LinkItem key={link.link_id} link={link} onRemove={handleRemoveLink} />
+                  ))}
+                </div>
+              )}
+              {locationLinks.length > 0 && (
+                <div className="linked-records__section">
+                  <div className="linked-records__section-title">Locations</div>
+                  {locationLinks.map((link) => (
+                    <LinkItem key={link.link_id} link={link} onRemove={handleRemoveLink} />
+                  ))}
+                </div>
+              )}
+              {documentLinks.length > 0 && (
+                <div className="linked-records__section">
+                  <div className="linked-records__section-title">Documents</div>
+                  {documentLinks.map((link) => (
+                    <LinkItem key={link.link_id} link={link} onRemove={handleRemoveLink} />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -104,6 +131,7 @@ export function LinkedRecordsPanel({ documentId, onRefresh }: LinkedRecordsPanel
         <LinkPickerDialog
           sourceType="lore_document"
           sourceId={documentId}
+          primaryVariant="lore"
           onClose={() => setShowPicker(false)}
           onLinkCreated={handleLinkCreated}
         />
@@ -127,7 +155,15 @@ function LinkItem({
         : 'DOC';
 
   return (
-    <div className="linked-records__item">
+    <div
+      className="linked-records__item"
+      data-peek-link
+      data-entity-type={link.entity_type}
+      data-entity-id={link.entity_id}
+      role="button"
+      tabIndex={0}
+      title={`Open ${link.entity_name}`}
+    >
       <span className="linked-records__badge" data-type={link.entity_type}>
         {badgeLabel}
       </span>
@@ -138,7 +174,10 @@ function LinkItem({
       <button
         className="linked-records__remove-btn"
         title="Remove link"
-        onClick={() => onRemove(link.link_id)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove(link.link_id);
+        }}
       >
         <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12">
           <path d="M4.646 4.646a.5.5 0 01.708 0L8 7.293l2.646-2.647a.5.5 0 01.708.708L8.707 8l2.647 2.646a.5.5 0 01-.708.708L8 8.707l-2.646 2.647a.5.5 0 01-.708-.708L7.293 8 4.646 5.354a.5.5 0 010-.708z" />

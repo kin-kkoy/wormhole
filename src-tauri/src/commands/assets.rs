@@ -33,6 +33,7 @@ fn mime_from_extension(path: &Path) -> &'static str {
 #[tauri::command]
 pub fn import_asset(
     file_path: String,
+    max_bytes: Option<u64>,
     state: State<Mutex<AppDatabase>>,
 ) -> Result<String, String> {
     let db = state.lock().map_err(|e| format!("Lock error: {}", e))?;
@@ -43,6 +44,19 @@ pub fn import_asset(
         .ok_or("No world is currently open")?;
 
     let path = Path::new(&file_path);
+
+    if let Some(limit) = max_bytes {
+        let metadata = std::fs::metadata(path)
+            .map_err(|e| format!("Failed to read file metadata: {}", e))?;
+        if metadata.len() > limit {
+            let mb = limit as f64 / (1024.0 * 1024.0);
+            return Err(format!(
+                "File exceeds the {:.0} MB size limit (actual: {:.1} MB)",
+                mb,
+                metadata.len() as f64 / (1024.0 * 1024.0),
+            ));
+        }
+    }
 
     let data =
         std::fs::read(path).map_err(|e| format!("Failed to read file: {}", e))?;
@@ -98,4 +112,31 @@ pub fn get_asset(
         },
     )
     .map_err(|e| format!("Asset not found: {}", e))
+}
+
+/// Binary asset fetch: returns the BLOB as raw bytes via `tauri::ipc::Response`
+/// so the frontend can build an Object URL directly. Avoids the ~33% base64
+/// bloat and the multi-megabyte JSON string parsing that `get_asset` incurs —
+/// the main bottleneck for image display latency on WebKitGTK.
+#[tauri::command]
+pub fn get_asset_bytes(
+    asset_id: String,
+    state: State<Mutex<AppDatabase>>,
+) -> Result<tauri::ipc::Response, String> {
+    let db = state.lock().map_err(|e| format!("Lock error: {}", e))?;
+
+    let (_, conn) = db
+        .active_world
+        .as_ref()
+        .ok_or("No world is currently open")?;
+
+    let data: Vec<u8> = conn
+        .query_row(
+            "SELECT data FROM assets WHERE id = ?1",
+            [&asset_id],
+            |row| row.get(0),
+        )
+        .map_err(|e| format!("Asset not found: {}", e))?;
+
+    Ok(tauri::ipc::Response::new(data))
 }
