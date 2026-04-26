@@ -320,14 +320,13 @@ pub fn seed_example_world(
     let char2_id = uuid::Uuid::new_v4().to_string();
 
     conn.execute(
-        "INSERT INTO characters (id, world_id, name, short_role, objective_summary, in_character_intro, card_layout_variant, brief_details_json, sort_order, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+        "INSERT INTO characters (id, world_id, name, short_role, objective_summary, in_character_intro, brief_details_json, sort_order, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
         rusqlite::params![
             char1_id, world_id,
             "Kira Voss",
             "Fleet Commander",
             r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Commander of the Thornwatch Rangers. A seasoned tactician who rose through the ranks after leading a daring defense of the keep against a marshland incursion. Known for her pragmatic leadership and refusal to leave anyone behind."}]}]}"#,
             r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"\"I didn't choose the Ashenmoor. The Ashenmoor chose me — and I've been arguing with it ever since.\""}]}]}"#,
-            "landscape",
             r#"[{"key":"Title","value":"Fleet Commander"},{"key":"Born","value":"Year 412, Third Age"},{"key":"Status","value":"Active"},{"key":"Affiliation","value":"Thornwatch Rangers"}]"#,
             0,
             now, now
@@ -335,14 +334,13 @@ pub fn seed_example_world(
     ).map_err(|e| format!("Failed to insert character 1: {}", e))?;
 
     conn.execute(
-        "INSERT INTO characters (id, world_id, name, short_role, objective_summary, in_character_intro, card_layout_variant, brief_details_json, sort_order, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+        "INSERT INTO characters (id, world_id, name, short_role, objective_summary, in_character_intro, brief_details_json, sort_order, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
         rusqlite::params![
             char2_id, world_id,
             "Thane Ashford",
             "Keeper of the Archive",
             r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"The appointed guardian of Eldoria's Great Archive, a vast underground library containing records from before the Sundering. Thane has spent decades cataloguing forbidden texts and is one of the few who can read the Old Script."}]}]}"#,
             r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"\"Every page I turn reveals another lie we've been told about our history. The truth isn't hidden — it's just inconvenient.\""}]}]}"#,
-            "portrait",
             r#"[{"key":"Title","value":"Keeper of the Archive"},{"key":"Age","value":"67"},{"key":"Status","value":"Active"},{"key":"Affiliation","value":"The Great Archive"}]"#,
             1,
             now, now

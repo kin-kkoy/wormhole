@@ -161,9 +161,10 @@ export interface CharacterSummary {
   short_role: string | null;
   image_asset_id: string | null;
   decorative_ribbon: string | null;
-  card_layout_variant: string;
   tags_text: string | null;
   sort_order: number | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CharacterFull {
@@ -175,14 +176,13 @@ export interface CharacterFull {
   objective_summary: string | null;
   in_character_intro: string | null;
   decorative_ribbon: string | null;
-  traits_text: string | null;
-  card_layout_variant: string;
   brief_details_json: string | null;
   tags_text: string | null;
   sort_order: number | null;
-  /** When true, opening this character from the codex opens the cinematic
-   *  (full-bleed image) view instead of the default card view. */
-  cinematic_preview_locked: boolean;
+  /** Tri-state lock for the front face. null = unlocked (card by default,
+   *  Preview enabled). 'card' or 'cinematic' = locked to that face,
+   *  Preview disabled. */
+  locked_face: 'card' | 'cinematic' | null;
   created_at: string;
   updated_at: string;
 }
@@ -325,6 +325,11 @@ export interface InlineLinkResolution {
   entity_id: string;
   exists: boolean;
   name: string;
+}
+
+export interface NextPageLink {
+  source_id: string;
+  target_id: string;
 }
 
 // ─── Search & Recycle Bin ─────────────────────────────────────────────────────
@@ -483,14 +488,12 @@ export const commands = {
     name: string;
     shortRole?: string;
     imageAssetId?: string;
-    cardLayoutVariant?: string;
     tagsText?: string;
   }) =>
     invoke<CharacterFull>('create_character', {
       name: params.name,
       shortRole: params.shortRole ?? null,
       imageAssetId: params.imageAssetId ?? null,
-      cardLayoutVariant: params.cardLayoutVariant ?? null,
       tagsText: params.tagsText ?? null,
     }),
 
@@ -501,12 +504,11 @@ export const commands = {
     objectiveSummary?: string;
     inCharacterIntro?: string;
     decorativeRibbon?: string;
-    traitsText?: string;
-    cardLayoutVariant?: string;
     briefDetailsJson?: string;
     imageAssetId?: string;
     tagsText?: string;
-    cinematicPreviewLocked?: boolean;
+    /** undefined = no change; null = unlock; 'card'|'cinematic' = lock to that face. */
+    lockedFace?: 'card' | 'cinematic' | null;
   }) =>
     invoke<CharacterFull>('update_character', {
       characterId: params.characterId,
@@ -515,12 +517,16 @@ export const commands = {
       objectiveSummary: params.objectiveSummary ?? null,
       inCharacterIntro: params.inCharacterIntro ?? null,
       decorativeRibbon: params.decorativeRibbon ?? null,
-      traitsText: params.traitsText ?? null,
-      cardLayoutVariant: params.cardLayoutVariant ?? null,
       briefDetailsJson: params.briefDetailsJson ?? null,
       imageAssetId: params.imageAssetId ?? null,
       tagsText: params.tagsText ?? null,
-      cinematicPreviewLocked: params.cinematicPreviewLocked ?? null,
+      // Empty string is the "unlock" sentinel the Rust side recognises.
+      lockedFace:
+        params.lockedFace === undefined
+          ? null
+          : params.lockedFace === null
+            ? ''
+            : params.lockedFace,
     }),
 
   deleteCharacter: (characterId: string) =>
@@ -545,6 +551,7 @@ export const commands = {
     colSpan?: number;
     rowSpan?: number;
     blockType?: BlockType;
+    presetUnique?: boolean;
   }) =>
     invoke<CardBlock>('create_card_block', {
       characterId: params.characterId,
@@ -554,6 +561,7 @@ export const commands = {
       colSpan: params.colSpan ?? null,
       rowSpan: params.rowSpan ?? null,
       blockType: params.blockType ?? null,
+      presetUnique: params.presetUnique ?? null,
     }),
 
   updateCardBlock: (params: {
@@ -716,6 +724,19 @@ export const commands = {
 
   resolveInlineLinks: (refs: InlineLinkRef[]) =>
     invoke<InlineLinkResolution[]>('resolve_inline_links', { refs }),
+
+  // ─── Next-page override (lore docs only) ──────────────────────────────────
+  getNextPageLink: (documentId: string) =>
+    invoke<string | null>('get_next_page_link', { sourceDocumentId: documentId }),
+
+  setNextPageLink: (params: { documentId: string; targetId: string | null }) =>
+    invoke<void>('set_next_page_link', {
+      sourceDocumentId: params.documentId,
+      targetDocumentId: params.targetId,
+    }),
+
+  listNextPageLinks: () =>
+    invoke<NextPageLink[]>('list_next_page_links'),
 
   // ─── Atlas Canvas (Stage 5) ────────────────────────────────────────────────
 

@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wormhole — Atlas Canvas Painting + Layers Prototype</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg-void: #080a0f;
+    --bg-primary: #0f1117;
+    --bg-surface: #1a1d27;
+    --bg-elevated: #242836;
+    --border: #2a2e3d;
+    --text-primary: #e8e8ed;
+    --text-secondary: #8a8da0;
+    --text-muted: #555770;
+    --accent: #4a9eff;
+    --accent-glow: rgba(74, 158, 255, 0.25);
+    --accent-dim: rgba(74, 158, 255, 0.08);
+    --amber: #f5a623;
+    --green: #4ade80;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg-void);
+    color: var(--text-primary);
+    font-family: 'Instrument Sans', sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    cursor: crosshair;
+  }
+
+  #canvas-container { position: fixed; inset: 0; z-index: 0; }
+  canvas { display: block; }
+
+  .hud { position: fixed; z-index: 10; pointer-events: none; }
+  .hud > * { pointer-events: auto; }
+
+  /* Top bar */
+  .hud-top {
+    top: 0; left: 0; right: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 24px;
+    background: linear-gradient(to bottom, rgba(8,10,15,0.85) 0%, transparent 100%);
+  }
+  .hud-brand { display: flex; align-items: center; gap: 10px; }
+  .hud-brand__icon {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px; color: #fff;
+    box-shadow: 0 0 20px var(--accent-glow);
+  }
+  .hud-brand__text { font-size: 14px; font-weight: 600; letter-spacing: 0.5px; }
+  .hud-brand__sub {
+    font-size: 11px; font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: 1.5px; text-transform: uppercase;
+    margin-left: 4px; padding-left: 10px;
+    border-left: 1px solid var(--border);
+  }
+  .hud-actions { display: flex; gap: 8px; }
+  .hud-btn {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .hud-btn:hover { color: var(--text-primary); border-color: var(--accent); }
+
+  /* View mode pill */
+  .hud-view-mode { top: 16px; left: 50%; transform: translateX(-50%); }
+  .hud-view-mode__label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 500;
+    letter-spacing: 3px; text-transform: uppercase;
+    color: var(--accent);
+    padding: 6px 16px;
+    background: var(--accent-dim);
+    border: 1px solid rgba(74, 158, 255, 0.15);
+    border-radius: 4px;
+    transition: all 0.5s ease;
+    white-space: nowrap;
+  }
+  .hud-view-mode__label[data-mode="tactical"] {
+    color: var(--amber);
+    background: rgba(245, 166, 35, 0.08);
+    border-color: rgba(245, 166, 35, 0.15);
+  }
+  .hud-view-mode__label[data-mode="immersive"] {
+    color: var(--green);
+    background: rgba(74, 222, 128, 0.08);
+    border-color: rgba(74, 222, 128, 0.15);
+  }
+
+  /* Right column: zoom */
+  .hud-right {
+    top: 50%; right: 24px; transform: translateY(-50%);
+    display: flex; flex-direction: column;
+    align-items: flex-end; gap: 16px;
+  }
+  .zoom-track {
+    width: 3px; height: 140px;
+    background: var(--bg-elevated);
+    border-radius: 2px;
+    position: relative;
+    border: 1px solid var(--border);
+  }
+  .zoom-fill {
+    position: absolute;
+    bottom: 0; left: -1px; right: -1px;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: height 0.2s ease;
+    box-shadow: 0 0 8px var(--accent-glow);
+  }
+  .zoom-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--text-muted);
+    letter-spacing: 1px;
+    writing-mode: vertical-lr; text-orientation: mixed;
+    transform: rotate(180deg); margin-top: 8px;
+  }
+
+  /* Bottom bar */
+  .hud-bottom {
+    bottom: 0; left: 0; right: 0;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    padding: 16px 24px;
+    background: linear-gradient(to top, rgba(8,10,15,0.85) 0%, transparent 100%);
+  }
+  .hud-coords {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--text-muted);
+    display: flex; gap: 16px;
+  }
+  .hud-coords span { display: flex; align-items: center; gap: 4px; }
+  .hud-coords .coord-label {
+    color: var(--text-muted);
+    font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+  }
+
+  /* Brush panel — left side, full height */
+  .hud-brush {
+    top: 80px; left: 24px; bottom: 80px;
+    width: 270px;
+    background: rgba(15, 17, 23, 0.88);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    backdrop-filter: blur(8px);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    overflow-y: auto;
+  }
+  .brush-section { display: flex; flex-direction: column; gap: 8px; }
+  .brush-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .brush-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 2px 0;
+  }
+
+  /* Layer rows (top→bottom: L4 mountain → L0 underground) */
+  .layer-list {
+    display: flex; flex-direction: column;
+    gap: 4px;
+  }
+  .layer-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.12s;
+    user-select: none;
+  }
+  .layer-row:hover { color: var(--text-primary); border-color: var(--border); }
+  .layer-row.active {
+    background: rgba(74, 158, 255, 0.16);
+    color: var(--text-primary);
+    border-color: rgba(74, 158, 255, 0.5);
+    box-shadow: 0 0 12px rgba(74,158,255,0.18);
+  }
+  .layer-row__num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-muted);
+    width: 18px;
+  }
+  .layer-row.active .layer-row__num { color: var(--accent); }
+  .layer-row__dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.15);
+    flex-shrink: 0;
+  }
+  .layer-row__name { flex: 1; font-weight: 500; }
+  .layer-row__h {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-muted);
+  }
+
+  /* Material swatches */
+  .brush-swatches {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  .brush-swatch {
+    cursor: pointer;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    padding: 6px 8px;
+    background: var(--bg-elevated);
+    transition: all 0.12s;
+    user-select: none;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .brush-swatch:hover { border-color: rgba(255,255,255,0.2); }
+  .brush-swatch.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 12px var(--accent-glow);
+  }
+  .brush-swatch__color {
+    width: 18px; height: 18px;
+    border-radius: 4px;
+    border: 1px solid rgba(0,0,0,0.4);
+    flex-shrink: 0;
+  }
+  .brush-swatch__color.cutout {
+    background:
+      linear-gradient(45deg, transparent 45%, var(--amber) 45%, var(--amber) 55%, transparent 55%),
+      linear-gradient(-45deg, transparent 45%, var(--amber) 45%, var(--amber) 55%, transparent 55%),
+      #000;
+  }
+  .brush-swatch__name {
+    font-size: 10px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+  .brush-swatch.active .brush-swatch__name { color: var(--text-primary); }
+
+  /* Sliders */
+  .slider-row {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .slider-row input[type="range"] { flex: 1; accent-color: var(--accent); }
+  .slider-row__value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-secondary);
+    min-width: 28px; text-align: right;
+  }
+
+  .hint {
+    font-size: 10px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    background: rgba(8,10,15,0.4);
+    padding: 8px 10px;
+    border-radius: 4px;
+    border-left: 2px solid var(--accent);
+  }
+  .hint strong { color: var(--accent); }
+
+  /* Instruction overlay */
+  .hud-instructions {
+    bottom: 60px; left: 50%; transform: translateX(-50%);
+    text-align: center;
+    transition: opacity 1s ease;
+  }
+  .hud-instructions__text {
+    font-size: 12px;
+    color: var(--text-muted);
+    background: rgba(15, 17, 23, 0.85);
+    padding: 8px 20px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    backdrop-filter: blur(8px);
+  }
+  .hud-instructions__text kbd {
+    display: inline-block;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    margin: 0 2px;
+  }
+  .hud-instructions.hidden { opacity: 0; pointer-events: none; }
+
+  .vignette {
+    position: fixed; inset: 0; z-index: 5;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(8,10,15,0.6) 100%);
+  }
+
+  /* Active layer banner */
+  .active-banner {
+    background: rgba(74, 158, 255, 0.1);
+    border: 1px solid rgba(74,158,255,0.3);
+    padding: 8px 10px;
+    border-radius: 6px;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .active-banner__dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .active-banner__name { flex: 1; }
+  .active-banner__hint {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+<div class="vignette"></div>
+
+<div class="hud hud-top">
+  <div class="hud-brand">
+    <div class="hud-brand__icon">W</div>
+    <span class="hud-brand__text">Wormhole</span>
+    <span class="hud-brand__sub">Atlas Canvas — Painting + Layers</span>
+  </div>
+  <div class="hud-actions">
+    <button class="hud-btn" id="btnReset">Reset Map</button>
+    <button class="hud-btn" id="btnClear">Clear All</button>
+  </div>
+</div>
+
+<div class="hud hud-view-mode">
+  <div class="hud-view-mode__label" id="viewModeLabel" data-mode="strategic">Strategic View</div>
+</div>
+
+<div class="hud hud-right">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span class="zoom-label">ZOOM</span>
+    <div class="zoom-track"><div class="zoom-fill" id="zoomFill"></div></div>
+  </div>
+</div>
+
+<!-- Brush panel -->
+<div class="hud hud-brush">
+
+  <div class="active-banner" id="activeBanner">
+    <span class="active-banner__dot" id="activeDot"></span>
+    <span class="active-banner__name" id="activeName">Ground</span>
+    <span class="active-banner__hint" id="activeHint">L3 / 2.5</span>
+  </div>
+
+  <div class="brush-section">
+    <div class="brush-title">Layer (top → bottom)</div>
+    <div class="layer-list" id="layerList"></div>
+  </div>
+
+  <div class="brush-divider"></div>
+
+  <div class="brush-section">
+    <div class="brush-title" id="paletteTitle">Material</div>
+    <div class="brush-swatches" id="brushSwatches"></div>
+  </div>
+
+  <div class="brush-divider"></div>
+
+  <div class="brush-section">
+    <div class="brush-title">Brush Size</div>
+    <div class="slider-row">
+      <input type="range" id="brushSize" min="2" max="14" value="6">
+      <span class="slider-row__value" id="brushSizeValue">6</span>
+    </div>
+    <div class="brush-title" style="margin-top: 6px;">Brush Strength</div>
+    <div class="slider-row">
+      <input type="range" id="brushStrength" min="5" max="100" value="50">
+      <span class="slider-row__value" id="brushStrengthValue">50%</span>
+    </div>
+  </div>
+
+  <div class="hint" id="brushHint">
+    Click and drag on the map to paint. The active <strong>layer</strong> sets the elevation the brush pushes terrain toward; the active <strong>material</strong> sets the surface color.
+  </div>
+</div>
+
+<div class="hud hud-bottom">
+  <div class="hud-coords">
+    <span><span class="coord-label">Alt</span> <span id="coordAlt">120</span></span>
+    <span><span class="coord-label">Pitch</span> <span id="coordPitch">2&deg;</span></span>
+    <span><span class="coord-label">Terrain</span> <span id="coordTerrain">0%</span></span>
+    <span><span class="coord-label">Brush</span> <span id="coordBrush">L3 Ground</span></span>
+  </div>
+</div>
+
+<div class="hud hud-instructions" id="instructions">
+  <div class="hud-instructions__text">
+    <kbd>Scroll</kbd> zoom &middot; <kbd>Right drag</kbd> rotate &middot; <kbd>Left drag</kbd> paint &middot; Switch layers in the side panel
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.162.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.162.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ─── Helpers ────────────────────────────────────────────────────
+
+const lerp = (a, b, t) => a + (b - a) * t;
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const smoothstep = (t, a, b) => {
+  const x = clamp((t - a) / (b - a), 0, 1);
+  return x * x * (3 - 2 * x);
+};
+
+function hash(x, y) {
+  let h = (x * 374761393 + y * 668265263) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 0xffffffff;
+}
+function smoothNoise(x, y) {
+  const ix = Math.floor(x), iy = Math.floor(y);
+  const fx = x - ix, fy = y - iy;
+  const u = fx * fx * (3 - 2 * fx);
+  const v = fy * fy * (3 - 2 * fy);
+  return (hash(ix, iy) * (1 - u) + hash(ix + 1, iy) * u) * (1 - v)
+       + (hash(ix, iy + 1) * (1 - u) + hash(ix + 1, iy + 1) * u) * v;
+}
+function fbm(x, y, octaves = 5) {
+  let val = 0, amp = 0.5, freq = 1;
+  for (let i = 0; i < octaves; i++) {
+    val += amp * smoothNoise(x * freq, y * freq);
+    amp *= 0.5; freq *= 2;
+  }
+  return val;
+}
+
+// ─── Config ─────────────────────────────────────────────────────
+
+const TERRAIN_SIZE = 100;
+const TERRAIN_RES = 161;          // vertices per side (must be ≥ 2)
+const VERT_DX = TERRAIN_SIZE / (TERRAIN_RES - 1); // world units per vertex step
+const SPLAT_SIZE = 512;            // material canvas resolution
+const SPLAT_PER_WORLD = SPLAT_SIZE / TERRAIN_SIZE; // splat px per world unit
+
+// World-space constants for water + underground planes
+const Y_UNDERGROUND = -3.0;
+const Y_DEEP_OCEAN  =  0.5;
+const Y_SHALLOW     =  1.4;
+const MAX_HEIGHT    =  8.0;
+
+const CAM_MIN_DIST = 10;
+const CAM_MAX_DIST = 130;
+
+// ─── Layers ─────────────────────────────────────────────────────
+// Each layer has a target elevation (in world Y units, after the
+// 0..1 transition factor — so we store the 0..1 normalized value
+// actually scaled by MAX_HEIGHT internally).
+//
+// Layer order in UI: top→bottom = L4 → L0 (so high stuff is at top).
+
+const LAYERS = [
+  {
+    id: 'mountain',
+    num: 4,
+    name: 'Mountain',
+    targetH: 6.5,
+    color: '#b0b0b8',
+    palette: ['stone', 'snow', 'rock'],
+  },
+  {
+    id: 'ground',
+    num: 3,
+    name: 'Ground',
+    targetH: 2.5,
+    color: '#5fa83b',
+    palette: ['grass', 'sand', 'dirt'],
+  },
+  {
+    id: 'shallow',
+    num: 2,
+    name: 'Shallow Water',
+    targetH: 0.9,
+    color: '#2a7090',
+    palette: ['sandbed', 'coral', 'kelp'],
+  },
+  {
+    id: 'deep',
+    num: 1,
+    name: 'Deep Ocean',
+    targetH: 0.0,
+    color: '#0a2040',
+    palette: ['deepfloor', 'trench'],
+  },
+  {
+    id: 'underground',
+    num: 0,
+    name: 'Underground',
+    targetH: null, // doesn't change upper terrain height
+    color: '#7a5fa8',
+    palette: ['caveentrance', 'cavestone', 'lava', 'crystal'],
+  },
+];
+
+const LAYER_BY_ID = Object.fromEntries(LAYERS.map(l => [l.id, l]));
+
+// Material color palette (id → hex). 'caveentrance' is a sentinel: it
+// punches alpha=0 in the upper terrain texture rather than coloring it.
+const MATERIALS = {
+  // Mountain
+  stone:       { color: '#7a7a82', label: 'Stone'   },
+  snow:        { color: '#f0f0f5', label: 'Snow'    },
+  rock:        { color: '#5a4a3a', label: 'Rock'    },
+  // Ground
+  grass:       { color: '#5fa83b', label: 'Grass'   },
+  sand:        { color: '#e8c97a', label: 'Sand'    },
+  dirt:        { color: '#8b5a2b', label: 'Dirt'    },
+  // Shallow
+  sandbed:     { color: '#c4a96a', label: 'Sandbed' },
+  coral:       { color: '#ff7b5e', label: 'Coral'   },
+  kelp:        { color: '#3a6b3a', label: 'Kelp'    },
+  // Deep
+  deepfloor:   { color: '#1a2438', label: 'Deepfloor' },
+  trench:      { color: '#0a1428', label: 'Trench'    },
+  // Underground
+  caveentrance:{ color: '#000000', label: 'Cave Entrance', cutout: true },
+  cavestone:   { color: '#3a3245', label: 'Cave Stone' },
+  lava:        { color: '#ff4a1a', label: 'Lava'    },
+  crystal:     { color: '#7ab8ff', label: 'Crystal' },
+};
+
+// ─── Three.js Setup ─────────────────────────────────────────────
+
+const container = document.getElementById('canvas-container');
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setClearColor(0x080a0f);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x080a0f, 0.0);
+
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 500);
+camera.position.set(0, CAM_MAX_DIST, 0.01);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = CAM_MIN_DIST;
+controls.maxDistance = CAM_MAX_DIST;
+controls.maxPolarAngle = Math.PI / 2.2;
+controls.minPolarAngle = 0.05;
+controls.target.set(0, 0, 0);
+// Left = paint (we override below), Shift+Left = pan, Right = rotate
+controls.mouseButtons = { LEFT: null, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
+controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
+
+// ─── Lighting ───────────────────────────────────────────────────
+
+scene.add(new THREE.AmbientLight(0x99aacc, 0.6));
+
+const sun = new THREE.DirectionalLight(0xffeedd, 1.05);
+sun.position.set(40, 70, 25);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -70;
+sun.shadow.camera.right = 70;
+sun.shadow.camera.top = 70;
+sun.shadow.camera.bottom = -70;
+scene.add(sun);
+
+const rim = new THREE.DirectionalLight(0x4a9eff, 0.18);
+rim.position.set(-30, 40, -40);
+scene.add(rim);
+
+// ─── Heights array (the source of truth for terrain shape) ──────
+
+// Stored as normalized 0..1 (multiplied by MAX_HEIGHT at render time).
+// Index = row * TERRAIN_RES + col, where row=0 is min Z.
+const heights = new Float32Array(TERRAIN_RES * TERRAIN_RES);
+
+// Convert vertex (row,col) to world (x,z)
+function vertWorld(row, col) {
+  return {
+    x: -TERRAIN_SIZE / 2 + col * VERT_DX,
+    z: -TERRAIN_SIZE / 2 + row * VERT_DX,
+  };
+}
+function worldToVert(x, z) {
+  return {
+    col: Math.round((x + TERRAIN_SIZE / 2) / VERT_DX),
+    row: Math.round((z + TERRAIN_SIZE / 2) / VERT_DX),
+  };
+}
+
+// ─── Splat (material) canvases ──────────────────────────────────
+
+// Upper-terrain material: RGB color + A=255 (or 0 for cave entrance cutouts)
+const splatCanvas = document.createElement('canvas');
+splatCanvas.width = SPLAT_SIZE;
+splatCanvas.height = SPLAT_SIZE;
+const splatCtx = splatCanvas.getContext('2d');
+const splatTex = new THREE.CanvasTexture(splatCanvas);
+splatTex.colorSpace = THREE.SRGBColorSpace;
+splatTex.minFilter = THREE.LinearFilter;
+splatTex.magFilter = THREE.LinearFilter;
+
+// Underground floor material (always opaque)
+const underCanvas = document.createElement('canvas');
+underCanvas.width = SPLAT_SIZE;
+underCanvas.height = SPLAT_SIZE;
+const underCtx = underCanvas.getContext('2d');
+const underTex = new THREE.CanvasTexture(underCanvas);
+underTex.colorSpace = THREE.SRGBColorSpace;
+underTex.minFilter = THREE.LinearFilter;
+underTex.magFilter = THREE.LinearFilter;
+
+// World-space ↔ splat-canvas pixel
+function worldToSplatPx(x, z) {
+  return {
+    px: (x + TERRAIN_SIZE / 2) * SPLAT_PER_WORLD,
+    py: (z + TERRAIN_SIZE / 2) * SPLAT_PER_WORLD,
+  };
+}
+
+// ─── Build initial pre-baked starter terrain ────────────────────
+//
+// Layout: small grass island center-ish, mountain in one corner,
+// shallow water moat, deep ocean at the far corners. One pre-painted
+// cave entrance to demo the underground.
+
+function bakeInitialTerrain() {
+  // 1. Heights — start from a layered template
+  for (let r = 0; r < TERRAIN_RES; r++) {
+    for (let c = 0; c < TERRAIN_RES; c++) {
+      const { x, z } = vertWorld(r, c);
+      const nx = x / TERRAIN_SIZE + 0.5;
+      const nz = z / TERRAIN_SIZE + 0.5;
+      // Distance from a "Land Center" point biased toward the mountain
+      const cx = 0.42, cz = 0.45;
+      const d = Math.sqrt((nx - cx) ** 2 + (nz - cz) ** 2);
+      // Gaussian island
+      let island = Math.exp(-d * d / 0.08);
+      // Add some noise to it
+      island *= (0.85 + 0.3 * fbm(nx * 4 + 1.7, nz * 4 + 0.3));
+      // Mountain bias: top-left of UV (= -X,+Z world)
+      const mtnD = Math.sqrt((nx - 0.18) ** 2 + (nz - 0.78) ** 2);
+      const mtn = Math.exp(-mtnD * mtnD / 0.04) * 1.0;
+      // Combine into a 0..1ish height
+      let h = island * 0.45 + mtn * 0.85;
+      h = clamp(h, 0, 1.0);
+      heights[r * TERRAIN_RES + c] = h;
+    }
+  }
+
+  // 2. Material splat — paint by elevation tier (via ImageData for speed)
+  const hexToRgb = (hex) => {
+    const v = parseInt(hex.slice(1), 16);
+    return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+  };
+  const matRgb = {};
+  for (const k in MATERIALS) matRgb[k] = hexToRgb(MATERIALS[k].color);
+
+  const splatImg = splatCtx.createImageData(SPLAT_SIZE, SPLAT_SIZE);
+  for (let py = 0; py < SPLAT_SIZE; py++) {
+    for (let px = 0; px < SPLAT_SIZE; px++) {
+      const x = px / SPLAT_PER_WORLD - TERRAIN_SIZE / 2;
+      const z = py / SPLAT_PER_WORLD - TERRAIN_SIZE / 2;
+      const ri = clamp(Math.round((z + TERRAIN_SIZE / 2) / VERT_DX), 0, TERRAIN_RES - 1);
+      const ci = clamp(Math.round((x + TERRAIN_SIZE / 2) / VERT_DX), 0, TERRAIN_RES - 1);
+      const h = heights[ri * TERRAIN_RES + ci];
+      const noise = smoothNoise(x * 0.12, z * 0.12);
+
+      let mat;
+      if (h < 0.05)         mat = 'trench';
+      else if (h < 0.18)    mat = 'deepfloor';
+      else if (h < 0.30)    mat = 'sandbed';
+      else if (h < 0.36)    mat = 'sand';
+      else if (h < 0.62)    mat = (noise > 0.55 ? 'dirt' : 'grass');
+      else if (h < 0.82)    mat = 'stone';
+      else                  mat = 'snow';
+
+      const [r, g, b] = matRgb[mat];
+      const i = (py * SPLAT_SIZE + px) * 4;
+      splatImg.data[i] = r;
+      splatImg.data[i + 1] = g;
+      splatImg.data[i + 2] = b;
+      splatImg.data[i + 3] = 255;
+    }
+  }
+  splatCtx.putImageData(splatImg, 0, 0);
+  splatTex.needsUpdate = true;
+
+  // 3. Underground floor — base cave stone with crystal speckles
+  underCtx.fillStyle = MATERIALS.cavestone.color;
+  underCtx.fillRect(0, 0, SPLAT_SIZE, SPLAT_SIZE);
+  underCtx.fillStyle = MATERIALS.crystal.color;
+  for (let i = 0; i < 220; i++) {
+    const px = Math.random() * SPLAT_SIZE;
+    const py = Math.random() * SPLAT_SIZE;
+    const r = 1.5 + Math.random() * 3;
+    underCtx.beginPath();
+    underCtx.arc(px, py, r, 0, Math.PI * 2);
+    underCtx.fill();
+  }
+  // A small lava pool somewhere
+  underCtx.fillStyle = MATERIALS.lava.color;
+  underCtx.beginPath();
+  underCtx.arc(SPLAT_SIZE * 0.7, SPLAT_SIZE * 0.32, 22, 0, Math.PI * 2);
+  underCtx.fill();
+  underTex.needsUpdate = true;
+
+  // 4. One pre-painted cave entrance so the feature is visible on load
+  const caveWorld = { x: -32, z: 28 }; // near the mountain
+  const cavePx = worldToSplatPx(caveWorld.x, caveWorld.z);
+  // destination-out clears alpha
+  splatCtx.save();
+  splatCtx.globalCompositeOperation = 'destination-out';
+  splatCtx.beginPath();
+  splatCtx.arc(cavePx.px, cavePx.py, 14, 0, Math.PI * 2);
+  splatCtx.fill();
+  splatCtx.restore();
+  splatTex.needsUpdate = true;
+}
+
+bakeInitialTerrain();
+
+function clearWorld() {
+  heights.fill(0);
+  splatCtx.clearRect(0, 0, SPLAT_SIZE, SPLAT_SIZE);
+  splatCtx.fillStyle = MATERIALS.deepfloor.color;
+  splatCtx.fillRect(0, 0, SPLAT_SIZE, SPLAT_SIZE);
+  underCtx.fillStyle = MATERIALS.cavestone.color;
+  underCtx.fillRect(0, 0, SPLAT_SIZE, SPLAT_SIZE);
+  splatTex.needsUpdate = true;
+  underTex.needsUpdate = true;
+}
+
+// ─── Terrain mesh ───────────────────────────────────────────────
+
+const terrainGeo = new THREE.PlaneGeometry(TERRAIN_SIZE, TERRAIN_SIZE, TERRAIN_RES - 1, TERRAIN_RES - 1);
+terrainGeo.rotateX(-Math.PI / 2);
+
+const terrainMat = new THREE.MeshLambertMaterial({
+  map: splatTex,
+  alphaTest: 0.5, // cave-entrance cutouts
+  transparent: true, // also need transparent for opacity dimming when L0 active
+  side: THREE.DoubleSide,
+  opacity: 1.0,
+});
+
+const terrain = new THREE.Mesh(terrainGeo, terrainMat);
+terrain.castShadow = true;
+terrain.receiveShadow = true;
+scene.add(terrain);
+
+// ─── Underground floor ─────────────────────────────────────────
+
+const underGeo = new THREE.PlaneGeometry(TERRAIN_SIZE, TERRAIN_SIZE, 1, 1);
+underGeo.rotateX(-Math.PI / 2);
+const underMat = new THREE.MeshLambertMaterial({
+  map: underTex,
+  side: THREE.DoubleSide,
+});
+const underground = new THREE.Mesh(underGeo, underMat);
+underground.position.y = Y_UNDERGROUND;
+underground.receiveShadow = false; // skip terrain shadows so underground reads clearly
+scene.add(underground);
+
+// Soft purple glow that sits just above the underground floor — gives
+// the cave an atmosphere and shines up through cave entrances.
+const underGlow = new THREE.PointLight(0xb088ff, 0.9, 35, 1.3);
+underGlow.position.set(-32, Y_UNDERGROUND + 0.8, 28); // beneath the starter cave entrance
+scene.add(underGlow);
+
+// ─── Water layers ───────────────────────────────────────────────
+
+const deepGeo = new THREE.PlaneGeometry(TERRAIN_SIZE * 1.2, TERRAIN_SIZE * 1.2);
+deepGeo.rotateX(-Math.PI / 2);
+const deepMat = new THREE.MeshLambertMaterial({ color: 0x0a2040 });
+const deepOcean = new THREE.Mesh(deepGeo, deepMat);
+deepOcean.position.y = Y_DEEP_OCEAN;
+scene.add(deepOcean);
+
+const shallowGeo = new THREE.PlaneGeometry(TERRAIN_SIZE * 1.2, TERRAIN_SIZE * 1.2);
+shallowGeo.rotateX(-Math.PI / 2);
+const shallowMat = new THREE.MeshPhongMaterial({
+  color: 0x2a7090,
+  transparent: true,
+  opacity: 0.55,
+  shininess: 80,
+  specular: 0x4a9eff,
+});
+const shallow = new THREE.Mesh(shallowGeo, shallowMat);
+shallow.position.y = Y_SHALLOW;
+scene.add(shallow);
+
+// ─── Grid (fades out as terrain rises into 3D) ─────────────────
+
+const gridHelper = new THREE.GridHelper(TERRAIN_SIZE, 20, 0x1a2a40, 0x111828);
+gridHelper.position.y = 0.02;
+gridHelper.material.transparent = true;
+gridHelper.material.opacity = 0.4;
+scene.add(gridHelper);
+
+// ─── Brush state ────────────────────────────────────────────────
+
+let activeLayer = LAYER_BY_ID.ground;
+let activeMaterial = 'grass';
+let brushRadius = 6;       // in world units
+let brushStrength = 0.5;   // 0..1 per stroke step
+let isPainting = false;
+let isPanning = false;
+let lastPointer = { x: 0, y: 0 };
+
+// ─── Brush UI rendering ─────────────────────────────────────────
+
+const layerListEl = document.getElementById('layerList');
+const swatchesEl = document.getElementById('brushSwatches');
+const paletteTitleEl = document.getElementById('paletteTitle');
+const activeBanner = document.getElementById('activeBanner');
+const activeDot = document.getElementById('activeDot');
+const activeName = document.getElementById('activeName');
+const activeHint = document.getElementById('activeHint');
+const coordBrush = document.getElementById('coordBrush');
+const brushHint = document.getElementById('brushHint');
+
+function renderLayers() {
+  layerListEl.innerHTML = '';
+  for (const layer of LAYERS) {
+    const row = document.createElement('div');
+    row.className = 'layer-row' + (layer.id === activeLayer.id ? ' active' : '');
+    row.innerHTML = `
+      <span class="layer-row__num">L${layer.num}</span>
+      <span class="layer-row__dot" style="background:${layer.color}"></span>
+      <span class="layer-row__name">${layer.name}</span>
+      <span class="layer-row__h">${layer.targetH === null ? 'cave' : 'h ' + layer.targetH.toFixed(1)}</span>
+    `;
+    row.addEventListener('click', () => {
+      activeLayer = layer;
+      activeMaterial = layer.palette[0];
+      renderLayers();
+      renderSwatches();
+      updateActiveBanner();
+    });
+    layerListEl.appendChild(row);
+  }
+}
+
+function renderSwatches() {
+  swatchesEl.innerHTML = '';
+  paletteTitleEl.textContent = `Material — ${activeLayer.name}`;
+  for (const matId of activeLayer.palette) {
+    const mat = MATERIALS[matId];
+    const sw = document.createElement('div');
+    sw.className = 'brush-swatch' + (matId === activeMaterial ? ' active' : '');
+    const colorClass = mat.cutout ? 'brush-swatch__color cutout' : 'brush-swatch__color';
+    const colorStyle = mat.cutout ? '' : `style="background:${mat.color}"`;
+    sw.innerHTML = `
+      <span class="${colorClass}" ${colorStyle}></span>
+      <span class="brush-swatch__name">${mat.label}</span>
+    `;
+    sw.addEventListener('click', () => {
+      activeMaterial = matId;
+      renderSwatches();
+      updateActiveBanner();
+    });
+    swatchesEl.appendChild(sw);
+  }
+}
+
+function updateActiveBanner() {
+  activeDot.style.background = activeLayer.color;
+  activeName.textContent = `${activeLayer.name} · ${MATERIALS[activeMaterial].label}`;
+  activeHint.textContent = `L${activeLayer.num} / ${activeLayer.targetH === null ? '—' : 'h ' + activeLayer.targetH.toFixed(1)}`;
+  coordBrush.textContent = `L${activeLayer.num} ${activeLayer.name} · ${MATERIALS[activeMaterial].label}`;
+
+  if (activeLayer.id === 'underground') {
+    brushHint.innerHTML = `<strong>Underground mode:</strong> the upper terrain dims so you can see what you're painting on the cave floor. Use <strong>Cave Entrance</strong> to punch a hole in the surface above.`;
+  } else {
+    brushHint.innerHTML = `Click and drag on the map to paint. The active <strong>layer</strong> sets the elevation the brush pushes terrain toward; the active <strong>material</strong> sets the surface color.`;
+  }
+}
+
+const brushSizeInput = document.getElementById('brushSize');
+const brushSizeValue = document.getElementById('brushSizeValue');
+brushSizeInput.addEventListener('input', () => {
+  brushRadius = parseInt(brushSizeInput.value, 10);
+  brushSizeValue.textContent = brushRadius;
+});
+
+const brushStrengthInput = document.getElementById('brushStrength');
+const brushStrengthValue = document.getElementById('brushStrengthValue');
+brushStrengthInput.addEventListener('input', () => {
+  brushStrength = parseInt(brushStrengthInput.value, 10) / 100;
+  brushStrengthValue.textContent = `${brushStrengthInput.value}%`;
+});
+
+renderLayers();
+renderSwatches();
+updateActiveBanner();
+
+// Action buttons
+document.getElementById('btnReset').addEventListener('click', () => {
+  bakeInitialTerrain();
+});
+document.getElementById('btnClear').addEventListener('click', () => {
+  clearWorld();
+});
+
+// ─── Brush algorithm ────────────────────────────────────────────
+
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+function pointerToNDC(ev) {
+  mouse.x = (ev.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(ev.clientY / window.innerHeight) * 2 + 1;
+}
+
+function raycastWorld(ev) {
+  pointerToNDC(ev);
+  raycaster.setFromCamera(mouse, camera);
+  // When painting underground we want to hit the underground plane, not the upper terrain.
+  const target = activeLayer.id === 'underground' ? underground : terrain;
+  const hits = raycaster.intersectObject(target, false);
+  if (!hits.length) return null;
+  return hits[0].point;
+}
+
+function applyBrush(worldPoint) {
+  const wx = worldPoint.x;
+  const wz = worldPoint.z;
+  const isCutout = MATERIALS[activeMaterial].cutout === true;
+  const isUnderground = activeLayer.id === 'underground';
+
+  // 1. HEIGHTMAP: only for non-underground, non-cutout layers
+  if (!isUnderground && activeLayer.targetH !== null) {
+    const targetH01 = activeLayer.targetH / MAX_HEIGHT;
+    const center = worldToVert(wx, wz);
+    const radiusVert = Math.ceil(brushRadius / VERT_DX) + 1;
+    for (let dr = -radiusVert; dr <= radiusVert; dr++) {
+      for (let dc = -radiusVert; dc <= radiusVert; dc++) {
+        const r = center.row + dr;
+        const c = center.col + dc;
+        if (r < 0 || c < 0 || r >= TERRAIN_RES || c >= TERRAIN_RES) continue;
+        const vx = -TERRAIN_SIZE / 2 + c * VERT_DX;
+        const vz = -TERRAIN_SIZE / 2 + r * VERT_DX;
+        const d = Math.hypot(vx - wx, vz - wz);
+        if (d > brushRadius) continue;
+        const fall = 1 - smoothstep(d / brushRadius, 0, 1);
+        const idx = r * TERRAIN_RES + c;
+        heights[idx] = lerp(heights[idx], targetH01, fall * brushStrength);
+      }
+    }
+  }
+
+  // 2. MATERIAL CANVAS
+  const px = (wx + TERRAIN_SIZE / 2) * SPLAT_PER_WORLD;
+  const py = (wz + TERRAIN_SIZE / 2) * SPLAT_PER_WORLD;
+  const radPx = brushRadius * SPLAT_PER_WORLD;
+
+  if (isUnderground) {
+    if (isCutout) {
+      // Cave entrance: clear alpha on the upper splat
+      splatCtx.save();
+      splatCtx.globalCompositeOperation = 'destination-out';
+      splatCtx.globalAlpha = clamp(brushStrength * 1.5, 0.2, 1);
+      splatCtx.beginPath();
+      splatCtx.arc(px, py, radPx, 0, Math.PI * 2);
+      splatCtx.fill();
+      splatCtx.restore();
+      splatTex.needsUpdate = true;
+    } else {
+      // Paint the underground floor
+      underCtx.save();
+      underCtx.globalAlpha = clamp(brushStrength * 1.5, 0.2, 1);
+      underCtx.fillStyle = MATERIALS[activeMaterial].color;
+      underCtx.beginPath();
+      underCtx.arc(px, py, radPx, 0, Math.PI * 2);
+      underCtx.fill();
+      underCtx.restore();
+      underTex.needsUpdate = true;
+    }
+  } else {
+    // Paint the upper splat. First, ensure the area is opaque (in case
+    // a cave entrance was previously punched here).
+    splatCtx.save();
+    splatCtx.globalCompositeOperation = 'source-over';
+    splatCtx.globalAlpha = clamp(brushStrength * 1.5, 0.2, 1);
+    splatCtx.fillStyle = MATERIALS[activeMaterial].color;
+    splatCtx.beginPath();
+    splatCtx.arc(px, py, radPx, 0, Math.PI * 2);
+    splatCtx.fill();
+    splatCtx.restore();
+    splatTex.needsUpdate = true;
+  }
+}
+
+function strokeAlong(p1, p2) {
+  // Sample a line between two stroke points so dragging fast still paints
+  const d = Math.hypot(p2.x - p1.x, p2.z - p1.z);
+  const stepLen = Math.max(brushRadius * 0.4, 0.5);
+  const steps = Math.max(1, Math.ceil(d / stepLen));
+  for (let i = 1; i <= steps; i++) {
+    const t = i / steps;
+    applyBrush({ x: lerp(p1.x, p2.x, t), z: lerp(p1.z, p2.z, t) });
+  }
+}
+
+let lastWorld = null;
+
+renderer.domElement.addEventListener('pointerdown', (ev) => {
+  if (ev.button !== 0) return;
+  const wp = raycastWorld(ev);
+  if (!wp) return;
+  isPainting = true;
+  lastWorld = { x: wp.x, z: wp.z };
+  applyBrush(wp);
+});
+
+window.addEventListener('pointermove', (ev) => {
+  if (!isPainting) return;
+  const wp = raycastWorld(ev);
+  if (!wp) return;
+  if (lastWorld) {
+    strokeAlong(lastWorld, { x: wp.x, z: wp.z });
+  } else {
+    applyBrush(wp);
+  }
+  lastWorld = { x: wp.x, z: wp.z };
+});
+
+window.addEventListener('pointerup', () => {
+  isPainting = false;
+  lastWorld = null;
+});
+
+// ─── Starfield ──────────────────────────────────────────────────
+
+const starsGeo = new THREE.BufferGeometry();
+const starPos = new Float32Array(1500 * 3);
+for (let i = 0; i < 1500; i++) {
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos(2 * Math.random() - 1);
+  const r = 200;
+  starPos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+  starPos[i * 3 + 1] = Math.abs(r * Math.cos(phi));
+  starPos[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+}
+starsGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+const starsMat = new THREE.PointsMaterial({ color: 0x4466aa, size: 0.3, transparent: true, opacity: 0.6 });
+const stars = new THREE.Points(starsGeo, starsMat);
+scene.add(stars);
+
+// ─── HUD refs ───────────────────────────────────────────────────
+
+const viewModeLabel = document.getElementById('viewModeLabel');
+const zoomFill = document.getElementById('zoomFill');
+const coordAlt = document.getElementById('coordAlt');
+const coordPitch = document.getElementById('coordPitch');
+const coordTerrain = document.getElementById('coordTerrain');
+const instructionsEl = document.getElementById('instructions');
+
+let instructionsTimer = setTimeout(() => instructionsEl.classList.add('hidden'), 6500);
+['wheel', 'pointerdown', 'touchstart'].forEach(evt => {
+  window.addEventListener(evt, () => {
+    clearTimeout(instructionsTimer);
+    instructionsEl.classList.add('hidden');
+  }, { once: true });
+});
+
+// ─── Per-frame: push heights → vertices ─────────────────────────
+
+let currentTerrainScale = 0;
+let currentUpperOpacity = 1.0;
+
+function getTransitionFactor() {
+  const dist = camera.position.distanceTo(controls.target);
+  return 1 - clamp((dist - CAM_MIN_DIST) / (CAM_MAX_DIST - CAM_MIN_DIST), 0, 1);
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+
+  const t = getTransitionFactor();
+  const targetScale = smoothstep(t, 0.05, 0.55);
+  currentTerrainScale += (targetScale - currentTerrainScale) * 0.08;
+
+  // Push heightmap → mesh vertices
+  const pos = terrainGeo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    pos.setY(i, heights[i] * currentTerrainScale * MAX_HEIGHT);
+  }
+  pos.needsUpdate = true;
+  terrainGeo.computeVertexNormals();
+
+  // Water layers settle into place
+  deepOcean.position.y = lerp(-0.02, Y_DEEP_OCEAN, currentTerrainScale);
+  shallow.position.y   = lerp( 0.00, Y_SHALLOW,    currentTerrainScale);
+  shallowMat.opacity   = lerp(0.25, 0.55, currentTerrainScale);
+
+  // Underground sinks lower as we go 3D
+  underground.position.y = lerp(-0.08, Y_UNDERGROUND, currentTerrainScale);
+
+  // Upper terrain dims when underground layer is active (cutaway view)
+  const targetOpacity = activeLayer.id === 'underground' ? 0.35 : 1.0;
+  currentUpperOpacity += (targetOpacity - currentUpperOpacity) * 0.12;
+  terrainMat.opacity = currentUpperOpacity;
+  terrainMat.depthWrite = currentUpperOpacity > 0.95; // disable depth-write while semi-transparent
+  // Also dim the water so you can see down
+  shallow.visible = activeLayer.id !== 'underground';
+  deepOcean.visible = activeLayer.id !== 'underground';
+
+  // Grid + fog + stars
+  gridHelper.material.opacity = lerp(0.4, 0.0, smoothstep(t, 0.2, 0.5));
+  scene.fog.density = lerp(0.0, 0.012, smoothstep(t, 0.4, 0.9));
+  starsMat.opacity = lerp(0.6, 0.0, smoothstep(t, 0.3, 0.6));
+
+  // Auto-tilt camera toward perspective at close zoom
+  const targetPolar = lerp(0.08, 1.05, smoothstep(t, 0.15, 0.7));
+  const currentPolar = controls.getPolarAngle();
+  if (Math.abs(currentPolar - targetPolar) > 0.01) {
+    const newPolar = currentPolar + (targetPolar - currentPolar) * 0.03;
+    controls.minPolarAngle = Math.min(newPolar, targetPolar);
+    controls.maxPolarAngle = Math.max(newPolar, Math.PI / 2.2);
+  }
+
+  // HUD
+  const dist = camera.position.distanceTo(controls.target);
+  zoomFill.style.height = `${Math.round(t * 100)}%`;
+  let mode, modeText;
+  if (t < 0.3)        { mode = 'strategic';  modeText = 'Strategic View'; }
+  else if (t < 0.65)  { mode = 'tactical';   modeText = 'Tactical View'; }
+  else                { mode = 'immersive';  modeText = 'Immersive View'; }
+  viewModeLabel.dataset.mode = mode;
+  viewModeLabel.textContent = modeText;
+
+  coordAlt.textContent = Math.round(dist);
+  coordPitch.innerHTML = `${Math.round(controls.getPolarAngle() * (180 / Math.PI))}&deg;`;
+  coordTerrain.textContent = `${Math.round(currentTerrainScale * 100)}%`;
+
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// Disable browser context menu on right-click (so it doesn't interfere with rotate)
+renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
+</script>
+
+</body>
+</html>

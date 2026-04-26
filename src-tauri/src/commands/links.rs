@@ -47,6 +47,12 @@ pub struct InlineLinkResolution {
     pub name: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct NextPageLink {
+    pub source_id: String,
+    pub target_id: String,
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 fn resolve_entity_name(
@@ -333,6 +339,138 @@ pub fn search_linkable_records(
     results.truncate(10);
 
     Ok(results)
+}
+
+// ─── Next-page override commands ─────────────────────────────────────────────
+//
+// A "next-page" link is a regular entity_links row with link_type='next_page'
+// and both source_type/target_type = 'lore_document'. At most one non-deleted
+// outgoing next_page link per source doc (enforced in set_next_page_link).
+// Read mode uses it to override the default flat-order "next doc" when the
+// user reaches the end of a document.
+
+#[tauri::command]
+pub fn get_next_page_link(
+    source_document_id: String,
+    state: State<Mutex<AppDatabase>>,
+) -> Result<Option<String>, String> {
+    let db = state.lock().map_err(|e| format!("Lock error: {}", e))?;
+    let (_, conn) = db
+        .active_world
+        .as_ref()
+        .ok_or("No world is currently open")?;
+
+    let target: Option<String> = conn
+        .query_row(
+            "SELECT target_id FROM entity_links \
+             WHERE deleted_at IS NULL AND link_type = 'next_page' \
+               AND source_type = 'lore_document' AND source_id = ?1 \
+             LIMIT 1",
+            [source_document_id],
+            |row| row.get::<_, String>(0),
+        )
+        .ok();
+    Ok(target)
+}
+
+#[tauri::command]
+pub fn set_next_page_link(
+    source_document_id: String,
+    target_document_id: Option<String>,
+    state: State<Mutex<AppDatabase>>,
+) -> Result<(), String> {
+    let db = state.lock().map_err(|e| format!("Lock error: {}", e))?;
+    let (world_id, conn) = db
+        .active_world
+        .as_ref()
+        .ok_or("No world is currently open")?;
+
+    // Source must exist in this world and be live.
+    let src_world: Option<String> = conn
+        .query_row(
+            "SELECT world_id FROM lore_documents WHERE id = ?1 AND deleted_at IS NULL",
+            [&source_document_id],
+            |row| row.get(0),
+        )
+        .ok();
+    let src_world = src_world.ok_or_else(|| "Source document not found".to_string())?;
+    if &src_world != world_id {
+        return Err("Source document does not belong to the active world".to_string());
+    }
+
+    if let Some(ref tid) = target_document_id {
+        if tid == &source_document_id {
+            return Err("A document cannot reference itself as its next page".to_string());
+        }
+        let tgt_world: Option<String> = conn
+            .query_row(
+                "SELECT world_id FROM lore_documents WHERE id = ?1 AND deleted_at IS NULL",
+                [tid],
+                |row| row.get(0),
+            )
+            .ok();
+        let tgt_world = tgt_world.ok_or_else(|| "Target document not found".to_string())?;
+        if &tgt_world != world_id {
+            return Err("Target document does not belong to the active world".to_string());
+        }
+    }
+
+    let now = chrono::Utc::now().to_rfc3339();
+
+    // Soft-delete any existing non-deleted next_page outgoing from this source.
+    conn.execute(
+        "UPDATE entity_links SET deleted_at = ?1 \
+         WHERE deleted_at IS NULL AND link_type = 'next_page' \
+           AND source_type = 'lore_document' AND source_id = ?2",
+        rusqlite::params![now, source_document_id],
+    )
+    .map_err(|e| format!("Failed to clear prior next-page link: {}", e))?;
+
+    // Insert new row when target is Some; None = clear only.
+    if let Some(tid) = target_document_id {
+        let link_id = uuid::Uuid::new_v4().to_string();
+        conn.execute(
+            "INSERT INTO entity_links \
+             (id, world_id, source_type, source_id, target_type, target_id, link_type, created_at) \
+             VALUES (?1, ?2, 'lore_document', ?3, 'lore_document', ?4, 'next_page', ?5)",
+            rusqlite::params![link_id, world_id, source_document_id, tid, now],
+        )
+        .map_err(|e| format!("Failed to set next-page link: {}", e))?;
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn list_next_page_links(
+    state: State<Mutex<AppDatabase>>,
+) -> Result<Vec<NextPageLink>, String> {
+    let db = state.lock().map_err(|e| format!("Lock error: {}", e))?;
+    let (_, conn) = db
+        .active_world
+        .as_ref()
+        .ok_or("No world is currently open")?;
+
+    let mut stmt = conn
+        .prepare(
+            "SELECT source_id, target_id FROM entity_links \
+             WHERE deleted_at IS NULL AND link_type = 'next_page' \
+               AND source_type = 'lore_document' AND target_type = 'lore_document'",
+        )
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let links: Vec<NextPageLink> = stmt
+        .query_map([], |row| {
+            Ok(NextPageLink {
+                source_id: row.get(0)?,
+                target_id: row.get(1)?,
+            })
+        })
+        .map_err(|e| format!("Failed to query next-page links: {}", e))?
+        .filter_map(|r| r.ok())
+        .collect();
+
+    Ok(links)
 }
 
 /// Resolve a batch of inline-link references to (exists, name) tuples so the

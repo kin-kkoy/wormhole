@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useAppStore, type TabId } from '../../state/store';
 import { useTheme } from '../../app/providers';
 import { GlobalSearchBar } from './GlobalSearchBar';
-import { RecycleBinDialog } from './RecycleBinDialog';
 import './TopDock.css';
 
 // Tabs that support edit mode in overview
@@ -27,7 +26,6 @@ export function TopDock({ onBack }: TopDockProps) {
   const setEditMode = useAppStore((s) => s.setEditMode);
   const { theme, toggleTheme } = useTheme();
   const [searchOpen, setSearchOpen] = useState(false);
-  const [binOpen, setBinOpen] = useState(false);
 
   const showEditButton =
     (activeTab === 'overview' && EDITABLE_OVERVIEW_TABS.has(overviewTab)) ||
@@ -96,22 +94,6 @@ export function TopDock({ onBack }: TopDockProps) {
             </button>
           )}
 
-          <button
-            className="top-dock__icon-btn"
-            onClick={() => setBinOpen(true)}
-            title="Recycle Bin"
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path
-                d="M3 5h10M6.5 5V3.5a1 1 0 011-1h1a1 1 0 011 1V5M4.5 5v8a1.5 1.5 0 001.5 1.5h4A1.5 1.5 0 0011.5 13V5"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-
           {showEditButton && (
             <button
               className={`top-dock__edit-toggle ${editMode ? 'top-dock__edit-toggle--active' : ''}`}
@@ -145,7 +127,6 @@ export function TopDock({ onBack }: TopDockProps) {
       </header>
 
       {searchAllowed && searchOpen && <GlobalSearchBar onClose={() => setSearchOpen(false)} />}
-      {binOpen && <RecycleBinDialog onClose={() => setBinOpen(false)} />}
     </>
   );
 }

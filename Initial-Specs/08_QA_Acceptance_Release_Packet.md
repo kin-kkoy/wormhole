@@ -1,5 +1,7 @@
 # Packet 8 — QA, Acceptance, and Release Packet
 
+> **Status:** Active reference. V1 acceptance criteria; "definition of done" for the original packets. Newer packets (9, 10) carry their own acceptance sections.
+
 ## 1. Purpose of this packet
 This packet defines:
 - what “done enough” means for V1

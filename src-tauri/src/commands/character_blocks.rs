@@ -95,6 +95,10 @@ pub fn create_card_block(
     col_span: Option<i32>,
     row_span: Option<i32>,
     block_type: Option<String>,
+    // When true, reject creation if another block already exists with the same
+    // (character_id, title). Enforces non-multi preset uniqueness server-side
+    // (the palette's client-side check can be bypassed by rapid double-drops).
+    preset_unique: Option<bool>,
     state: State<Mutex<AppDatabase>>,
 ) -> Result<CardBlock, String> {
     let db = state.lock().map_err(|e| format!("Lock error: {}", e))?;
@@ -112,6 +116,23 @@ pub fn create_card_block(
         Some("text") => "text",
         _ => "standard",
     };
+
+    if preset_unique.unwrap_or(false) && !title.is_empty() {
+        let existing: Option<String> = conn
+            .query_row(
+                "SELECT id FROM character_card_blocks \
+                 WHERE character_id = ?1 AND title = ?2 LIMIT 1",
+                rusqlite::params![character_id, title],
+                |row| row.get(0),
+            )
+            .ok();
+        if existing.is_some() {
+            return Err(format!(
+                "A '{}' block already exists on this character",
+                title
+            ));
+        }
+    }
 
     let max_sort: Option<i32> = conn
         .query_row(

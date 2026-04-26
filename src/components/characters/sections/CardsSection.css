@@ -15,11 +15,47 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s, opacity 0.15s;
+  position: relative;
 }
 
 .cards-section__card:hover {
   border-color: var(--accent-characters);
+}
+
+.cards-section__card[draggable="true"] {
+  cursor: grab;
+}
+
+.cards-section__card[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.cards-section__card--drag-over {
+  border-color: var(--accent-characters);
+  box-shadow: 0 0 0 2px var(--accent-characters);
+}
+
+.cards-section__card--dragging {
+  opacity: 0.4;
+}
+
+.cards-section__drag-handle {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+  letter-spacing: -2px;
+  line-height: 1;
+  opacity: 0.4;
+  pointer-events: none;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.cards-section__card:hover .cards-section__drag-handle {
+  opacity: 1;
+  color: var(--accent-characters);
 }
 
 .cards-section__card-view {
@@ -28,24 +64,31 @@
 }
 
 .cards-section__card-title {
-  font-size: 14px;
+  font-family: var(--char-font-heading);
+  font-size: var(--char-size-title);
   font-weight: 600;
   color: var(--text-primary);
   margin: 0 0 4px;
+  letter-spacing: 0.005em;
 }
 
 .cards-section__card-subtitle {
-  font-size: 11px;
+  font-family: var(--char-font-key);
+  font-size: var(--char-size-label);
   color: var(--accent-characters);
   display: block;
   margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: var(--char-letter-label);
+  font-weight: 600;
 }
 
 .cards-section__card-desc {
-  font-size: 13px;
+  font-family: var(--char-font-prose);
+  font-size: var(--char-size-body);
   color: var(--text-secondary);
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
 .cards-section__card-edit {

@@ -1,5 +1,7 @@
 # Packet 1 — Master Product Spec
 
+> **Status:** Active reference. Product identity and scope anchor; evolves only with intentional product redirection.
+
 ## 1. Purpose of this packet
 This document defines what Wormhole is, what it is not, and what the product is trying to achieve.
 It is the identity and scope anchor for every other packet.

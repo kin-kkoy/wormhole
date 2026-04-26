@@ -10,7 +10,10 @@
   --border-subtle: #1f2230;
   --accent-atlas: #4a9eff;
   --accent-characters: #a78bfa;
+  --accent-characters-rgb: 167, 139, 250;
+  --accent-atlas-rgb: 74, 158, 255;
   --accent-lore: #f5a623;
+  --accent-lore-rgb: 245, 166, 35;
   --accent-overview: #4ade80;
   --danger: #ef4444;
   --danger-hover: #dc2626;
@@ -32,8 +35,11 @@
   --border: #d0d0e0;
   --border-subtle: #e0e0ea;
   --accent-atlas: #2563eb;
+  --accent-atlas-rgb: 37, 99, 235;
   --accent-characters: #7c3aed;
+  --accent-characters-rgb: 124, 58, 237;
   --accent-lore: #d97706;
+  --accent-lore-rgb: 217, 119, 6;
   --accent-overview: #16a34a;
   --danger: #dc2626;
   --danger-hover: #b91c1c;

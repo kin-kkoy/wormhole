@@ -1,5 +1,7 @@
 # Packet 3 — Atlas Canvas Build Packet
 
+> **Status:** Built (V1). Region painting, marker placement, freehand color regions, and panel-based entity descriptions all implemented. The painting/region model described here is **superseded by Packet 9 (Atlas Canvas v2)** for the next major evolution — this packet remains the spec for V1 behavior.
+
 ## 1. Purpose of this packet
 This packet defines the Atlas Canvas system:
 - responsibilities

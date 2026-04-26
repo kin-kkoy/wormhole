@@ -1,5 +1,7 @@
 # Packet 7 — UX and Interaction Packet
 
+> **Status:** Active reference. Cross-system UX rules (dialogs, navigation, system identity colors, drag-and-drop on WebKitGTK, etc.). Consulted during every feature build; no per-section "built/pending" state.
+
 ## 1. Purpose of this packet
 This packet defines shared user experience rules:
 - navigation behavior

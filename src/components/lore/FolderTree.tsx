@@ -564,8 +564,15 @@ export function FolderTree({
             <span className="folder-tree__title">Lore Archive</span>
             <button
               className="folder-tree__add-btn"
-              title="New Document"
-              onClick={() => setDocumentDialog({ mode: 'create' })}
+              title="Create…"
+              onClick={(e) => {
+                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                setContextMenu({
+                  type: 'root',
+                  x: rect.left,
+                  y: rect.bottom + 4,
+                });
+              }}
             >
               <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14">
                 <path d="M8 2a.5.5 0 01.5.5v5h5a.5.5 0 010 1h-5v5a.5.5 0 01-1 0v-5h-5a.5.5 0 010-1h5v-5A.5.5 0 018 2z" />

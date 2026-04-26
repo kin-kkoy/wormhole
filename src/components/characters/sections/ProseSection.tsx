@@ -33,6 +33,7 @@ export function ProseSection({ section, editMode, onUpdate }: ProseSectionProps)
         onUpdate={handleUpdate}
         editable={editMode}
         placeholder="Write your content here..."
+        linkSource={{ type: 'character', id: section.character_id }}
       />
     </div>
   );

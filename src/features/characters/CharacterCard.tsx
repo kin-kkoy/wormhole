@@ -6,7 +6,6 @@ import { CardImage } from '../../components/characters/CardImage';
 import { CardHeader } from '../../components/characters/CardHeader';
 import { CardGrid } from '../../components/characters/CardGrid';
 import { CardBlockDock } from '../../components/characters/CardBlockDock';
-import { LinkedRecords } from '../../components/characters/LinkedRecords';
 import './CharacterCard.css';
 
 interface CharacterCardProps {
@@ -81,7 +80,6 @@ export function CharacterCard({ characterId }: CharacterCardProps) {
             onRefresh={refreshBlocks}
             presetDragRef={presetDragRef}
           />
-          <LinkedRecords characterId={characterId} />
         </div>
       </div>
       {editMode && (

@@ -10,6 +10,10 @@ interface LinkPickerDialogProps {
   sourceId: string;
   /** Restrict picker to these target entity types. Omit to allow all. */
   allowedTargetTypes?: EntityType[];
+  /** Keys of already-linked entities (`${entity_type}:${id}`). Rows matching
+   *  these keys are shown with a muted "Already linked" badge. Selection is
+   *  still allowed — the backend will reject the duplicate with an error. */
+  existingLinkKeys?: Set<string>;
   /** Variant button styling for the primary "Link" action. */
   primaryVariant?: 'lore' | 'characters' | 'atlas' | 'default';
   onClose: () => void;
@@ -54,6 +58,7 @@ export function LinkPickerDialog({
   sourceType,
   sourceId,
   allowedTargetTypes,
+  existingLinkKeys,
   primaryVariant = 'default',
   onClose,
   onLinkCreated,
@@ -165,22 +170,28 @@ export function LinkPickerDialog({
           {results.length === 0 ? (
             <div className="link-picker__results-empty">No results found</div>
           ) : (
-            results.map((record) => (
-              <button
-                key={`${record.entity_type}-${record.id}`}
-                className={`link-picker__result-item ${
-                  selected?.id === record.id && selected?.entity_type === record.entity_type
-                    ? 'link-picker__result-item--selected'
-                    : ''
-                }`}
-                onClick={() => setSelected(record)}
-              >
-                <span className="link-picker__result-badge" data-type={record.entity_type}>
-                  {badgeLabel(record.entity_type)}
-                </span>
-                <span className="link-picker__result-name">{record.name}</span>
-              </button>
-            ))
+            results.map((record) => {
+              const alreadyLinked = existingLinkKeys?.has(`${record.entity_type}:${record.id}`) ?? false;
+              return (
+                <button
+                  key={`${record.entity_type}-${record.id}`}
+                  className={`link-picker__result-item ${
+                    selected?.id === record.id && selected?.entity_type === record.entity_type
+                      ? 'link-picker__result-item--selected'
+                      : ''
+                  }`}
+                  onClick={() => setSelected(record)}
+                >
+                  <span className="link-picker__result-badge" data-type={record.entity_type}>
+                    {badgeLabel(record.entity_type)}
+                  </span>
+                  <span className="link-picker__result-name">{record.name}</span>
+                  {alreadyLinked && (
+                    <span className="link-picker__result-existing">Already linked</span>
+                  )}
+                </button>
+              );
+            })
           )}
         </div>
 

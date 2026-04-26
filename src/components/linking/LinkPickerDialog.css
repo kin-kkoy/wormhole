@@ -70,6 +70,18 @@
   white-space: nowrap;
 }
 
+.link-picker__result-existing {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 1px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
 .link-picker__field-error {
   margin-top: 6px;
   font-size: 12px;

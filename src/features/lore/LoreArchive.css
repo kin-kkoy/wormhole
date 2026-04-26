@@ -1,11 +1,21 @@
+/* Outer wrapper: fills the tab area; stacks header above body. */
+.lore-archive-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
 /* Detached two-panel layout: folder explorer on the left, content panel
    (editor + linked records) on the right. Both are rounded "cards" floating
    over the page background rather than flush dividers. */
 .lore-archive {
   display: flex;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   gap: 16px;
-  padding: 16px;
+  padding: 12px 16px 16px;
   overflow: hidden;
 }
 

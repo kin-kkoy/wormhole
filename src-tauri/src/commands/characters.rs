@@ -10,9 +10,10 @@ pub struct CharacterSummary {
     pub short_role: Option<String>,
     pub image_asset_id: Option<String>,
     pub decorative_ribbon: Option<String>,
-    pub card_layout_variant: String,
     pub tags_text: Option<String>,
     pub sort_order: Option<i64>,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -25,14 +26,13 @@ pub struct CharacterFull {
     pub objective_summary: Option<String>,
     pub in_character_intro: Option<String>,
     pub decorative_ribbon: Option<String>,
-    pub traits_text: Option<String>,
-    pub card_layout_variant: String,
     pub brief_details_json: Option<String>,
     pub tags_text: Option<String>,
     pub sort_order: Option<i64>,
-    /// When true, the codex opens this character directly into the cinematic
-    /// (full-bleed image) view instead of the default card view.
-    pub cinematic_preview_locked: bool,
+    /// Tri-state lock for the front face. NULL = unlocked (card by default,
+    /// Preview button enabled). 'card' or 'cinematic' = locked to that face,
+    /// Preview button disabled.
+    pub locked_face: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -44,9 +44,10 @@ fn row_to_summary(row: &rusqlite::Row) -> rusqlite::Result<CharacterSummary> {
         short_role: row.get(2)?,
         image_asset_id: row.get(3)?,
         decorative_ribbon: row.get(4)?,
-        card_layout_variant: row.get(5)?,
-        tags_text: row.get(6)?,
-        sort_order: row.get(7)?,
+        tags_text: row.get(5)?,
+        sort_order: row.get(6)?,
+        created_at: row.get(7)?,
+        updated_at: row.get(8)?,
     })
 }
 
@@ -60,20 +61,18 @@ fn row_to_full(row: &rusqlite::Row) -> rusqlite::Result<CharacterFull> {
         objective_summary: row.get(5)?,
         in_character_intro: row.get(6)?,
         decorative_ribbon: row.get(7)?,
-        traits_text: row.get(8)?,
-        card_layout_variant: row.get(9)?,
-        brief_details_json: row.get(10)?,
-        tags_text: row.get(11)?,
-        sort_order: row.get(12)?,
-        cinematic_preview_locked: row.get(13)?,
-        created_at: row.get(14)?,
-        updated_at: row.get(15)?,
+        brief_details_json: row.get(8)?,
+        tags_text: row.get(9)?,
+        sort_order: row.get(10)?,
+        locked_face: row.get(11)?,
+        created_at: row.get(12)?,
+        updated_at: row.get(13)?,
     })
 }
 
 const FULL_COLUMNS: &str = "id, world_id, image_asset_id, name, short_role, objective_summary, \
-    in_character_intro, decorative_ribbon, traits_text, card_layout_variant, \
-    brief_details_json, tags_text, sort_order, cinematic_preview_locked, created_at, updated_at";
+    in_character_intro, decorative_ribbon, brief_details_json, tags_text, sort_order, \
+    locked_face, created_at, updated_at";
 
 fn query_character_full(
     conn: &rusqlite::Connection,
@@ -101,7 +100,7 @@ pub fn list_characters(state: State<Mutex<AppDatabase>>) -> Result<Vec<Character
     let mut stmt = conn
         .prepare(
             "SELECT id, name, short_role, image_asset_id, decorative_ribbon, \
-             card_layout_variant, tags_text, sort_order \
+             tags_text, sort_order, created_at, updated_at \
              FROM characters WHERE deleted_at IS NULL \
              ORDER BY sort_order ASC NULLS LAST, name ASC",
         )
@@ -135,7 +134,6 @@ pub fn create_character(
     name: String,
     short_role: Option<String>,
     image_asset_id: Option<String>,
-    card_layout_variant: Option<String>,
     tags_text: Option<String>,
     state: State<Mutex<AppDatabase>>,
 ) -> Result<CharacterFull, String> {
@@ -147,7 +145,6 @@ pub fn create_character(
 
     let character_id = uuid::Uuid::new_v4().to_string();
     let now = chrono::Utc::now().to_rfc3339();
-    let variant = card_layout_variant.unwrap_or_else(|| "landscape".to_string());
 
     // Get next sort_order
     let max_sort: Option<i64> = conn
@@ -161,15 +158,14 @@ pub fn create_character(
 
     conn.execute(
         "INSERT INTO characters (id, world_id, name, short_role, image_asset_id, \
-         card_layout_variant, tags_text, sort_order, created_at, updated_at) \
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+         tags_text, sort_order, created_at, updated_at) \
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
         rusqlite::params![
             character_id,
             world_id,
             name,
             short_role,
             image_asset_id,
-            variant,
             tags_text,
             sort_order,
             now,
@@ -198,12 +194,10 @@ pub fn update_character(
     objective_summary: Option<String>,
     in_character_intro: Option<String>,
     decorative_ribbon: Option<String>,
-    traits_text: Option<String>,
-    card_layout_variant: Option<String>,
     brief_details_json: Option<String>,
     image_asset_id: Option<String>,
     tags_text: Option<String>,
-    cinematic_preview_locked: Option<bool>,
+    locked_face: Option<String>,
     state: State<Mutex<AppDatabase>>,
 ) -> Result<CharacterFull, String> {
     let db = state.lock().map_err(|e| format!("Lock error: {}", e))?;
@@ -233,12 +227,21 @@ pub fn update_character(
     add_field!("objective_summary", objective_summary);
     add_field!("in_character_intro", in_character_intro);
     add_field!("decorative_ribbon", decorative_ribbon);
-    add_field!("traits_text", traits_text);
-    add_field!("card_layout_variant", card_layout_variant);
     add_field!("brief_details_json", brief_details_json);
     add_field!("image_asset_id", image_asset_id);
     add_field!("tags_text", tags_text);
-    add_field!("cinematic_preview_locked", cinematic_preview_locked);
+
+    // locked_face is tri-state: None = no change; Some("") = unlock (NULL);
+    // Some("card"|"cinematic") = lock to that face.
+    if let Some(ref v) = locked_face {
+        if v.is_empty() {
+            set_clauses.push("locked_face = NULL".to_string());
+        } else {
+            set_clauses.push(format!("locked_face = ?{}", idx));
+            params.push(Box::new(v.clone()));
+            idx += 1;
+        }
+    }
 
     let _ = idx;
 

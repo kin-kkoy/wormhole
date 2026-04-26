@@ -4,7 +4,7 @@
   overflow: hidden;
   position: relative;
   z-index: 1;
-  border-radius: 8px;
+  border-radius: 10px;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
@@ -16,7 +16,8 @@
 }
 
 /* View mode: blocks render as inline content — no frame, no fill, no header
-   border. The header (if any) just acts as a small section label. */
+   border. The header (if any) just acts as a small section label so the
+   front face reads as natural prose, not a stack of mini-cards. */
 .card-block--view {
   background: transparent;
   border: 1px solid transparent;
@@ -66,11 +67,12 @@
 }
 
 .card-block__title {
-  font-size: 11px;
+  font-family: var(--char-font-key);
+  font-size: var(--char-size-label);
   font-weight: 600;
   color: var(--accent-characters);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: var(--char-letter-label);
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -94,10 +96,11 @@
   border-radius: 3px;
   background: var(--bg-primary);
   color: var(--accent-characters);
-  font-size: 11px;
+  font-family: var(--char-font-key);
+  font-size: var(--char-size-label);
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: var(--char-letter-label);
   outline: none;
 }
 
@@ -186,8 +189,8 @@
 .card-block--label .card-block__title {
   flex: 0 0 auto;
   text-align: center;
-  font-size: 13px;
-  letter-spacing: 1px;
+  font-size: var(--char-size-body);
+  letter-spacing: 0.14em;
 }
 
 .card-block--view.card-block--label .card-block__header {
@@ -275,7 +278,8 @@
 }
 
 .card-block__content .tiptap-editor {
-  font-size: 13px;
+  font-family: var(--char-font-prose);
+  font-size: var(--char-size-body);
 }
 
 .card-block__content .tiptap-editor--editable .tiptap {

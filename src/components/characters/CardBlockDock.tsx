@@ -62,11 +62,13 @@ export function CardBlockDock({ blocks, presetDragRef }: CardBlockDockProps) {
       rows: number,
       label: string,
       blockType: BlockType,
+      presetUnique: boolean,
     ) => {
       e.dataTransfer.setData('text/block-title', title);
       e.dataTransfer.setData('text/block-cols', String(cols));
       e.dataTransfer.setData('text/block-rows', String(rows));
       e.dataTransfer.setData('text/block-type', blockType);
+      e.dataTransfer.setData('text/block-unique', presetUnique ? '1' : '0');
       e.dataTransfer.effectAllowed = 'copy';
       // Mirror cols/rows/title/type into the shared ref so CardGrid's dragover
       // preview can size + label the ghost (dataTransfer values aren't
@@ -125,7 +127,7 @@ export function CardBlockDock({ blocks, presetDragRef }: CardBlockDockProps) {
                 key={preset.label}
                 className={`card-block-dock__item ${placed ? 'card-block-dock__item--placed' : ''}`}
                 draggable={!placed}
-                onDragStart={(e) => handleDragStart(e, preset.title, preset.cols, preset.rows, preset.label, preset.blockType ?? 'standard')}
+                onDragStart={(e) => handleDragStart(e, preset.title, preset.cols, preset.rows, preset.label, preset.blockType ?? 'standard', !preset.multi)}
                 onDragEnd={handleDragEnd}
               >
                 <span className="card-block-dock__item-icon">&#9632;</span>
@@ -161,7 +163,7 @@ export function CardBlockDock({ blocks, presetDragRef }: CardBlockDockProps) {
           <div
             className="card-block-dock__item card-block-dock__item--custom"
             draggable
-            onDragStart={(e) => handleDragStart(e, customTitle.trim(), 1, 1, customTitle.trim(), 'standard')}
+            onDragStart={(e) => handleDragStart(e, customTitle.trim(), 1, 1, customTitle.trim(), 'standard', false)}
             onDragEnd={handleDragEnd}
           >
             <span className="card-block-dock__item-icon">&#9830;</span>

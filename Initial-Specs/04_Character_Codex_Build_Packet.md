@@ -1,5 +1,7 @@
 # Packet 4 — Character Codex Build Packet
 
+> **Status:** Built (V1) + extended 2026-04-25 in the Codex polish pass — typography v1 (CSS-var system, bundled fonts, role-level settings popover), inline font picker (TipTap bubble menu), live drag-reflow on the character grid, animated bulk-action bar, codex-aesthetic dashboard chrome and empty state, LinkedRecords polish, CardBlock view-mode kept frameless per user preference. Pending **Packet 10** for Lore/Atlas typography parity and expanded inline toolbar.
+
 ## 1. Purpose of this packet
 This packet defines the Character Codex system:
 - the two-page character model (Card + Details)
@@ -23,8 +25,8 @@ The character bible. A horizontally-navigated, tabbed panel system showing deepe
 The user flips between the two with a **literal 3D card flip animation** triggered by a toggle button on the card.
 
 ### What lives where
-- **Card**: image, name, brief details, in-character introduction, grid blocks (traits, powers, quick facts, etc.)
-- **Details**: background, how relationships formed, affiliations with context, opinions on other characters, FYIs, deeper structured content
+- **Card**: image (preview-style, image-forward), name, ribbon/accent, brief details, grid blocks (personality, powers, quick facts, etc.)
+- **Details**: background, how relationships formed, affiliations with context, opinions on other characters, FYIs, deeper structured content — and Linked Records
 - **Lore Archive** (separate system): narrative writing — scenes, chapters, diary entries, story journey
 
 ## 3. V1 scope
@@ -36,12 +38,14 @@ The user flips between the two with a **literal 3D card flip animation** trigger
 - character card page with inventory-style grid blocks
 - character details page with horizontal tabbed panels
 - 3D flip animation between card and details
-- character image
-- in-character intro (on the card)
-- objective summary (on the card or details overview)
-- linked records section
+- character image (preview-style: image-forward, name + title prominent)
+- objective summary (on details overview)
+- linked records section (on details page)
 - decorative ribbon/accent
+- cinematic preview view (full-bleed image alt-view of the card, togglable via Preview / lockable via Lock)
 - view/edit mode toggle
+- post-creation conversion between section layout types (prose ↔ cards ↔ timeline ↔ key-value) with a copyable plaintext dump of any content that will be dropped
+- recycle bin (scoped to the Characters tab) showing soft-deleted characters with Restore and Delete-permanently actions; 24h auto-purge
 
 ### Excluded
 - per-field font styling
@@ -57,13 +61,13 @@ Fields:
 - world_id
 - image_asset_id nullable
 - name
-- short_role nullable (plain text)
-- objective_summary nullable (rich text JSON)
-- in_character_intro nullable (rich text JSON)
+- short_role nullable (plain text) — displayed in the cinematic preview view
+- objective_summary nullable (rich text JSON) — displayed in the details Overview section
+- in_character_intro nullable (rich text JSON) — reserved for future card-front use
 - decorative_ribbon nullable
-- traits_text nullable
-- card_layout_variant text default 'landscape' — either 'landscape' or 'portrait'
 - brief_details_json nullable — JSON array of key-value pairs (e.g. `[{"key": "Title", "value": "Fleet Commander"}]`)
+- tags_text nullable — comma-separated tags surfaced in the list view filter
+- cinematic_preview_locked boolean (default false) — when true, the codex opens the character directly into the cinematic view
 - sort_order integer nullable — for manual ordering in the character list
 - created_at
 - updated_at
@@ -77,33 +81,42 @@ The card is the "first impression." It fits on one screen without scrolling. The
 ### Layout
 The card takes up **80% of the world shell width** with symmetric side margins. On screens narrower than 1024px, card scales to 90%. The remaining margin space has a transparent background.
 
-### Header section
-Always present at the top of the card:
-- **Image** (required) — rectangular photo slot
-- **Name** (required) — in a colored banner
-- **Ribbon/accent** — optional decorative color stripe. User selects from a 12-color swatch picker or enters a custom hex color (#RRGGBB). Stored as a nullable hex string. Purely decorative — not used for filtering, searching, or logic.
-- **Brief details** (optional) — key-value pairs (Title: Fleet Commander, Born: Year 412, Status: Active)
-- **In-character introduction** — a fixed area between the header and the grid. Always visible, cannot be removed. Content is edited in a dedicated rich text field. Visually distinct from factual content (e.g., italic styling, different background tint).
+### Layout — Preview-style (image-forward)
+The card uses a single preview-style layout: the character's image anchors the left side and extends the full card height; the right side holds the header info and the inventory grid.
 
-### Two layout variants for the header (user chooses per character)
-- **Landscape (default):** left column (40% width) = tall portrait image. Right column (60%) = name, ribbon, brief details.
-- **Portrait (alternate):** top = wide landscape image (100% width, 4:5 aspect ratio). Below = name, ribbon, brief details.
+Card header (right column, above the grid):
+- **Name** (required) — shown in a prominent colored banner row at the top of the right column.
+- **Ribbon/accent** — optional decorative color stripe. User selects from a 12-color swatch picker or enters a custom hex color (#RRGGBB). Stored as a nullable hex string. Purely decorative — not used for filtering, searching, or logic. Shown only in edit mode or if the value is set.
+- **Brief details** (optional) — key-value pairs (e.g., Title: Fleet Commander, Born: Year 412, Status: Active).
 
-Layout variant is selectable during character creation and changeable anytime via edit. Changing variant re-renders the header without affecting the grid below. The grid layout is identical for both variants (always 3 columns, 5 rows).
+No in-character intro block renders on the card in V1 — the `in_character_intro` field is stored and reserved for a future card-front use, but the shipped card keeps the header tight (name + ribbon + brief details only).
+
+Linked Records does **not** appear on the card. It lives exclusively on the Details back where it has dedicated space.
+
+### Cinematic preview (alt card front)
+Each character has a second front-of-card view — a **cinematic preview** — which shows the character image full-bleed with only the name and short_role overlaid. The toolbar offers two controls:
+- **Preview** — temporarily toggles to the cinematic view while the user clicks the button.
+- **Lock** — writes `cinematic_preview_locked = true`, which makes the cinematic view the default front whenever this character is opened.
+
+The details back and grid-editing flow are unaffected by this toggle.
 
 ### Content area — Inventory grid
-Below the header + intro, the content area uses a **CSS Grid layout**.
+Below the header, the content area uses a **CSS Grid layout**.
 
 Grid rules:
-- fixed at **3 columns** and **5 rows** — this is the maximum grid capacity
+- fixed at **3 columns** and **7 rows** — this is the maximum grid capacity
 - the grid does NOT scroll — it fits within the card viewport
-- total grid height is calculated to fill remaining card space after header and intro
+- total grid height is calculated to fill remaining card space after the header
 - blocks snap to grid cells
 - a block can span **1–3 columns** and **1–2 rows**
 - blocks must not overlap — the UI prevents placement in occupied cells with a visual indicator (red highlight on unavailable cells)
 - if a block's col_span would exceed remaining columns in a row, the drag is rejected
 - grid cells may be left intentionally empty for visual breathing room
+- in view mode, rows size to `auto` so sparsely populated cards don't stretch blocks; in edit mode rows are equal (`1fr`) so drop targets stay on a predictable cell grid
 - block content that exceeds the block's visible height scrolls internally within the block
+
+### Block presets
+Draggable from the right-side palette in edit mode. Non-multi presets (Backstory, Relationships, Arc Notes, Quotes, Personality, Powers, Inventory, Goals, Fears, Secrets) can only be placed once per character — enforced both client-side (palette greys out placed presets) and server-side (`create_card_block` rejects duplicates by `(character_id, title)` when the drag flagged the preset as non-multi). Label and Text are multi-instance generic presets.
 
 ### Block model
 Each block in the grid is a named module with rich text content:
@@ -141,8 +154,8 @@ In view mode:
 - the grid layout stays exactly the same as in edit mode
 - the card is read-only
 
-### Linked records on card
-Displayed as a read-only section **below the grid** (does not count toward the 5-row grid limit). Shows linked characters, map entities, and lore documents with their link type labels. Links are managed via a link picker dialog, not edited inline on the card. This section is always visible if any links exist; hidden if no links.
+### Linked records — on Details only
+In V1 the Linked Records section is rendered only on the Details page, not on the card. This avoids competing with the card's fixed-viewport grid layout (Linked Records would anchor awkwardly below a sparse grid). The Details layout gives it full width and a collapsible accordion.
 
 ## 6. Character Details Page (back)
 
@@ -214,16 +227,17 @@ Entries are displayed in the order the user arranges them (manual ordering via d
 
 Rows can be added, removed, and reordered. Suitable for: Overview stats, Abilities, Attributes.
 
-The user selects the layout type when creating a section. They may change it later (content is preserved where possible; incompatible content may be lost with a warning).
+The user selects the layout type when creating a section, and may convert it later via a **Convert layout** action on the section (edit mode only; Overview is excluded). Conversion preserves content where the shapes map cleanly (e.g. Cards ↔ Timeline carries title + description; Timeline → Cards puts date into subtitle; any structured layout → Prose joins entries into paragraphs). When fields cannot map (Cards subtitles → Timeline/KV, or any Prose → structured conversion), the confirm dialog surfaces the dropped content as a copyable plaintext dump so the user can paste it elsewhere before committing. The one-shot dump with clipboard copy is the agreed safety net — there is no undo stack.
 
 ### Details edit mode
 In edit mode:
 - tabs can be added, renamed, reordered, or deleted
+- a tab's layout type can be converted in place via the section's **Convert layout** action (see Section layout types above)
 - panel content is editable using the appropriate editor for the layout type
 - for prose layout: rich text editor
-- for cards layout: add/edit/remove card entries
-- for timeline layout: add/edit/remove timeline entries
-- for key-value layout: add/edit/remove rows
+- for cards layout: add/edit/remove/reorder card entries (drag handle on hover)
+- for timeline layout: add/edit/remove/reorder timeline entries
+- for key-value layout: add/edit/remove/reorder rows
 
 ### Details view mode
 In view mode:
@@ -245,22 +259,24 @@ The user may also style cards with transparent backgrounds so the character imag
 ### List behavior
 - card grid layout
 - search by name
-- **manual reordering** via drag-and-drop
-- default sort on first load: **alphabetical by name**
-- optional filtering by tags
+- **manual reordering** via drag-and-drop (edit mode + Manual sort + no search/tag filter active; visible `⋮⋮` handle on hover)
+- sort modes: Manual, Name (A–Z), Recently edited, Newest first
+- multi-tag filter with AND semantics
+- multi-select (shift / ctrl-click) for bulk delete + bulk add-tag
+- **Recycle Bin** toolbar button opens an in-place subview listing soft-deleted characters with Restore + Delete-permanently actions; items auto-purge after 24h
 - clicking a card opens the Character Card Page
 
 ## 8. Linked records
 Characters can link to:
+- other characters
 - map entities
 - lore documents
 
 Links appear:
-- as a dedicated section on the Card Page (a grid block, or a fixed area)
-- within Details Page sections where relevant
-- through inline `[[links]]` in any rich text content
+- as a dedicated accordion section on the Details Page (grouped by target type — Characters / Locations / Lore)
+- through inline `[[links]]` in any rich text content (card blocks, detail sections) — triggered by typing `[[`, which opens an autocomplete list of linkable entities (self excluded)
 
-Linking uses the shared `entity_links` model (see Packet 6).
+Linking uses the shared `entity_links` model (see Packet 6). The Link Picker dialog shows an "Already linked" badge on rows matching existing links for the current source.
 
 ## 9. Ribbon / accent behavior
 The ribbon is:
@@ -290,9 +306,9 @@ The strength of Character Codex is the balance between creative expression (grid
 ## 12. Acceptance criteria
 Character Codex is acceptable when the user can:
 - create a character with image and name
-- see the character card page with grid blocks in the inventory layout
+- see the character card page in the preview-style layout with grid blocks in the inventory arrangement
 - add, resize, reposition, and remove grid blocks on the card
-- drag blocks from the dock/palette onto the grid
+- drag blocks from the dock/palette onto the grid; non-multi presets can only be placed once
 - flip the card to reveal the details page (3D flip animation)
 - see the details page with horizontally navigated tabbed panels
 - the first details section is always present with core info
@@ -300,6 +316,11 @@ Character Codex is acceptable when the user can:
 - navigate between detail sections via tabs, arrows, or prev/next buttons
 - toggle between edit and view modes on both card and details
 - view mode renders content as styled HTML with clickable `[[links]]`
-- link the character to map entities and lore docs
+- trigger the `[[` autocomplete inside any character rich-text field to insert an inline link
+- toggle the cinematic preview view and/or lock it as the default front for a character
+- link the character to other characters, map entities, and lore documents
 - reorder characters in the list via drag-and-drop
+- convert a detail section's layout type after creation; any content that cannot map across appears in a copyable plaintext dump in the confirm dialog
+- reorder entries within a Cards, Timeline, or Key-Value section via drag-and-drop in edit mode
+- soft-delete a character, find it in the Characters-tab Recycle Bin, and either Restore (full data intact, including grid blocks, sections, links) or Delete permanently (which invalidates inline links pointing at it)
 - reopen the app and find all character data preserved (grid layout, block content, detail sections, links)

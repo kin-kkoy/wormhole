@@ -7,9 +7,13 @@ import './LinkedRecordsPanel.css';
 interface LinkedRecordsPanelProps {
   documentId: string;
   onRefresh: () => void;
+  /** Incremented by the parent when another UI (e.g. the NextPagePicker
+   *  toolbar) mutates an entity link for this doc, so the panel re-reads
+   *  rather than rendering stale data. */
+  refreshToken?: number;
 }
 
-export function LinkedRecordsPanel({ documentId, onRefresh }: LinkedRecordsPanelProps) {
+export function LinkedRecordsPanel({ documentId, onRefresh, refreshToken }: LinkedRecordsPanelProps) {
   const [links, setLinks] = useState<LinkedRecordDisplay[]>([]);
   const [loading, setLoading] = useState(true);
   const [showPicker, setShowPicker] = useState(false);
@@ -29,12 +33,15 @@ export function LinkedRecordsPanel({ documentId, onRefresh }: LinkedRecordsPanel
     setLinks([]); // Clear stale data immediately on document switch
     setLoading(true);
     loadLinks();
-  }, [loadLinks]);
+  }, [loadLinks, refreshToken]);
 
   async function handleRemoveLink(linkId: string) {
     try {
       await commands.deleteEntityLink(linkId);
       loadLinks();
+      // Signal peers (e.g. NextPagePicker) that a link changed so they can
+      // refetch their own derived state.
+      onRefresh();
     } catch (e) {
       console.error('Failed to remove link:', e);
     }
@@ -154,6 +161,8 @@ function LinkItem({
         ? 'LOC'
         : 'DOC';
 
+  const linkTypeLabel = link.link_type === 'next_page' ? 'Next Page' : link.link_type;
+
   return (
     <div
       className="linked-records__item"
@@ -169,7 +178,7 @@ function LinkItem({
       </span>
       <div className="linked-records__item-info">
         <span className="linked-records__item-name">{link.entity_name}</span>
-        <span className="linked-records__item-type">{link.link_type}</span>
+        <span className="linked-records__item-type">{linkTypeLabel}</span>
       </div>
       <button
         className="linked-records__remove-btn"

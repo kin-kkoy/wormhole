@@ -1,9 +1,83 @@
 .character-list {
+  position: relative;
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 24px;
+  padding: 28px 28px 32px;
   overflow-y: auto;
+  isolation: isolate;
+}
+
+/* Subtle parchment grain behind the whole codex view. SVG turbulence at very
+   low opacity — no network fetch, no image file. Pointer-events off so the
+   layer never intercepts clicks. */
+.character-list::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.55;
+  background-image:
+    radial-gradient(
+      ellipse at 20% 0%,
+      rgba(var(--accent-characters-rgb), 0.06) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse at 100% 100%,
+      rgba(var(--accent-characters-rgb), 0.035) 0%,
+      transparent 60%
+    ),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.035 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: auto, auto, 200px 200px;
+}
+
+:root[data-theme="light"] .character-list::before {
+  opacity: 0.4;
+  background-image:
+    radial-gradient(
+      ellipse at 20% 0%,
+      rgba(var(--accent-characters-rgb), 0.04) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse at 100% 100%,
+      rgba(var(--accent-characters-rgb), 0.02) 0%,
+      transparent 60%
+    ),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.025 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: auto, auto, 200px 200px;
+}
+
+/* ─── Page header ─────────────────────────────────────────────────────────── */
+.character-list__page-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 4px 2px 12px;
+  flex-shrink: 0;
+}
+
+.character-list__eyebrow {
+  font-family: var(--char-font-key);
+  font-size: var(--char-size-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--accent-characters);
+  flex-shrink: 0;
+}
+
+.character-list__eyebrow-rule {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    rgba(var(--accent-characters-rgb), 0.35) 0,
+    rgba(var(--accent-characters-rgb), 0.1) 35%,
+    transparent 100%
+  );
 }
 
 .character-list__loading {
@@ -15,68 +89,347 @@
   font-size: 14px;
 }
 
+/* ─── Empty state ─────────────────────────────────────────────────────────── */
+.character-list--empty {
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+}
+
 .character-list__empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  height: 100%;
-  gap: 12px;
-  color: var(--text-muted);
-}
-
-.character-list__empty-icon {
-  font-size: 48px;
-  opacity: 0.3;
-}
-
-.character-list__empty-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--accent-characters);
-}
-
-.character-list__empty-sub {
-  font-size: 13px;
-  max-width: 300px;
+  gap: 14px;
+  max-width: 420px;
   text-align: center;
 }
 
-.character-list__create-btn {
-  margin-top: 8px;
-  background: var(--accent-characters) !important;
+.character-list__empty-mark {
+  width: 68px;
+  height: 68px;
+  color: var(--accent-characters);
+  opacity: 0.75;
+  margin-bottom: 2px;
 }
+
+/* Stagger the stroke-in so the quill looks drawn, not stamped. The plume
+   outline draws first (sets the silhouette), then the spine, then the
+   cross-veins in sequence, ending with the ink drop. */
+.character-list__empty-mark path {
+  stroke-dasharray: 120;
+  stroke-dashoffset: 120;
+  animation: char-empty-draw 1.4s cubic-bezier(.25,.7,.25,1) forwards;
+}
+
+.character-list__empty-mark path:nth-child(1) { animation-delay: 0ms;   } /* plume outline */
+.character-list__empty-mark path:nth-child(2) { animation-delay: 200ms; } /* spine */
+.character-list__empty-mark path:nth-child(3) { animation-delay: 350ms; } /* vein 1 */
+.character-list__empty-mark path:nth-child(4) { animation-delay: 420ms; } /* vein 2 */
+.character-list__empty-mark path:nth-child(5) { animation-delay: 490ms; } /* vein 3 */
+.character-list__empty-mark path:nth-child(6) { animation-delay: 560ms; } /* vein 4 */
+.character-list__empty-mark path:nth-child(7) { animation-delay: 630ms; } /* vein 5 */
+.character-list__empty-mark path:nth-child(8) { animation-delay: 750ms; } /* ink drop */
+
+@keyframes char-empty-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+.character-list__empty-eyebrow {
+  font-family: var(--char-font-label);
+  font-size: var(--char-size-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.32em;
+  color: var(--accent-characters);
+  opacity: 0.85;
+}
+
+.character-list__empty-title {
+  font-family: var(--char-font-heading);
+  font-size: 2rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: 0.005em;
+  line-height: 1.15;
+}
+
+.character-list__empty-sub {
+  font-family: var(--char-font-body);
+  font-size: 1rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.character-list__empty-fleuron {
+  font-size: 20px;
+  color: var(--accent-characters);
+  opacity: 0.4;
+  margin: 4px 0 2px;
+  line-height: 1;
+}
+
+.character-list__empty-cta {
+  margin-top: 2px;
+  padding: 0 18px;
+  height: 36px;
+  font-size: var(--char-size-body);
+}
+
+.character-list__empty-link {
+  margin-top: 6px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--char-font-label);
+  font-size: var(--char-size-meta);
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+
+.character-list__empty-link:hover {
+  color: var(--accent-characters);
+}
+
+
 
 .character-list__toolbar {
   display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 18px;
   flex-shrink: 0;
+  background: rgba(var(--accent-characters-rgb), 0.045);
+  border: 1px solid rgba(var(--accent-characters-rgb), 0.12);
+  border-radius: 10px;
+  backdrop-filter: blur(2px);
 }
 
 .character-list__search {
   flex: 1;
+  min-width: 140px;
   padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg-secondary);
   color: var(--text-primary);
-  font-size: 13px;
+  font-family: var(--char-font-label);
+  font-size: var(--char-size-meta);
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .character-list__search:focus {
   border-color: var(--accent-characters);
+  box-shadow: 0 0 0 2px rgba(var(--accent-characters-rgb), 0.2);
 }
 
 .character-list__search::placeholder {
   color: var(--text-muted);
+  font-style: italic;
 }
 
-.character-list__toolbar .btn--primary {
-  background: var(--accent-characters);
+/* Sort select wrapper — lets us overlay an icon and a custom chevron without
+   fighting the native control's baked-in affordances. */
+.character-list__sort-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
   flex-shrink: 0;
+}
+
+.character-list__sort-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--text-muted);
+  pointer-events: none;
+  transition: color 0.15s;
+}
+
+.character-list__sort-wrap:hover .character-list__sort-icon {
+  color: var(--accent-characters);
+}
+
+.character-list__sort {
+  padding: 8px 28px 8px 32px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background-color: var(--bg-secondary);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'><path d='M1 1l4 4 4-4' stroke='%23a0a0a0' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px 6px;
+  color: var(--text-primary);
+  font-family: var(--char-font-label);
+  font-size: var(--char-size-meta);
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  transition: border-color 0.15s;
+}
+
+.character-list__sort:hover,
+.character-list__sort:focus {
+  border-color: var(--accent-characters);
+}
+
+.character-list__sort option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* Icon-only button for Recycle Bin and similar actions. */
+.character-list__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.character-list__icon-btn:hover {
+  border-color: var(--accent-characters);
+  color: var(--accent-characters);
+  background: rgba(var(--accent-characters-rgb), 0.08);
+}
+
+.character-list__icon-btn svg {
+  display: block;
+}
+
+/* Icon + label primary button. */
+.character-list__primary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  height: 32px;
+  border: 1px solid var(--accent-characters);
+  border-radius: 6px;
+  background: var(--accent-characters);
+  color: #fff;
+  font-family: var(--char-font-label);
+  font-size: var(--char-size-meta);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: filter 0.15s, box-shadow 0.15s;
+}
+
+.character-list__primary-btn:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 2px 8px rgba(var(--accent-characters-rgb), 0.35);
+}
+
+.character-list__primary-btn svg {
+  display: block;
+}
+
+.character-list__bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  margin-bottom: 16px;
+  border: 1px solid var(--accent-characters);
+  border-radius: 8px;
+  background: rgba(var(--accent-characters-rgb), 0.08);
+  flex-shrink: 0;
+  animation: char-bulk-bar-enter 340ms cubic-bezier(.22,.61,.36,1);
+  transform-origin: center;
+}
+
+/* Outside-to-inside fade: a purple halo materialises around the bar and
+   collapses inward as opacity resolves. Keeps the bar flat at rest. */
+@keyframes char-bulk-bar-enter {
+  0% {
+    opacity: 0;
+    transform: scaleY(0.92);
+    box-shadow: 0 0 0 8px rgba(var(--accent-characters-rgb), 0.22);
+    border-color: transparent;
+  }
+  55% {
+    opacity: 1;
+    transform: scaleY(1);
+    box-shadow: 0 0 0 3px rgba(var(--accent-characters-rgb), 0.38);
+    border-color: var(--accent-characters);
+  }
+  100% {
+    opacity: 1;
+    transform: scaleY(1);
+    box-shadow: 0 0 0 0 rgba(var(--accent-characters-rgb), 0);
+    border-color: var(--accent-characters);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .character-list__bulk-bar {
+    animation: none;
+  }
+}
+
+/* Base <button> has no background in this codebase — .btn--ghost and
+   .btn--primary leave it to the browser default, which renders white on
+   WebKitGTK in dark mode. Force dark-appropriate fills here. */
+.character-list__bulk-bar .btn--ghost {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.character-list__bulk-bar .btn--ghost:hover {
+  background: var(--bg-elevated);
+  border-color: var(--accent-characters);
+  color: var(--accent-characters);
+}
+
+.character-list__bulk-bar .btn--primary {
+  background: var(--accent-characters);
+  color: #fff;
+}
+
+.character-list__bulk-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-characters);
+  margin-right: auto;
+}
+
+.character-list__bulk-tag-input {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 12px;
+  outline: none;
+  min-width: 140px;
+}
+
+.character-list__bulk-tag-input:focus {
+  border-color: var(--accent-characters);
+}
+
+.character-list__card--selected {
+  border-color: var(--accent-characters);
+  box-shadow: 0 0 0 2px var(--accent-characters);
 }
 
 .character-list__tags {
@@ -116,8 +469,8 @@
 
 .character-list__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(192px, 1fr));
+  gap: 20px;
   /* Cards stay at their natural height (image aspect + info row) instead of
      stretching to fill the whole viewport. The parent .character-list handles
      scroll when the grid overflows. */
@@ -132,22 +485,32 @@
   border-radius: 10px;
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  /* Transform gets its own, slightly longer ease so live drag reflow reads
+     smoothly as grid order changes under the cursor. */
+  transition:
+    transform 180ms cubic-bezier(.2,.6,.25,1),
+    box-shadow 0.15s,
+    border-color 0.15s;
 }
 
 .character-list__card:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow);
-  border-color: var(--accent-characters);
+  box-shadow:
+    0 1px 0 rgba(var(--accent-characters-rgb), 0.15) inset,
+    0 8px 20px rgba(var(--accent-characters-rgb), 0.18),
+    0 2px 6px rgba(0, 0, 0, 0.25);
+  border-color: rgba(var(--accent-characters-rgb), 0.55);
 }
 
 .character-list__card--dragging {
-  opacity: 0.4;
-}
-
-.character-list__card--drag-over {
-  border-color: var(--accent-characters);
-  box-shadow: 0 0 0 2px var(--accent-characters);
+  /* Fade the source slightly as it's being dragged — just enough that the
+     user reads it as "this is the one moving" without hiding the reflow. */
+  opacity: 0.55;
+  box-shadow:
+    0 0 0 1px rgba(var(--accent-characters-rgb), 0.6),
+    0 12px 24px rgba(0, 0, 0, 0.35);
+  transform: scale(1.02);
+  z-index: 2;
 }
 
 .character-list__card-ribbon {
@@ -184,20 +547,45 @@
 }
 
 .character-list__card-name {
-  font-size: 14px;
+  font-family: var(--char-font-heading);
+  font-size: var(--char-size-title);
   font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  letter-spacing: 0.005em;
 }
 
 .character-list__card-role {
-  font-size: 12px;
+  font-family: var(--char-font-prose);
+  font-size: var(--char-size-meta);
   color: var(--text-secondary);
+  font-style: italic;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.character-list__card-drag-handle {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 1;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 12px;
+  letter-spacing: -2px;
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.character-list__card:hover .character-list__card-drag-handle {
+  opacity: 1;
 }
 
 .character-list__card-delete {

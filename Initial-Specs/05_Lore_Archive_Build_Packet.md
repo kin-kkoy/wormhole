@@ -1,5 +1,7 @@
 # Packet 5 — Lore Archive Build Packet
 
+> **Status:** Built (V1) + Read Mode. Folder hierarchy, document CRUD, TipTap-based body editor, inline cross-system links, paginated and continuous readers, paper-styled tokens, cross-doc next-page navigation. Pending **Packet 10** for lore-side typography popover, per-document font defaults, and expanded inline toolbar (color, alignment, underline).
+
 ## 1. Purpose of this packet
 This packet defines the Lore Archive system:
 - folder model

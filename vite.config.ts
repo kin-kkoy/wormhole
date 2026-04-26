@@ -29,4 +29,10 @@ export default defineConfig(async () => ({
       ignored: ["**/src-tauri/**"],
     },
   },
+  // Standalone prototype HTMLs in /prototypes/ pull `three` and other libs
+  // from CDN import maps. Don't let the dep scanner recurse into them — it
+  // doesn't grok import maps and prints noisy warnings.
+  optimizeDeps: {
+    entries: ["index.html", "src/**/*.{ts,tsx}"],
+  },
 }));

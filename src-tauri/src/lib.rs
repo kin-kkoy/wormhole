@@ -106,6 +106,9 @@ pub fn run() {
             links::delete_entity_link,
             links::search_linkable_records,
             links::resolve_inline_links,
+            links::get_next_page_link,
+            links::set_next_page_link,
+            links::list_next_page_links,
             // Atlas Canvas (Stage 5)
             atlas::list_map_entities,
             atlas::get_map_entity,

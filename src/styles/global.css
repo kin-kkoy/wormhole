@@ -1,4 +1,6 @@
+@import '../assets/fonts/fonts.css';
 @import './themes.css';
+@import './typography.css';
 
 *,
 *::before,

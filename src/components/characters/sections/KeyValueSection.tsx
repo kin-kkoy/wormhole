@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import type { DetailSection } from '../../../lib/commands';
+import { useEntryReorder } from './useEntryReorder';
 import './KeyValueSection.css';
 
 interface KeyValueRow {
@@ -28,6 +29,8 @@ export function KeyValueSection({ section, editMode, onUpdate }: KeyValueSection
     onUpdate(section.id, { structuredContentJson: JSON.stringify(updated) });
   }, [section.id, onUpdate]);
 
+  const reorder = useEntryReorder<KeyValueRow>(rows, saveRows);
+
   const updateRow = useCallback((rowId: string, field: 'label' | 'value', val: string) => {
     const updated = rows.map((r) => r.id === rowId ? { ...r, [field]: val } : r);
     saveRows(updated);
@@ -53,10 +56,24 @@ export function KeyValueSection({ section, editMode, onUpdate }: KeyValueSection
   return (
     <div className="kv-section">
       <div className="kv-section__grid">
-        {rows.map((row) => (
-          <div key={row.id} className="kv-section__row">
+        {rows.map((row, index) => (
+          <div
+            key={row.id}
+            className={`kv-section__row ${
+              reorder.isDropTarget(index) ? 'kv-section__row--drag-over' : ''
+            } ${reorder.dragIndex === index ? 'kv-section__row--dragging' : ''}`}
+            draggable={editMode}
+            onDragStart={(e) => reorder.handleDragStart(e, index)}
+            onDragOver={(e) => reorder.handleDragOver(e, index)}
+            onDragLeave={() => reorder.handleDragLeave(index)}
+            onDrop={(e) => reorder.handleDrop(e, index)}
+            onDragEnd={reorder.handleDragEnd}
+          >
             {editMode ? (
               <>
+                <span className="kv-section__drag-handle" aria-hidden="true" title="Drag to reorder">
+                  ⋮⋮
+                </span>
                 <input
                   className="kv-section__input kv-section__input--label"
                   value={row.label}

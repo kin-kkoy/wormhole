@@ -37,17 +37,19 @@
 }
 
 .linked-records__title {
-  font-size: 12px;
+  font-family: var(--char-font-key);
+  font-size: var(--char-size-meta);
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: var(--char-letter-label);
   margin: 0;
   transition: color 0.12s;
 }
 
 .linked-records__count {
-  font-size: 11px;
+  font-family: var(--char-font-key);
+  font-size: var(--char-size-label);
   color: var(--text-muted);
   background: var(--bg-tertiary);
   padding: 1px 6px;
@@ -83,67 +85,148 @@
 .linked-records__list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
+/* Each section becomes a subtle card tinted with its system accent. */
 .linked-records__section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.015);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.linked-records__section[data-section-type="character"] {
+  background: rgba(var(--accent-characters-rgb), 0.035);
+  border-color: rgba(var(--accent-characters-rgb), 0.18);
+}
+.linked-records__section[data-section-type="map_entity"] {
+  background: rgba(var(--accent-atlas-rgb), 0.035);
+  border-color: rgba(var(--accent-atlas-rgb), 0.18);
+}
+.linked-records__section[data-section-type="lore_document"] {
+  background: rgba(var(--accent-lore-rgb), 0.04);
+  border-color: rgba(var(--accent-lore-rgb), 0.18);
+}
+
+.linked-records__section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+}
+
+.linked-records__section[data-section-type="character"] .linked-records__section-header {
+  border-bottom-color: rgba(var(--accent-characters-rgb), 0.18);
+}
+.linked-records__section[data-section-type="map_entity"] .linked-records__section-header {
+  border-bottom-color: rgba(var(--accent-atlas-rgb), 0.18);
+}
+.linked-records__section[data-section-type="lore_document"] .linked-records__section-header {
+  border-bottom-color: rgba(var(--accent-lore-rgb), 0.18);
+}
+
+.linked-records__section-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.linked-records__section-glyph[data-type="character"] {
+  color: var(--accent-characters);
+}
+.linked-records__section-glyph[data-type="map_entity"] {
+  color: var(--accent-atlas);
+}
+.linked-records__section-glyph[data-type="lore_document"] {
+  color: var(--accent-lore);
+}
+
+.linked-records__section-title {
+  font-family: var(--char-font-key);
+  font-size: var(--char-size-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.linked-records__section-count {
+  font-family: var(--char-font-key);
+  font-size: var(--char-size-label);
+  color: var(--text-muted);
+  padding: 0 7px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.linked-records__section-items {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.linked-records__section-title {
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: var(--text-muted);
-}
-
 .linked-records__item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  padding: 6px 10px;
+  padding: 7px 10px;
   border-radius: 6px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-subtle);
-  font-size: 13px;
+  background: transparent;
+  border: 1px solid transparent;
+  font-family: var(--char-font-prose);
+  font-size: var(--char-size-body);
   text-align: left;
   cursor: pointer;
-  transition: background 0.1s, border-color 0.1s;
+  transition: background 0.12s, border-color 0.12s, transform 0.12s;
 }
 
 .linked-records__item:hover {
-  background: var(--hover);
+  background: rgba(255, 255, 255, 0.03);
+  transform: translateX(2px);
 }
 
+.linked-records__item[data-entity-type="character"]:hover {
+  border-color: rgba(var(--accent-characters-rgb), 0.4);
+  background: rgba(var(--accent-characters-rgb), 0.06);
+}
 .linked-records__item[data-entity-type="map_entity"]:hover {
-  border-color: var(--accent-atlas);
+  border-color: rgba(var(--accent-atlas-rgb), 0.4);
+  background: rgba(var(--accent-atlas-rgb), 0.06);
 }
 .linked-records__item[data-entity-type="lore_document"]:hover {
-  border-color: var(--accent-lore);
+  border-color: rgba(var(--accent-lore-rgb), 0.4);
+  background: rgba(var(--accent-lore-rgb), 0.06);
 }
 
-.linked-records__item-type {
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  padding: 1px 6px;
-  border-radius: 3px;
+.linked-records__item-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
+  opacity: 0.8;
 }
 
-.linked-records__item-type[data-type="map_entity"] {
+.linked-records__item-glyph[data-type="character"] {
+  color: var(--accent-characters);
+}
+.linked-records__item-glyph[data-type="map_entity"] {
   color: var(--accent-atlas);
-  background: rgba(74, 158, 255, 0.12);
 }
-
-.linked-records__item-type[data-type="lore_document"] {
+.linked-records__item-glyph[data-type="lore_document"] {
   color: var(--accent-lore);
-  background: rgba(245, 166, 35, 0.12);
 }
 
 .linked-records__item-name {
@@ -155,9 +238,18 @@
 }
 
 .linked-records__item-link-type {
-  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--char-font-key);
+  font-size: var(--char-size-label);
   color: var(--text-muted);
   font-style: italic;
+  flex-shrink: 0;
+}
+
+.linked-records__arrow {
+  opacity: 0.65;
   flex-shrink: 0;
 }
 
@@ -169,9 +261,15 @@
   border-radius: 3px;
   cursor: pointer;
   flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.12s, color 0.12s, background 0.12s;
+}
+
+.linked-records__item:hover .linked-records__remove {
+  opacity: 1;
 }
 
 .linked-records__remove:hover {
-  background: var(--hover);
-  color: var(--accent-danger, #f87171);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--danger);
 }

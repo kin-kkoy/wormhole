@@ -68,6 +68,7 @@ export function OverviewSection({ section, character, editMode, onUpdate }: Over
           onUpdate={handleSummaryUpdate}
           editable={editMode}
           placeholder="Write an objective summary of this character..."
+          linkSource={{ type: 'character', id: character.id }}
         />
       </div>
 
@@ -78,6 +79,7 @@ export function OverviewSection({ section, character, editMode, onUpdate }: Over
             onUpdate={handleSectionContentUpdate}
             editable={editMode}
             placeholder="Additional overview notes..."
+            linkSource={{ type: 'character', id: character.id }}
           />
         </div>
       )}
@@ -88,6 +90,7 @@ export function OverviewSection({ section, character, editMode, onUpdate }: Over
             onUpdate={handleSectionContentUpdate}
             editable={editMode}
             placeholder="Additional overview notes..."
+            linkSource={{ type: 'character', id: character.id }}
           />
         </div>
       )}

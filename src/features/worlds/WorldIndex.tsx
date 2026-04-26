@@ -251,10 +251,18 @@ export function WorldIndex() {
       ) : (
         <div className="world-index__grid">
           {filteredWorlds.map((world) => (
-            <button
+            <div
               key={world.id}
               className="world-card"
+              role="button"
+              tabIndex={0}
               onClick={() => openWorld(world.id)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  openWorld(world.id);
+                }
+              }}
             >
               <div className="world-card__cover">
                 {world.cover_thumbnail_base64 ? (
@@ -305,7 +313,7 @@ export function WorldIndex() {
                   </svg>
                 </button>
               </div>
-            </button>
+            </div>
           ))}
         </div>
       )}

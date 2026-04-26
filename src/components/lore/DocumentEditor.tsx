@@ -9,11 +9,15 @@ import {
   detectBracketTrigger,
   insertInlineLink,
 } from '../editor/InlineLinkExtension';
+import { NextPagePicker } from './NextPagePicker';
 import './DocumentEditor.css';
 
 interface DocumentEditorProps {
   document: LoreDocumentFull;
   onDocumentUpdated: () => void;
+  /** Incremented whenever an external surface (LinkedRecordsPanel) mutates
+   *  an entity link for this doc, so the NextPagePicker can re-read. */
+  linkRefreshToken?: number;
 }
 
 interface AutocompleteState {
@@ -34,7 +38,7 @@ const INITIAL_AUTOCOMPLETE: AutocompleteState = {
   startPos: 0,
 };
 
-export function DocumentEditor({ document, onDocumentUpdated }: DocumentEditorProps) {
+export function DocumentEditor({ document, onDocumentUpdated, linkRefreshToken }: DocumentEditorProps) {
   const [title, setTitle] = useState(document.title);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [autocomplete, setAutocomplete] = useState<AutocompleteState>(INITIAL_AUTOCOMPLETE);
@@ -368,6 +372,12 @@ export function DocumentEditor({ document, onDocumentUpdated }: DocumentEditorPr
               <path d="M11.3 7H5a3 3 0 000 6h2v-1H5a2 2 0 010-4h6.3l-2.15 2.15.7.7L13 7.7l-3.15-3.15-.7.7L11.3 7z" />
             </svg>
           </button>
+          <span className="doc-editor__toolbar-sep" />
+          <NextPagePicker
+            documentId={document.id}
+            onChanged={onDocumentUpdated}
+            refreshToken={linkRefreshToken}
+          />
           <div className="doc-editor__toolbar-right">
             <button
               className="btn btn--lore-primary doc-editor__save-btn"

@@ -47,5 +47,15 @@ pub fn run_world_migrations(conn: &Connection) -> Result<(), rusqlite::Error> {
             "migrations/world/005_cinematic_preview.sql"
         ))?;
     }
+    if version < 6 {
+        conn.execute_batch(include_str!(
+            "migrations/world/006_drop_dead_character_columns.sql"
+        ))?;
+    }
+    if version < 7 {
+        conn.execute_batch(include_str!(
+            "migrations/world/007_character_lock_face.sql"
+        ))?;
+    }
     Ok(())
 }

@@ -1,0 +1,39 @@
+.detail-section-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-section-panel__toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.detail-section-panel__convert-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.detail-section-panel__convert-btn:hover {
+  border-color: var(--accent-characters);
+  color: var(--accent-characters);
+}
+
+.detail-section-panel__convert-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.detail-section-panel__body {
+  min-height: 0;
+}

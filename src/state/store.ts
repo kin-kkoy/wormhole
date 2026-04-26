@@ -5,6 +5,17 @@ import { getSettingsStore } from '../lib/settings-store';
 export type TabId = 'overview' | 'atlas' | 'characters' | 'lore';
 export type OverviewTab = 'atlas' | 'characters' | 'lore';
 export type AtlasTool = 'select' | 'brush' | 'erase' | 'pan';
+export type LoreMode = 'edit' | 'read';
+/** Read-mode page layout. Paginated = CSS-columns sub-paging within a doc;
+ *  Continuous = single scrolling surface (infinite-scroll feel). */
+export type ReaderLayout = 'paginated' | 'continuous';
+/** Synthetic book id for documents with no folder — they appear as a "Loose Pages" book. */
+export const LOOSE_BOOK_ID = '__loose__';
+/** Virtual path segment that represents a drilled-into "stack" of loose docs
+ *  at the parent folder's level. When this is the last segment of
+ *  activeFolderPath, the view shows each previously-stacked doc as an
+ *  individual PageTile. */
+export const STACK_SEGMENT = '__stack__';
 export type PeekEntityType = 'character' | 'map_entity' | 'lore_document';
 
 export interface PeekTarget {
@@ -30,6 +41,15 @@ interface AppState {
   cardFlipped: boolean;
   selectedFolderId: string | null;
   selectedDocumentId: string | null;
+  // Lore Archive — Read vs Write mode
+  loreMode: LoreMode;
+  /** Drill-down path through the library. Empty = root library (books as
+   *  tiles). `[rootFolderId]` = a book is opened. Deeper = nested sub-books.
+   *  May end with STACK_SEGMENT to represent an expanded loose-doc stack. */
+  activeFolderPath: string[];
+  readerLayout: ReaderLayout;
+  /** Read-mode TOC sidebar collapsed state. Persists across sessions. */
+  tocCollapsed: boolean;
   // Atlas Canvas (Stage 5)
   selectedMapEntityId: string | null;
   atlasTool: AtlasTool;
@@ -56,6 +76,15 @@ interface AppState {
   openFullFromPeek: () => void;
   restoreFromPeekReturn: () => void;
   loadOverviewTab: () => Promise<void>;
+  setLoreMode: (mode: LoreMode) => void;
+  setActiveFolderPath: (path: string[]) => void;
+  pushFolderPath: (segment: string) => void;
+  popFolderPathTo: (depth: number) => void;
+  loadLoreMode: () => Promise<void>;
+  setReaderLayout: (layout: ReaderLayout) => void;
+  loadReaderLayout: () => Promise<void>;
+  setTocCollapsed: (collapsed: boolean) => void;
+  loadTocCollapsed: () => Promise<void>;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -68,6 +97,10 @@ export const useAppStore = create<AppState>((set) => ({
   cardFlipped: false,
   selectedFolderId: null,
   selectedDocumentId: null,
+  loreMode: 'read',
+  activeFolderPath: [],
+  readerLayout: 'paginated',
+  tocCollapsed: false,
   selectedMapEntityId: null,
   atlasTool: 'select',
   atlasBrushColor: '#d4a574',
@@ -85,6 +118,7 @@ export const useAppStore = create<AppState>((set) => ({
       editMode: false,
       selectedFolderId: null,
       selectedDocumentId: null,
+      activeFolderPath: [],
       selectedMapEntityId: null,
       atlasTool: 'select',
       peekTarget: null,
@@ -98,6 +132,7 @@ export const useAppStore = create<AppState>((set) => ({
       cardFlipped: false,
       selectedFolderId: null,
       selectedDocumentId: null,
+      activeFolderPath: [],
       selectedMapEntityId: null,
       atlasTool: 'select',
       // Manual tab change cancels any pending "return to peek" affordance.
@@ -179,6 +214,72 @@ export const useAppStore = create<AppState>((set) => ({
       }
     } catch {
       // Keep default
+    }
+  },
+
+  setLoreMode: (mode) => {
+    set({ loreMode: mode });
+    getSettingsStore().then(async (store) => {
+      await store.set('loreMode', mode);
+      await store.save();
+    }).catch(console.error);
+  },
+
+  setActiveFolderPath: (path) => set({ activeFolderPath: path }),
+  pushFolderPath: (segment) =>
+    set((state) => ({ activeFolderPath: [...state.activeFolderPath, segment] })),
+  popFolderPathTo: (depth) =>
+    set((state) => ({ activeFolderPath: state.activeFolderPath.slice(0, depth) })),
+
+  loadLoreMode: async () => {
+    try {
+      const store = await getSettingsStore();
+      const saved = await store.get<string>('loreMode');
+      if (saved === 'edit' || saved === 'read') {
+        set({ loreMode: saved });
+      }
+    } catch {
+      // Keep default ('read')
+    }
+  },
+
+  setReaderLayout: (layout) => {
+    set({ readerLayout: layout });
+    getSettingsStore().then(async (store) => {
+      await store.set('readerLayout', layout);
+      await store.save();
+    }).catch(console.error);
+  },
+
+  loadReaderLayout: async () => {
+    try {
+      const store = await getSettingsStore();
+      const saved = await store.get<string>('readerLayout');
+      if (saved === 'paginated' || saved === 'continuous') {
+        set({ readerLayout: saved });
+      }
+    } catch {
+      // Keep default ('paginated')
+    }
+  },
+
+  setTocCollapsed: (collapsed) => {
+    set({ tocCollapsed: collapsed });
+    getSettingsStore().then(async (store) => {
+      await store.set('tocCollapsed', collapsed);
+      await store.save();
+    }).catch(console.error);
+  },
+
+  loadTocCollapsed: async () => {
+    try {
+      const store = await getSettingsStore();
+      const saved = await store.get<boolean>('tocCollapsed');
+      if (typeof saved === 'boolean') {
+        set({ tocCollapsed: saved });
+      }
+    } catch {
+      // Keep default (false)
     }
   },
 }));

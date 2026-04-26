@@ -23,6 +23,7 @@ export function CardInCharacterIntro({ character, onUpdate, editMode }: CardInCh
         editable={editMode}
         placeholder="Write an in-character introduction..."
         className="card-intro__editor"
+        linkSource={{ type: 'character', id: character.id }}
       />
     </div>
   );

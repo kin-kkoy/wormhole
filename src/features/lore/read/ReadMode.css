@@ -1,0 +1,1693 @@
+/* ============================================================================
+ *  Lore Archive — Read Mode styles.
+ *  Everything is scoped under `.lore-read-mode` so paper tokens, serif stack,
+ *  and book chrome never leak into Write mode, PeekPanel, or anywhere else.
+ * ==========================================================================*/
+
+.lore-read-mode {
+  /* Serif stack: system-only. No webfont fetch (Tauri offline-first). */
+  --font-serif-body: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Crimson Pro',
+    Georgia, Cambria, 'Times New Roman', serif;
+  --font-serif-display: 'Iowan Old Style', Palatino, 'Baskerville', Georgia, serif;
+
+  /* Paper tokens — light mode warm cream. */
+  --paper-bg: #f6efdf;
+  --paper-bg-edge: #ebe1cb;
+  --paper-ink: #241c12;
+  --paper-ink-muted: #6b5b43;
+  --paper-rule: #cdb98a;
+  --paper-deckle: rgba(120, 92, 50, 0.22);
+  --paper-edge-shadow: inset 0 0 60px rgba(58, 42, 20, 0.06), inset 0 0 0 1px rgba(58, 42, 20, 0.03);
+  --paper-shadow: 0 12px 36px rgba(58, 42, 20, 0.18), 0 2px 6px rgba(58, 42, 20, 0.08);
+  --cover-shadow: 0 6px 18px rgba(40, 28, 10, 0.28), 0 2px 4px rgba(40, 28, 10, 0.18);
+  --cover-shadow-hover: 0 14px 32px rgba(40, 28, 10, 0.32), 0 3px 6px rgba(40, 28, 10, 0.22);
+
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Dark-mode paper: warm umber, not black. Feels lamp-lit, not cave-dark. */
+:root[data-theme='dark'] .lore-read-mode {
+  --paper-bg: #1f1a13;
+  --paper-bg-edge: #17130d;
+  --paper-ink: #efe6cf;
+  --paper-ink-muted: #a2937a;
+  --paper-rule: #3a2f20;
+  --paper-deckle: rgba(220, 195, 145, 0.14);
+  --paper-edge-shadow: inset 0 0 80px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+  --paper-shadow: 0 12px 36px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.35);
+  --cover-shadow: 0 6px 18px rgba(0, 0, 0, 0.55), 0 2px 4px rgba(0, 0, 0, 0.4);
+  --cover-shadow-hover: 0 14px 32px rgba(0, 0, 0, 0.62), 0 3px 6px rgba(0, 0, 0, 0.45);
+}
+
+/* ─── Mode Toggle (header strip) ────────────────────────────────────────── */
+
+.lore-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  position: relative;
+}
+
+.lore-mode-toggle__pill {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: color 0.18s ease, background 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lore-mode-toggle__pill:hover:not(.lore-mode-toggle__pill--active) {
+  color: var(--text-primary);
+  background: var(--hover);
+}
+
+.lore-mode-toggle__pill--active {
+  color: #fff;
+  background: var(--accent-lore);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+:root[data-theme='light'] .lore-mode-toggle__pill--active {
+  color: #fff;
+}
+
+.lore-mode-toggle__icon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+/* ─── Archive header strip ──────────────────────────────────────────────── */
+
+.lore-archive__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px 0;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+/* Right-side cluster: groups the recycle-bin icon button + the read/write
+   toggle so the breadcrumb stays anchored at the left of the header. */
+.lore-archive__header-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.lore-archive__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.lore-archive__icon-btn:hover {
+  border-color: var(--accent-lore);
+  color: var(--accent-lore);
+  background: rgba(var(--accent-lore-rgb), 0.08);
+}
+
+.lore-archive__icon-btn svg {
+  display: block;
+}
+
+.lore-archive__breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  min-width: 0;
+}
+
+.lore-archive__breadcrumb-back {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--accent-lore);
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: background 0.15s ease;
+}
+
+.lore-archive__breadcrumb-back:hover {
+  background: var(--hover);
+}
+
+.lore-archive__breadcrumb-sep {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.lore-archive__breadcrumb-current {
+  font-family: var(--font-serif-display);
+  color: var(--text-primary);
+  font-size: 15px;
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* ─── Read-mode body container ──────────────────────────────────────────── */
+
+.read-mode-shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: read-mode-fade-in 250ms ease-out;
+}
+
+@keyframes read-mode-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Library shelf ─────────────────────────────────────────────────────── */
+
+.library-shelf {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px 32px 48px;
+}
+
+.library-shelf__title {
+  font-family: var(--font-serif-display);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--text-primary);
+  letter-spacing: 0.03em;
+  margin: 0 0 4px;
+}
+
+.library-shelf__subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  margin: 0 0 28px;
+}
+
+.library-shelf__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 32px 28px;
+  align-items: start;
+}
+
+.library-shelf__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 14px;
+  padding: 80px 24px;
+  color: var(--text-secondary);
+}
+
+.library-shelf__empty-fleuron {
+  font-size: 36px;
+  color: var(--accent-lore);
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.library-shelf__empty-title {
+  font-family: var(--font-serif-display);
+  font-size: 22px;
+  color: var(--text-primary);
+  font-style: italic;
+}
+
+.library-shelf__empty-body {
+  font-size: 13px;
+  color: var(--text-muted);
+  max-width: 300px;
+  line-height: 1.5;
+}
+
+.library-shelf__empty-cta {
+  margin-top: 8px;
+  appearance: none;
+  border: 1px solid var(--accent-lore);
+  background: transparent;
+  color: var(--accent-lore);
+  padding: 8px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.library-shelf__empty-cta:hover {
+  background: var(--accent-lore);
+  color: #fff;
+}
+
+/* ─── Book Cover ────────────────────────────────────────────────────────── */
+
+.book-cover {
+  appearance: none;
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  transition: transform 0.22s ease;
+}
+
+.book-cover:hover {
+  transform: translateY(-3px);
+}
+
+.book-cover:focus-visible {
+  outline: none;
+}
+
+.book-cover__tile {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4.2;
+  max-width: 200px;
+  border-radius: 4px 10px 10px 4px;
+  overflow: hidden;
+  box-shadow: var(--cover-shadow);
+  transition: box-shadow 0.22s ease, transform 0.22s ease;
+  display: flex;
+  background: var(--spine-color, var(--accent-lore));
+}
+
+.book-cover:hover .book-cover__tile {
+  box-shadow: var(--cover-shadow-hover);
+}
+
+.book-cover:focus-visible .book-cover__tile {
+  outline: 2px solid var(--accent-lore);
+  outline-offset: 3px;
+}
+
+/* Spine stripe on the left — gives each book a unique binding. */
+.book-cover__spine {
+  width: 14px;
+  flex-shrink: 0;
+  background: var(--spine-color, var(--accent-lore));
+  position: relative;
+  box-shadow: inset -2px 0 4px rgba(0, 0, 0, 0.2);
+}
+
+.book-cover__spine::before,
+.book-cover__spine::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.25);
+}
+.book-cover__spine::before { top: 18%; }
+.book-cover__spine::after { bottom: 18%; }
+
+/* Cover face — warm paper panel with title in serif. */
+.book-cover__face {
+  flex: 1;
+  min-width: 0;
+  background: var(--paper-bg);
+  background-image:
+    radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.12), transparent 60%),
+    var(--noise-bg, none);
+  color: var(--paper-ink);
+  padding: 18px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.book-cover__rule {
+  width: 32px;
+  height: 1px;
+  background: var(--accent-lore);
+  opacity: 0.7;
+  align-self: flex-start;
+  margin-bottom: 8px;
+}
+
+.book-cover__title {
+  font-family: var(--font-serif-display);
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  color: var(--paper-ink);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+.book-cover__meta {
+  font-family: var(--font-serif-body);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--paper-ink-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 12px;
+}
+
+.book-cover__label {
+  font-family: var(--font-serif-body);
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-style: italic;
+  max-width: 180px;
+  text-align: center;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.book-cover--loose .book-cover__face {
+  background: var(--paper-bg-edge);
+}
+
+.book-cover--loose .book-cover__title {
+  font-style: italic;
+  color: var(--paper-ink-muted);
+}
+
+/* ─── PageTile — folded-corner document card ─────────────────────────────── */
+
+.page-tile {
+  appearance: none;
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  transition: transform 0.22s ease;
+}
+
+.page-tile:hover {
+  transform: translateY(-3px);
+}
+
+.page-tile__card {
+  position: relative;
+  width: 100%;
+  max-width: 160px;
+  aspect-ratio: 3 / 4;
+  background: var(--paper-bg);
+  color: var(--paper-ink);
+  border-radius: 4px;
+  box-shadow: var(--cover-shadow);
+  padding: 16px 14px 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  transition: box-shadow 0.22s ease;
+  /* Clip the top-right corner to make the fold visible. */
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%);
+}
+
+.page-tile:hover .page-tile__card {
+  box-shadow: var(--cover-shadow-hover);
+}
+
+/* The folded corner triangle, sat on top of the clip. */
+.page-tile__corner {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 18px;
+  height: 18px;
+  background: linear-gradient(
+    225deg,
+    var(--paper-bg-edge) 0%,
+    var(--paper-bg-edge) 50%,
+    rgba(0, 0, 0, 0.15) 51%,
+    rgba(0, 0, 0, 0.15) 52%,
+    transparent 53%
+  );
+  pointer-events: none;
+  /* Echo the clip-path cut so the corner visually matches. */
+  clip-path: polygon(0 100%, 100% 0, 100% 100%);
+}
+
+/* Faux ruled lines in the top half to suggest "text on paper". */
+.page-tile__lines {
+  position: absolute;
+  top: 18px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.page-tile__lines span {
+  display: block;
+  height: 1.5px;
+  background: var(--paper-rule);
+  border-radius: 1px;
+}
+
+.page-tile__lines span:nth-child(1) { width: 78%; }
+.page-tile__lines span:nth-child(2) { width: 92%; }
+.page-tile__lines span:nth-child(3) { width: 70%; }
+.page-tile__lines span:nth-child(4) { width: 85%; }
+
+.page-tile__title {
+  font-family: var(--font-serif-display);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: 0.005em;
+  color: var(--paper-ink);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+  z-index: 1;
+}
+
+/* ─── StackTile — stack of overlapping paper cards ──────────────────────── */
+
+.stack-tile {
+  appearance: none;
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  transition: transform 0.22s ease;
+}
+
+.stack-tile:hover {
+  transform: translateY(-3px);
+}
+
+.stack-tile__stack {
+  position: relative;
+  width: 100%;
+  max-width: 180px;
+  aspect-ratio: 3 / 4.2;
+}
+
+.stack-tile__sheet {
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  background: var(--paper-bg);
+  box-shadow: var(--cover-shadow);
+  transition: box-shadow 0.22s ease, transform 0.22s ease;
+}
+
+.stack-tile:hover .stack-tile__sheet--front {
+  box-shadow: var(--cover-shadow-hover);
+}
+
+/* Each layer behind the front is offset + rotated more aggressively to
+ * suggest a fanned stack of papers. The back sheet is dimmer and sits at
+ * the largest angle; the mid sheet is tilted in the opposite direction.
+ * The front sheet is tilted just a touch so the whole stack reads as
+ * "casually dropped" rather than a perfectly square card. */
+.stack-tile__sheet--back {
+  transform: translate(10px, 8px) rotate(-7deg);
+  background: var(--paper-bg-edge);
+  opacity: 0.82;
+}
+
+.stack-tile__sheet--mid {
+  transform: translate(-6px, 4px) rotate(5deg);
+  background: var(--paper-bg);
+  opacity: 0.92;
+}
+
+.stack-tile__sheet--front {
+  transform: rotate(-1.5deg);
+  padding: 20px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: var(--paper-ink);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.stack-tile:hover .stack-tile__sheet--front {
+  transform: rotate(-1deg) translateY(-2px);
+}
+.stack-tile:hover .stack-tile__sheet--mid {
+  transform: translate(-8px, 3px) rotate(6.5deg);
+}
+.stack-tile:hover .stack-tile__sheet--back {
+  transform: translate(12px, 7px) rotate(-9deg);
+}
+
+.stack-tile__rule {
+  width: 32px;
+  height: 1px;
+  background: var(--accent-lore);
+  opacity: 0.7;
+  margin-bottom: 10px;
+}
+
+.stack-tile__title {
+  font-family: var(--font-serif-display);
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  color: var(--paper-ink);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1;
+}
+
+.stack-tile__count {
+  font-family: var(--font-serif-body);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--paper-ink-muted);
+  margin-top: 10px;
+}
+
+/* Sub-library variant of the shelf — same grid, slightly tighter titling. */
+.library-shelf--sub .library-shelf__title {
+  font-style: italic;
+}
+
+/* ─── Book Reader layout ────────────────────────────────────────────────── */
+
+.book-reader {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr) 240px;
+  gap: 0;
+  padding: 0 16px 16px;
+  overflow: hidden;
+}
+
+.book-reader--no-rail {
+  grid-template-columns: 260px minmax(0, 1fr);
+}
+
+/* Collapsed TOC: shrink the first column to just the header/toggle strip. */
+.book-reader--toc-collapsed {
+  grid-template-columns: 36px minmax(0, 1fr) 240px;
+}
+.book-reader--toc-collapsed.book-reader--no-rail {
+  grid-template-columns: 36px minmax(0, 1fr);
+}
+@media (max-width: 1100px) {
+  .book-reader--toc-collapsed {
+    grid-template-columns: 36px minmax(0, 1fr);
+  }
+}
+
+.book-reader__toc {
+  overflow-y: auto;
+  padding: 16px 14px 24px 4px;
+  border-right: 1px solid var(--border-subtle);
+  min-width: 0;
+  transition: padding 0.2s ease;
+}
+
+.book-reader--toc-collapsed .book-reader__toc {
+  padding: 12px 4px 24px 2px;
+  overflow: hidden;
+}
+
+/* Sidebar header — label + collapse button on the right. */
+.book-reader__toc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 4px 10px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.book-reader--toc-collapsed .book-reader__toc-header {
+  justify-content: center;
+  border-bottom: none;
+  padding: 0;
+  margin-bottom: 0;
+}
+
+.book-reader__toc-header-label {
+  font-family: var(--font-serif-display);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.book-reader__toc-collapse {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.book-reader__toc-collapse:hover {
+  color: var(--accent-lore);
+  background: var(--hover);
+  border-color: var(--border-subtle);
+}
+
+.book-reader__stage {
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 12px;
+  display: flex;
+  justify-content: center;
+  /* `flex-start` (not `stretch`): in continuous mode the paper must be free
+   * to grow with content. With `stretch`, the paper was pinned to the
+   * stage's cross-axis height and long body content spilled past the paper
+   * background. Paginated mode is unaffected because it sets an explicit
+   * `height` on `.book-page--paginated`, which overrides stretch anyway. */
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.book-reader__rail {
+  overflow-y: auto;
+  padding: 16px 4px 24px 14px;
+  border-left: 1px solid var(--border-subtle);
+  min-width: 0;
+}
+
+@media (max-width: 1100px) {
+  .book-reader {
+    grid-template-columns: 230px minmax(0, 1fr);
+  }
+  .book-reader__rail {
+    display: none;
+  }
+}
+
+/* ─── Table of Contents ─────────────────────────────────────────────────── */
+
+.book-toc__book-title {
+  font-family: var(--font-serif-display);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0 10px 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 10px;
+}
+
+.book-toc__empty {
+  padding: 12px 10px;
+  font-family: var(--font-serif-body);
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.book-toc__section {
+  margin-bottom: 4px;
+}
+
+.book-toc__chapter {
+  appearance: none;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  color: var(--accent-lore);
+  font-family: var(--font-serif-display);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 600;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+}
+
+.book-toc__chapter:hover {
+  background: var(--hover);
+}
+
+.book-toc__chapter-fleuron {
+  font-size: 11px;
+  opacity: 0.7;
+  transition: transform 0.18s ease;
+  display: inline-block;
+}
+
+.book-toc__chapter--expanded .book-toc__chapter-fleuron {
+  transform: rotate(90deg);
+}
+
+.book-toc__chapter-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.book-toc__chapter--foreword {
+  color: var(--text-secondary);
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+}
+
+.book-toc__chapter--empty {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.book-toc__chapter--empty:hover {
+  background: transparent;
+}
+
+.book-toc__empty-hint {
+  font-size: 10px;
+  font-style: italic;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-muted);
+  opacity: 0.7;
+  margin-left: 4px;
+}
+
+.book-toc__pocket {
+  appearance: none;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px 5px calc(10px + var(--pocket-depth, 1) * 14px);
+  color: var(--text-secondary);
+  font-family: var(--font-serif-body);
+  font-size: 13px;
+  font-style: italic;
+  border-left: 1px solid transparent;
+  border-radius: 0 4px 4px 0;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.book-toc__pocket:hover {
+  background: var(--hover);
+}
+
+.book-toc__pocket--expanded {
+  border-left-color: var(--accent-lore);
+  opacity: 0.95;
+}
+
+.book-toc__pocket-fleuron {
+  font-size: calc(10px - var(--pocket-depth, 1) * 0.5px);
+  opacity: 0.55;
+  transition: transform 0.18s ease;
+  display: inline-block;
+  min-width: 8px;
+}
+
+.book-toc__pocket--expanded .book-toc__pocket-fleuron {
+  transform: rotate(90deg);
+}
+
+.book-toc__pocket-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.book-toc__page {
+  appearance: none;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px 5px calc(10px + var(--page-depth, 0) * 14px);
+  color: var(--text-primary);
+  font-size: 13px;
+  border-left: 2px solid transparent;
+  border-radius: 0 4px 4px 0;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.book-toc__page:hover {
+  background: var(--hover);
+}
+
+.book-toc__page--active {
+  border-left-color: var(--accent-lore);
+  background: var(--active);
+  color: var(--accent-lore);
+  font-weight: 500;
+}
+
+.book-toc__page-icon {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.book-toc__page--active .book-toc__page-icon {
+  opacity: 1;
+}
+
+.book-toc__page-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.book-toc__children {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+/* ─── New-document toast (subtle chip) ──────────────────────────────────── */
+
+.book-reader__new-doc-toast {
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 18px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+  z-index: 4;
+  pointer-events: none;
+  animation: new-doc-toast 2500ms ease-out forwards;
+  max-width: 80%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.book-reader__new-doc-toast-label {
+  font-family: var(--font-serif-display);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent-lore);
+}
+
+.book-reader__new-doc-toast-title {
+  font-family: var(--font-serif-body);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@keyframes new-doc-toast {
+  0%   { opacity: 0; transform: translate(-50%, -6px); }
+  10%  { opacity: 1; transform: translate(-50%, 0); }
+  80%  { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -4px); }
+}
+
+/* ─── BookPage — the paper panel ────────────────────────────────────────── */
+
+.book-page {
+  width: 100%;
+  max-width: 740px;
+  /* Paper height is pinned to a fullscreen-equivalent floor (set once at
+   * module load from window.screen.availHeight — see ReadModeShell.tsx).
+   * This means the paper size comes from the display, not the current
+   * window, so dragging the window smaller does NOT shrink the paper — the
+   * stage simply scrolls. Footer sits at the bottom via `margin-top: auto`
+   * on `.book-page__footer`; the guaranteed floor ensures there's always
+   * remaining vertical space for that auto margin to consume. */
+  min-height: var(--paper-min-h, 800px);
+  flex-shrink: 0;
+  background: var(--paper-bg);
+  color: var(--paper-ink);
+  border-radius: 6px;
+  box-shadow: var(--paper-shadow), var(--paper-edge-shadow);
+  padding: 76px 88px 64px;
+  position: relative;
+  font-family: var(--font-serif-body);
+  font-size: 17px;
+  line-height: 1.7;
+  letter-spacing: 0.002em;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'kern', 'liga', 'onum';
+  animation: book-page-in 220ms ease-out;
+  display: flex;
+  flex-direction: column;
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(0, 0, 0, 0.05), transparent 35%),
+    radial-gradient(circle at 15% 10%, rgba(255, 255, 255, 0.08), transparent 55%),
+    radial-gradient(circle at 85% 90%, rgba(0, 0, 0, 0.04), transparent 60%),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.17 0 0 0 0 0.14 0 0 0 0 0.10 0 0 0 0.05 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-blend-mode: normal;
+}
+
+/* Inset hairline ring — the printed deckle / print-area frame. */
+.book-page::before {
+  content: '';
+  position: absolute;
+  inset: 14px;
+  border: 1px solid var(--paper-deckle);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.book-page > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes book-page-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Paginated mode pins the paper at the fullscreen floor exactly (no growth
+ * with content — content is clipped into columns instead). */
+.book-page--paginated {
+  height: var(--paper-min-h, 800px);
+  min-height: var(--paper-min-h, 800px);
+  overflow: hidden;
+}
+
+/* Continuous mode keeps the floor but lets the paper grow with content. */
+.book-page--continuous {
+  min-height: var(--paper-min-h, 800px);
+}
+
+/* Header/body/footer flex regions so viewport can flex: 1 between them. */
+.book-page__header {
+  flex: 0 0 auto;
+}
+
+.book-page__body {
+  flex: 0 0 auto;
+}
+
+.book-page__footer {
+  flex: 0 0 auto;
+}
+
+/* ─── Layout toggle (upper-right of paper) ──────────────────────────────── */
+
+.book-page__layout-toggle {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--paper-ink-muted);
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+  z-index: 2;
+}
+
+.book-page__layout-toggle:hover {
+  color: var(--accent-lore);
+  background: rgba(0, 0, 0, 0.04);
+  border-color: var(--paper-rule);
+}
+
+:root[data-theme='dark'] .book-page__layout-toggle:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.book-page__layout-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ─── Paginated viewport & columns ──────────────────────────────────────── */
+
+.book-page__viewport {
+  /* Fills the vertical gap between header and footer. Clips columns so only
+   * the active sub-page is visible; horizontal translate on the columns
+   * child animates between sub-pages. */
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.book-page__columns {
+  /* CSS columns pagination: each column = one sub-page width (set inline
+   * from the measured viewport clientWidth). column-fill: auto packs
+   * columns one at a time rather than balancing heights. */
+  height: 100%;
+  column-fill: auto;
+  column-gap: 0;
+  transition: transform 280ms ease;
+  will-change: transform;
+}
+
+/* Drop cap only on the first column (first sub-page). */
+.book-page--paginated .book-page__columns .tiptap-editor .ProseMirror > p:first-of-type::first-letter {
+  font-family: var(--font-serif-display);
+  float: left;
+  font-size: 4.2em;
+  line-height: 0.82;
+  padding: 8px 12px 0 2px;
+  color: var(--accent-lore);
+  font-weight: 600;
+}
+
+/* Reuse the body prose styles for the columnar TipTap. */
+.book-page__columns .tiptap-editor .ProseMirror {
+  color: var(--paper-ink);
+  font-family: var(--font-serif-body);
+  font-size: 17px;
+  line-height: 1.7;
+  outline: none;
+}
+
+.book-page__columns .tiptap-editor .ProseMirror p {
+  margin: 0;
+  text-align: justify;
+  hyphens: auto;
+  /* Allow line-breaks across columns but not mid-element orphan. */
+  break-inside: auto;
+}
+
+.book-page__columns .tiptap-editor .ProseMirror p + p {
+  text-indent: 1.6em;
+}
+
+.book-page__columns .tiptap-editor .ProseMirror h1,
+.book-page__columns .tiptap-editor .ProseMirror h2,
+.book-page__columns .tiptap-editor .ProseMirror h3 {
+  font-family: var(--font-serif-display);
+  color: var(--paper-ink);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  margin: 1.4em 0 0.4em;
+  text-align: left;
+  /* Keep headings from splitting mid-column. */
+  break-inside: avoid;
+}
+
+.book-page__columns .tiptap-editor .ProseMirror h1 { font-size: 1.6em; }
+.book-page__columns .tiptap-editor .ProseMirror h2 { font-size: 1.3em; }
+.book-page__columns .tiptap-editor .ProseMirror h3 { font-size: 1.1em; }
+
+.book-page__columns .tiptap-editor .ProseMirror blockquote {
+  border-left: 3px solid var(--accent-lore);
+  margin: 1.2em 0;
+  padding: 0.2em 0 0.2em 1.2em;
+  color: var(--paper-ink-muted);
+  font-style: italic;
+  break-inside: avoid;
+}
+
+.book-page__columns .tiptap-editor .ProseMirror ul,
+.book-page__columns .tiptap-editor .ProseMirror ol {
+  padding-left: 1.4em;
+  margin: 0 0 1em;
+}
+
+.book-page__columns .tiptap-editor .ProseMirror hr {
+  border: none;
+  text-align: center;
+  margin: 1.6em 0;
+  color: var(--accent-lore);
+  opacity: 0.75;
+  height: 1em;
+  break-inside: avoid;
+}
+
+.book-page__columns .tiptap-editor .ProseMirror hr::before {
+  content: '\2766';
+  font-size: 16px;
+  letter-spacing: 0.5em;
+}
+
+.book-page__columns .tiptap-editor .ProseMirror a,
+.book-page__columns .tiptap-editor .ProseMirror .inline-link {
+  color: var(--accent-lore);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--accent-lore);
+}
+
+:root[data-theme='dark'] .book-page {
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(0, 0, 0, 0.25), transparent 35%),
+    radial-gradient(circle at 15% 10%, rgba(255, 255, 255, 0.03), transparent 55%),
+    radial-gradient(circle at 85% 90%, rgba(0, 0, 0, 0.2), transparent 60%),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.9 0 0 0 0 0.85 0 0 0 0 0.75 0 0 0 0.045 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+.book-page__eyebrow {
+  font-family: var(--font-serif-display);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--paper-ink-muted);
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.book-page__rule {
+  width: 64px;
+  height: 1px;
+  background: var(--accent-lore);
+  margin: 0 auto 14px;
+  opacity: 0.6;
+}
+
+.book-page__title {
+  font-family: var(--font-serif-display);
+  font-size: 36px;
+  font-weight: 500;
+  color: var(--paper-ink);
+  text-align: center;
+  line-height: 1.1;
+  letter-spacing: -0.005em;
+  margin: 0 0 6px;
+  word-wrap: break-word;
+}
+
+.book-page__fleuron {
+  text-align: center;
+  color: var(--accent-lore);
+  font-size: 16px;
+  margin: 10px 0 38px;
+  opacity: 0.7;
+  letter-spacing: 0.5em;
+}
+
+/* TipTap content inside the page. Scoped overrides so paper tone wins. */
+.book-page__body .tiptap-editor .ProseMirror {
+  color: var(--paper-ink);
+  font-family: var(--font-serif-body);
+  font-size: 17px;
+  line-height: 1.7;
+  outline: none;
+}
+
+/* Classic book rhythm: zero margin between paragraphs, first-line indent on
+ * every paragraph after the first. The first paragraph (with the drop cap)
+ * sits flush. */
+.book-page__body .tiptap-editor .ProseMirror p {
+  margin: 0;
+  text-align: justify;
+  hyphens: auto;
+}
+
+.book-page__body .tiptap-editor .ProseMirror p + p {
+  text-indent: 1.6em;
+}
+
+.book-page__body .tiptap-editor .ProseMirror h1,
+.book-page__body .tiptap-editor .ProseMirror h2,
+.book-page__body .tiptap-editor .ProseMirror h3 {
+  font-family: var(--font-serif-display);
+  color: var(--paper-ink);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  margin: 1.4em 0 0.4em;
+  text-align: left;
+}
+
+.book-page__body .tiptap-editor .ProseMirror h1 { font-size: 1.6em; }
+.book-page__body .tiptap-editor .ProseMirror h2 { font-size: 1.3em; }
+.book-page__body .tiptap-editor .ProseMirror h3 { font-size: 1.1em; }
+
+.book-page__body .tiptap-editor .ProseMirror blockquote {
+  border-left: 3px solid var(--accent-lore);
+  margin: 1.2em 0;
+  padding: 0.2em 0 0.2em 1.2em;
+  color: var(--paper-ink-muted);
+  font-style: italic;
+}
+
+.book-page__body .tiptap-editor .ProseMirror ul,
+.book-page__body .tiptap-editor .ProseMirror ol {
+  padding-left: 1.4em;
+  margin: 0 0 1em;
+}
+
+.book-page__body .tiptap-editor .ProseMirror hr {
+  border: none;
+  text-align: center;
+  margin: 1.6em 0;
+  color: var(--accent-lore);
+  opacity: 0.75;
+  height: 1em;
+}
+
+.book-page__body .tiptap-editor .ProseMirror hr::before {
+  content: '\2766';
+  font-size: 16px;
+  letter-spacing: 0.5em;
+}
+
+.book-page__body .tiptap-editor .ProseMirror a,
+.book-page__body .tiptap-editor .ProseMirror .inline-link {
+  color: var(--accent-lore);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--accent-lore);
+  transition: border-bottom-style 0.15s ease;
+}
+
+.book-page__body .tiptap-editor .ProseMirror a:hover,
+.book-page__body .tiptap-editor .ProseMirror .inline-link:hover {
+  border-bottom-style: solid;
+}
+
+/* Drop cap on the first paragraph only. */
+.book-page__body .tiptap-editor .ProseMirror > p:first-of-type::first-letter {
+  font-family: var(--font-serif-display);
+  float: left;
+  font-size: 4.2em;
+  line-height: 0.82;
+  padding: 8px 12px 0 2px;
+  color: var(--accent-lore);
+  font-weight: 600;
+}
+
+.book-page__footer {
+  /* `margin-top: auto` pins the footer to the bottom of the paper: short
+   * documents get their prev/next at the bottom of the visible page instead
+   * of hanging right under the title. */
+  margin-top: auto;
+  padding-top: 18px;
+  border-top: 1px solid var(--paper-rule);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-serif-body);
+  font-size: 10px;
+  color: var(--paper-ink-muted);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  position: relative;
+}
+
+/* Centered fleuron sitting on the hairline — gives the rule a "real page
+ * footer" terminus instead of just a thin line. */
+.book-page__footer::before {
+  content: '·';
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--paper-bg);
+  color: var(--paper-ink-muted);
+  padding: 0 10px;
+  font-size: 14px;
+  line-height: 1;
+  opacity: 0.55;
+  letter-spacing: 0;
+}
+
+.book-page__footer-nav {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--paper-ink-muted);
+  cursor: pointer;
+  font-family: var(--font-serif-body);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  padding: 4px 2px;
+  border-radius: 0;
+  border-bottom: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.book-page__footer-nav svg {
+  width: 10px;
+  height: 8px;
+  flex-shrink: 0;
+}
+
+.book-page__footer-nav:hover:not(:disabled) {
+  color: var(--accent-lore);
+  border-bottom-color: var(--paper-rule);
+}
+
+.book-page__footer-nav:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.book-page__footer-number {
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0.1em;
+  opacity: 0.75;
+  font-feature-settings: 'onum';
+}
+
+/* Narrow viewport: shrink page padding so content doesn't look cramped
+ * inside a paper that's narrower than its own horizontal margins. The paper
+ * itself still fills the stage — this is about preserving legible reading
+ * width within it, not shrinking the paper. */
+@media (max-width: 720px) {
+  .book-page {
+    padding: 44px 32px 36px;
+  }
+}
+
+/* ─── Empty / error states inside the reader ────────────────────────────── */
+
+.book-page--empty {
+  /* Inherits `min-height: var(--paper-min-h)` from `.book-page` so the empty
+   * state fills the same fullscreen-equivalent floor as populated pages. */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 14px;
+}
+
+.book-page--empty .book-page__fleuron {
+  margin: 0 0 6px;
+}
+
+.book-page--empty-title {
+  font-family: var(--font-serif-display);
+  font-size: 22px;
+  color: var(--paper-ink);
+  font-style: italic;
+}
+
+.book-page--empty-body {
+  font-family: var(--font-serif-body);
+  font-size: 14px;
+  color: var(--paper-ink-muted);
+  line-height: 1.5;
+  max-width: 320px;
+}
+
+/* Inline references fallback when the rail is hidden. */
+.book-page__inline-refs {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--paper-rule);
+}
+
+.book-page__inline-refs-title {
+  font-family: var(--font-serif-display);
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent-lore);
+  margin: 0 0 14px;
+  text-align: center;
+}
+
+/* ─── References rail (right side) ─────────────────────────────────────── */
+
+.book-refs {
+  font-family: var(--font-serif-body);
+}
+
+.book-refs__title {
+  font-family: var(--font-serif-display);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 0 0 12px;
+  padding: 0 8px 8px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.book-refs__section {
+  margin-bottom: 18px;
+}
+
+.book-refs__section-title {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0 0 6px;
+  padding: 0 8px;
+}
+
+.book-refs__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 13px;
+  transition: background 0.15s ease;
+}
+
+.book-refs__item:hover {
+  background: var(--hover);
+}
+
+.book-refs__badge {
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.book-refs__badge[data-type='character'] { color: var(--accent-characters); }
+.book-refs__badge[data-type='map_entity'] { color: var(--accent-atlas); }
+.book-refs__badge[data-type='lore_document'] { color: var(--accent-lore); }
+
+.book-refs__item-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-serif-body);
+}
+
+.book-refs__empty {
+  padding: 12px 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ─── Cross-doc confirm popup ──────────────────────────────────────────── */
+
+.book-reader__cross-doc-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 14, 8, 0.28);
+  backdrop-filter: blur(2px);
+  z-index: 40;
+  animation: cross-doc-fade-in 180ms ease-out;
+}
+
+:root[data-theme='dark'] .book-reader__cross-doc-backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.book-reader__cross-doc-popup {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 41;
+  width: min(380px, calc(100% - 48px));
+  background: var(--paper-bg);
+  color: var(--paper-ink);
+  border-radius: 10px;
+  box-shadow: 0 22px 48px -16px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.12);
+  padding: 22px 24px 20px;
+  font-family: var(--font-serif-body);
+  animation: cross-doc-pop-in 220ms cubic-bezier(0.22, 0.9, 0.36, 1);
+  border: 1px solid var(--paper-rule);
+}
+
+@keyframes cross-doc-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes cross-doc-pop-in {
+  from { opacity: 0; transform: translate(-50%, calc(-50% + 6px)); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+.book-reader__cross-doc-eyebrow {
+  font-family: var(--font-serif-display);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--accent-lore);
+  margin-bottom: 8px;
+}
+
+.book-reader__cross-doc-title {
+  font-family: var(--font-serif-display);
+  font-size: 17px;
+  line-height: 1.35;
+  color: var(--paper-ink);
+  margin-bottom: 6px;
+}
+
+.book-reader__cross-doc-target {
+  font-size: 14px;
+  font-style: italic;
+  color: var(--paper-ink-muted);
+  margin-bottom: 18px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.book-reader__cross-doc-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.book-reader__cross-doc-btn {
+  appearance: none;
+  border: 1px solid var(--paper-rule);
+  background: transparent;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-family: var(--font-serif-body);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: var(--paper-ink);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.book-reader__cross-doc-btn--ghost:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+:root[data-theme='dark'] .book-reader__cross-doc-btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.book-reader__cross-doc-btn--primary {
+  background: var(--accent-lore);
+  border-color: var(--accent-lore);
+  color: #1a1207;
+  font-weight: 500;
+}
+
+.book-reader__cross-doc-btn--primary:hover {
+  filter: brightness(1.06);
+}

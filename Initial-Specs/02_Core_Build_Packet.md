@@ -1,5 +1,7 @@
 # Packet 2 — Core Build Packet
 
+> **Status:** Built (V1). Stack, two-database architecture, soft-delete, asset BLOB pipeline, and migration system all implemented per spec. Last verified 2026-04-26.
+
 ## 1. Purpose of this packet
 This packet defines the shared implementation foundation for Wormhole V1:
 - stack

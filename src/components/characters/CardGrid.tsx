@@ -245,6 +245,7 @@ export function CardGrid({ blocks, characterId, editMode, onRefresh, presetDragR
     const rawType = e.dataTransfer.getData('text/block-type');
     const blockType: 'label' | 'text' | 'standard' =
       rawType === 'label' || rawType === 'text' ? rawType : 'standard';
+    const presetUnique = e.dataTransfer.getData('text/block-unique') === '1';
     try {
       if (positionUpdates.length > 0) {
         await commands.batchUpdateBlockPositions(positionUpdates);
@@ -257,6 +258,7 @@ export function CardGrid({ blocks, characterId, editMode, onRefresh, presetDragR
         colSpan: info.cols,
         rowSpan: info.rows,
         blockType,
+        presetUnique,
       });
       onRefresh();
     } catch (err) {

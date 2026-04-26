@@ -59,6 +59,7 @@ export function CharacterDetails({ characterId, tabBarSlot }: CharacterDetailsPr
 
   const handleSectionUpdate = useCallback(async (sectionId: string, updates: {
     title?: string;
+    layoutType?: string;
     content?: string;
     structuredContentJson?: string;
   }) => {

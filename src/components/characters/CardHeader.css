@@ -10,19 +10,22 @@
 
 /* Name */
 .card-header__name {
-  font-size: 24px;
-  font-weight: 700;
+  font-family: var(--char-font-heading);
+  font-size: var(--char-size-heading);
+  font-weight: 600;
   color: var(--accent-characters);
   margin: 0;
   padding: 6px 12px;
-  background: rgba(167, 139, 250, 0.1);
+  background: rgba(var(--accent-characters-rgb), 0.1);
   border-radius: 6px;
-  line-height: 1.3;
+  line-height: 1.15;
+  letter-spacing: 0.005em;
 }
 
 .card-header__name-input {
-  font-size: 24px;
-  font-weight: 700;
+  font-family: var(--char-font-heading);
+  font-size: var(--char-size-heading);
+  font-weight: 600;
   color: var(--accent-characters);
   background: var(--bg-primary);
   border: 2px solid var(--accent-characters);
@@ -30,6 +33,7 @@
   padding: 4px 10px;
   outline: none;
   width: 100%;
+  letter-spacing: 0.005em;
 }
 
 /* Ribbon */

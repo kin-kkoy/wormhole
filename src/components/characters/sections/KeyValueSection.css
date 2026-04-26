@@ -1,6 +1,7 @@
 .kv-section__empty {
   color: var(--text-muted);
-  font-size: 13px;
+  font-family: var(--char-font-prose);
+  font-size: var(--char-size-body);
   font-style: italic;
 }
 
@@ -18,10 +19,44 @@
   border-radius: 6px;
   background: var(--bg-tertiary);
   border: 1px solid var(--border-subtle);
+  transition: border-color 0.15s, box-shadow 0.15s, opacity 0.15s;
+}
+
+.kv-section__row[draggable="true"] {
+  cursor: grab;
+}
+
+.kv-section__row[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.kv-section__row--drag-over {
+  border-color: var(--accent-characters);
+  box-shadow: 0 0 0 2px var(--accent-characters);
+}
+
+.kv-section__row--dragging {
+  opacity: 0.4;
+}
+
+.kv-section__drag-handle {
+  color: var(--text-muted);
+  font-size: 11px;
+  letter-spacing: -2px;
+  line-height: 1;
+  opacity: 0.4;
+  flex-shrink: 0;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.kv-section__row:hover .kv-section__drag-handle {
+  opacity: 1;
+  color: var(--accent-characters);
 }
 
 .kv-section__label {
-  font-size: 13px;
+  font-family: var(--char-font-key);
+  font-size: var(--char-size-body);
   font-weight: 500;
   color: var(--text-muted);
   min-width: 80px;
@@ -33,7 +68,8 @@
 }
 
 .kv-section__value {
-  font-size: 13px;
+  font-family: var(--char-font-value);
+  font-size: var(--char-size-value);
   color: var(--text-primary);
   flex: 1;
 }

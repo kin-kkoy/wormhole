@@ -196,6 +196,7 @@ export function CardBlock({
             onUpdate={handleContentUpdate}
             editable={editMode}
             placeholder="Write content..."
+            linkSource={{ type: 'character', id: block.character_id }}
           />
         </div>
       )}

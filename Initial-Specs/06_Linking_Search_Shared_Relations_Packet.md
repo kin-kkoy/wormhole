@@ -1,5 +1,7 @@
 # Packet 6 — Linking, Search, and Shared Relations Packet
 
+> **Status:** Built (V1). Inline `[[`-trigger autocomplete, cross-system entity links rendered as colored spans, broken-link resolver via `useBrokenLinkResolver`, scoped global search (Overview + Atlas), peek panel, soft-delete with link invalidation. Last verified 2026-04-26.
+
 ## 1. Purpose of this packet
 This packet defines the shared connective tissue across Wormhole:
 - cross-system links
