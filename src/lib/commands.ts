@@ -61,15 +61,6 @@ export interface WorldOverviewData {
 
 // ─── Graph types ──────────────────────────────────────────────────────────────
 
-export interface EntityLinkData {
-  id: string;
-  source_type: string;
-  source_id: string;
-  target_type: string;
-  target_id: string;
-  link_type: string;
-}
-
 export interface SharedNodeData {
   id: string;
   name: string;

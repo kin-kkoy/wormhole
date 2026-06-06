@@ -7,16 +7,6 @@ use tauri::State;
 
 // ─── Data types ───────────────────────────────────────────────────────────────
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct EntityLinkData {
-    pub id: String,
-    pub source_type: String,
-    pub source_id: String,
-    pub target_type: String,
-    pub target_id: String,
-    pub link_type: String,
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SharedNodeData {
     pub id: String,
