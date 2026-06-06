@@ -16,6 +16,7 @@
     "@tauri-apps/plugin-store": "^2.4.2",
     "@tiptap/extension-font-family": "^3.22.4",
     "@tiptap/extension-placeholder": "^3.22.3",
+    "@tiptap/extension-text-align": "^3.22.4",
     "@tiptap/extension-text-style": "^3.22.4",
     "@tiptap/pm": "^3.22.3",
     "@tiptap/react": "^3.22.3",

@@ -5,8 +5,10 @@ import { GlobalSearchBar } from './GlobalSearchBar';
 import './TopDock.css';
 
 // Tabs that support edit mode in overview
-const EDITABLE_OVERVIEW_TABS = new Set(['atlas', 'characters']);
+const EDITABLE_OVERVIEW_TABS = new Set(['characters']);
 
+// The Atlas Canvas tab stays visible but renders an "In Development"
+// placeholder — the system is detached for redesign.
 const TABS: { id: TabId; label: string; accent: string }[] = [
   { id: 'overview', label: 'Overview', accent: 'var(--accent-overview)' },
   { id: 'atlas', label: 'Atlas Canvas', accent: 'var(--accent-atlas)' },
@@ -31,10 +33,10 @@ export function TopDock({ onBack }: TopDockProps) {
     (activeTab === 'overview' && EDITABLE_OVERVIEW_TABS.has(overviewTab)) ||
     activeTab === 'characters';
 
-  // Global search is only meaningful on Overview and Atlas Canvas.
-  // Character Codex has its own in-list search, and Lore Archive has a
-  // scoped folder-tree search — no need for a duplicate global bar there.
-  const searchAllowed = activeTab === 'overview' || activeTab === 'atlas';
+  // Global search is only meaningful on Overview. Character Codex has its
+  // own in-list search, and Lore Archive has a scoped folder-tree search —
+  // no need for a duplicate global bar there.
+  const searchAllowed = activeTab === 'overview';
 
   // Close the overlay if the user switches to a tab that shouldn't host it.
   useEffect(() => {

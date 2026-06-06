@@ -54,7 +54,6 @@ export function LinkedRecordsPanel({ documentId, onRefresh, refreshToken }: Link
   }
 
   const characterLinks = links.filter((l) => l.entity_type === 'character');
-  const locationLinks = links.filter((l) => l.entity_type === 'map_entity');
   const documentLinks = links.filter((l) => l.entity_type === 'lore_document');
 
   return (
@@ -113,14 +112,6 @@ export function LinkedRecordsPanel({ documentId, onRefresh, refreshToken }: Link
                   ))}
                 </div>
               )}
-              {locationLinks.length > 0 && (
-                <div className="linked-records__section">
-                  <div className="linked-records__section-title">Locations</div>
-                  {locationLinks.map((link) => (
-                    <LinkItem key={link.link_id} link={link} onRemove={handleRemoveLink} />
-                  ))}
-                </div>
-              )}
               {documentLinks.length > 0 && (
                 <div className="linked-records__section">
                   <div className="linked-records__section-title">Documents</div>
@@ -154,12 +145,7 @@ function LinkItem({
   link: LinkedRecordDisplay;
   onRemove: (linkId: string) => void;
 }) {
-  const badgeLabel =
-    link.entity_type === 'character'
-      ? 'CHR'
-      : link.entity_type === 'map_entity'
-        ? 'LOC'
-        : 'DOC';
+  const badgeLabel = link.entity_type === 'character' ? 'CHR' : 'DOC';
 
   const linkTypeLabel = link.link_type === 'next_page' ? 'Next Page' : link.link_type;
 

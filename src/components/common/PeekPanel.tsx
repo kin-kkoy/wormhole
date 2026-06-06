@@ -4,7 +4,6 @@ import type {
   CharacterFull,
   LinkedRecordDisplay,
   LoreDocumentFull,
-  MapEntityFull,
 } from '../../lib/commands';
 import { useAppStore, type PeekTarget } from '../../state/store';
 import { TipTapEditor } from '../editor/TipTapEditor';
@@ -13,7 +12,6 @@ import './PeekPanel.css';
 
 const ENTITY_LABEL: Record<PeekTarget['entityType'], string> = {
   character: 'Character',
-  map_entity: 'Location',
   lore_document: 'Lore Document',
 };
 
@@ -88,9 +86,6 @@ export function PeekPanel() {
         )}
         {peekTarget.entityType === 'lore_document' && (
           <PeekLore documentId={peekTarget.entityId} />
-        )}
-        {peekTarget.entityType === 'map_entity' && (
-          <PeekMapEntity entityId={peekTarget.entityId} />
         )}
       </div>
     </aside>
@@ -274,80 +269,14 @@ function PeekLore({ documentId }: { documentId: string }) {
   );
 }
 
-// ─── Map entity ──────────────────────────────────────────────────────────────
-
-function PeekMapEntity({ entityId }: { entityId: string }) {
-  const [entity, setEntity] = useState<MapEntityFull | null>(null);
-  const [links, setLinks] = useState<LinkedRecordDisplay[]>([]);
-  const [missing, setMissing] = useState(false);
-  const { getImageUrl, loadImages } = useImageCache();
-
-  useEffect(() => {
-    let cancelled = false;
-    setEntity(null);
-    setLinks([]);
-    setMissing(false);
-    (async () => {
-      try {
-        const [ent, ls] = await Promise.all([
-          commands.getMapEntity(entityId),
-          commands.listEntityLinks('map_entity', entityId),
-        ]);
-        if (cancelled) return;
-        setEntity(ent);
-        setLinks(ls);
-        if (ent.image_asset_id) loadImages([ent.image_asset_id]);
-      } catch {
-        if (!cancelled) setMissing(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [entityId, loadImages]);
-
-  if (missing) return <PeekUnavailable />;
-  if (!entity) return <PeekLoading />;
-
-  const imageUrl = getImageUrl(entity.image_asset_id);
-  const tags = (entity.tags_text ?? '')
-    .split(',')
-    .map((t) => t.trim())
-    .filter(Boolean);
-
-  return (
-    <div className="peek-map-entity">
-      <h2 className="peek-map-entity__title">{entity.title}</h2>
-      <div className="peek-map-entity__type">{entity.entity_type}</div>
-      {imageUrl && (
-        <div className="peek-map-entity__image">
-          <img src={imageUrl} alt={entity.title} />
-        </div>
-      )}
-      {tags.length > 0 && (
-        <div className="peek-map-entity__tags">
-          {tags.map((t) => (
-            <span key={t} className="peek-map-entity__tag">
-              {t}
-            </span>
-          ))}
-        </div>
-      )}
-      <TipTapEditor
-        content={entity.description ?? ''}
-        editable={false}
-        onUpdate={() => {}}
-        className="peek-map-entity__desc"
-      />
-      <PeekLinkedSummary links={links} />
-    </div>
-  );
-}
-
 // ─── Shared ──────────────────────────────────────────────────────────────────
 
-function PeekLinkedSummary({ links }: { links: LinkedRecordDisplay[] }) {
+function PeekLinkedSummary({ links: allLinks }: { links: LinkedRecordDisplay[] }) {
   const setPeekTarget = useAppStore((s) => s.setPeekTarget);
+  // Only peekable record types (defensive against stale link rows).
+  const links = allLinks.filter(
+    (l) => l.entity_type === 'character' || l.entity_type === 'lore_document',
+  );
   if (links.length === 0) return null;
 
   return (

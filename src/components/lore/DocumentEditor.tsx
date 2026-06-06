@@ -1,6 +1,8 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
+import FontFamily from '@tiptap/extension-font-family';
+import TextAlign from '@tiptap/extension-text-align';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import type { LoreDocumentFull, LinkableRecord } from '../../lib/commands';
 import { commands } from '../../lib/commands';
@@ -9,12 +11,23 @@ import {
   detectBracketTrigger,
   insertInlineLink,
 } from '../editor/InlineLinkExtension';
+import { TextStyleWithFontSize } from '../editor/TextStyleWithFontSize';
+import { EditorBubbleMenu } from '../editor/EditorBubbleMenu';
 import { NextPagePicker } from './NextPagePicker';
+import {
+  DocFontControls,
+  parseLoreOverrides,
+  loreOverridesToStyle,
+  type LoreOverrides,
+} from './DocumentTypographyPanel';
+import type { LoreTypographySettings } from '../../hooks/useLoreTypography';
 import './DocumentEditor.css';
 
 interface DocumentEditorProps {
   document: LoreDocumentFull;
   onDocumentUpdated: () => void;
+  /** World-level lore typography defaults (for the per-doc override bar). */
+  worldLoreSettings: LoreTypographySettings;
   /** Incremented whenever an external surface (LinkedRecordsPanel) mutates
    *  an entity link for this doc, so the NextPagePicker can re-read. */
   linkRefreshToken?: number;
@@ -38,10 +51,18 @@ const INITIAL_AUTOCOMPLETE: AutocompleteState = {
   startPos: 0,
 };
 
-export function DocumentEditor({ document, onDocumentUpdated, linkRefreshToken }: DocumentEditorProps) {
+export function DocumentEditor({
+  document,
+  onDocumentUpdated,
+  worldLoreSettings,
+  linkRefreshToken,
+}: DocumentEditorProps) {
   const [title, setTitle] = useState(document.title);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [autocomplete, setAutocomplete] = useState<AutocompleteState>(INITIAL_AUTOCOMPLETE);
+  const [overrides, setOverrides] = useState<LoreOverrides>(() =>
+    parseLoreOverrides(document.typography_overrides_json),
+  );
 
   const docIdRef = useRef(document.id);
   const pendingContentRef = useRef<string | null>(null);
@@ -110,6 +131,10 @@ export function DocumentEditor({ document, onDocumentUpdated, linkRefreshToken }
       StarterKit,
       Placeholder.configure({ placeholder: 'Start writing...' }),
       InlineLinkNode,
+      TextStyleWithFontSize,
+      FontFamily.configure({ types: ['textStyle'] }),
+      // Underline + strike come from StarterKit; only TextAlign needs adding.
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
     ],
     content: parseContent(document.content),
     editable: true,
@@ -180,6 +205,7 @@ export function DocumentEditor({ document, onDocumentUpdated, linkRefreshToken }
 
     docIdRef.current = document.id;
     setTitle(document.title);
+    setOverrides(parseLoreOverrides(document.typography_overrides_json));
     pendingContentRef.current = null;
     hideAutocomplete();
 
@@ -246,6 +272,16 @@ export function DocumentEditor({ document, onDocumentUpdated, linkRefreshToken }
     if (pendingContentRef.current !== null) {
       handleSave();
     }
+  }
+
+  function persistOverrides(next: LoreOverrides) {
+    setOverrides(next);
+    const json = Object.keys(next).length ? JSON.stringify(next) : null;
+    commands.updateDocumentTypography(document.id, json).catch(console.error);
+  }
+  function clearOverrides() {
+    setOverrides({});
+    commands.updateDocumentTypography(document.id, null).catch(console.error);
   }
 
   async function handleTitleBlur() {
@@ -373,6 +409,13 @@ export function DocumentEditor({ document, onDocumentUpdated, linkRefreshToken }
             </svg>
           </button>
           <span className="doc-editor__toolbar-sep" />
+          <DocFontControls
+            overrides={overrides}
+            worldSettings={worldLoreSettings}
+            onChange={persistOverrides}
+            onClear={clearOverrides}
+          />
+          <span className="doc-editor__toolbar-sep" />
           <NextPagePicker
             documentId={document.id}
             onChanged={onDocumentUpdated}
@@ -389,9 +432,14 @@ export function DocumentEditor({ document, onDocumentUpdated, linkRefreshToken }
         </div>
       </div>
 
-      <div className="doc-editor__content" onBlur={handleEditorBlur}>
+      <div
+        className="doc-editor__content doc-editor__doc"
+        style={loreOverridesToStyle(overrides)}
+        onBlur={handleEditorBlur}
+      >
         <EditorContent editor={editor} />
       </div>
+      <EditorBubbleMenu editor={editor} />
 
       {/* Autocomplete dropdown */}
       {autocomplete.visible && autocomplete.results.length > 0 && (
@@ -419,11 +467,7 @@ export function DocumentEditor({ document, onDocumentUpdated, linkRefreshToken }
                 className="doc-editor__autocomplete-badge"
                 data-type={record.entity_type}
               >
-                {record.entity_type === 'character'
-                  ? 'CHR'
-                  : record.entity_type === 'map_entity'
-                    ? 'LOC'
-                    : 'DOC'}
+                {record.entity_type === 'character' ? 'CHR' : 'DOC'}
               </span>
               <span className="doc-editor__autocomplete-name">{record.name}</span>
             </button>

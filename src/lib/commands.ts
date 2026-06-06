@@ -12,17 +12,6 @@ function withLinkInvalidation<T>(p: Promise<T>): Promise<T> {
   });
 }
 
-function uint8ToBase64(bytes: Uint8Array): string {
-  // Chunked conversion to avoid call-stack overflow on large arrays.
-  let binary = '';
-  const chunkSize = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    const chunk = bytes.subarray(i, i + chunkSize);
-    binary += String.fromCharCode.apply(null, Array.from(chunk));
-  }
-  return btoa(binary);
-}
-
 export interface AppConfig {
   storage_folder: string | null;
 }
@@ -67,20 +56,10 @@ export interface SystemOverview {
 
 export interface WorldOverviewData {
   characters: SystemOverview;
-  atlas: SystemOverview;
   lore: SystemOverview;
 }
 
 // ─── Graph types ──────────────────────────────────────────────────────────────
-
-export interface AtlasNodeData {
-  id: string;
-  title: string;
-  entity_type: string;
-  parent_map_entity_id: string | null;
-  image_asset_id: string | null;
-  tags_text: string | null;
-}
 
 export interface EntityLinkData {
   id: string;
@@ -103,12 +82,6 @@ export interface SharedNodeData {
   member_ids: string[];
 }
 
-export interface AtlasGraphData {
-  entities: AtlasNodeData[];
-  links: EntityLinkData[];
-  shared_nodes: SharedNodeData[];
-}
-
 export interface CharacterNodeData {
   id: string;
   name: string;
@@ -116,16 +89,8 @@ export interface CharacterNodeData {
   tags_text: string | null;
 }
 
-export interface CharacterLocationLink {
-  character_id: string;
-  map_entity_id: string;
-  map_entity_title: string;
-  link_type: string;
-}
-
 export interface CharactersGraphData {
   characters: CharacterNodeData[];
-  location_links: CharacterLocationLink[];
   shared_nodes: SharedNodeData[];
 }
 
@@ -251,42 +216,11 @@ export interface LoreDocumentFull {
   folder_id: string | null;
   title: string;
   content: string;
+  /** Packet 10 §4.3 — per-doc typography overrides JSON, or null to inherit. */
+  typography_overrides_json: string | null;
   created_at: string;
   updated_at: string;
 }
-
-// ─── Atlas types (Stage 5) ───────────────────────────────────────────────────
-
-export interface MapEntityFull {
-  id: string;
-  world_id: string;
-  parent_map_entity_id: string | null;
-  entity_type: string;
-  title: string;
-  description: string | null;
-  x: number;
-  y: number;
-  width: number | null;
-  height: number | null;
-  style_token: string | null;
-  tags_text: string | null;
-  image_asset_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface PaintLayerData {
-  data_base64: string | null;
-  mime_type: string;
-  updated_at: string | null;
-}
-
-export type MapEntityType =
-  | 'region'
-  | 'settlement'
-  | 'landmark'
-  | 'district'
-  | 'infrastructure';
 
 // ─── Entity Link types ──────────────────────────────────────────────────────
 
@@ -334,7 +268,7 @@ export interface NextPageLink {
 
 // ─── Search & Recycle Bin ─────────────────────────────────────────────────────
 
-export type SearchRecordType = 'character' | 'map_entity' | 'lore_document';
+export type SearchRecordType = 'character' | 'lore_document';
 
 export interface SearchResult {
   record_type: SearchRecordType;
@@ -346,12 +280,6 @@ export interface SearchResult {
 export interface DeletedCharacter {
   id: string;
   name: string;
-  deleted_at: string;
-}
-
-export interface DeletedMapEntity {
-  id: string;
-  title: string;
   deleted_at: string;
 }
 
@@ -419,9 +347,6 @@ export const commands = {
     invoke<WorldOverviewData>('get_world_overview'),
 
   // Graph data
-  getAtlasGraphData: () =>
-    invoke<AtlasGraphData>('get_atlas_graph_data'),
-
   getCharactersGraphData: () =>
     invoke<CharactersGraphData>('get_characters_graph_data'),
 
@@ -683,6 +608,10 @@ export const commands = {
       folderId: params.folderId ?? null,
     }),
 
+  /** Set or clear (null) a document's per-doc typography overrides. */
+  updateDocumentTypography: (documentId: string, overridesJson: string | null) =>
+    invoke<LoreDocumentFull>('update_document_typography', { documentId, overridesJson }),
+
   deleteLoreDocument: (documentId: string) =>
     withLinkInvalidation(invoke<void>('delete_lore_document', { documentId })),
 
@@ -738,89 +667,6 @@ export const commands = {
   listNextPageLinks: () =>
     invoke<NextPageLink[]>('list_next_page_links'),
 
-  // ─── Atlas Canvas (Stage 5) ────────────────────────────────────────────────
-
-  listMapEntities: () =>
-    invoke<MapEntityFull[]>('list_map_entities'),
-
-  getMapEntity: (entityId: string) =>
-    invoke<MapEntityFull>('get_map_entity', { entityId }),
-
-  createMapEntity: (params: {
-    entityType: MapEntityType;
-    title: string;
-    x: number;
-    y: number;
-    parentMapEntityId?: string;
-    description?: string;
-    tagsText?: string;
-    imageAssetId?: string;
-  }) =>
-    invoke<MapEntityFull>('create_map_entity', {
-      entityType: params.entityType,
-      title: params.title,
-      x: params.x,
-      y: params.y,
-      parentMapEntityId: params.parentMapEntityId ?? null,
-      description: params.description ?? null,
-      tagsText: params.tagsText ?? null,
-      imageAssetId: params.imageAssetId ?? null,
-    }),
-
-  updateMapEntity: (params: {
-    entityId: string;
-    title?: string;
-    entityType?: MapEntityType;
-    description?: string;
-    parentMapEntityId?: string;
-    clearParent?: boolean;
-    x?: number;
-    y?: number;
-    tagsText?: string;
-    imageAssetId?: string;
-    clearImage?: boolean;
-  }) =>
-    invoke<MapEntityFull>('update_map_entity', {
-      entityId: params.entityId,
-      title: params.title ?? null,
-      entityType: params.entityType ?? null,
-      description: params.description ?? null,
-      parentMapEntityId: params.parentMapEntityId ?? null,
-      clearParent: params.clearParent ?? null,
-      x: params.x ?? null,
-      y: params.y ?? null,
-      tagsText: params.tagsText ?? null,
-      imageAssetId: params.imageAssetId ?? null,
-      clearImage: params.clearImage ?? null,
-    }),
-
-  updateMapEntityPosition: (entityId: string, x: number, y: number) =>
-    invoke<void>('update_map_entity_position', { entityId, x, y }),
-
-  deleteMapEntity: (entityId: string) =>
-    withLinkInvalidation(invoke<void>('delete_map_entity', { entityId })),
-
-  restoreMapEntity: (entityId: string) =>
-    withLinkInvalidation(invoke<MapEntityFull>('restore_map_entity', { entityId })),
-
-  getPaintLayer: () =>
-    invoke<PaintLayerData>('get_paint_layer'),
-
-  savePaintLayer: (pngBytes: Uint8Array) =>
-    invoke<void>('save_paint_layer', { pngBase64: uint8ToBase64(pngBytes) }),
-
-  clearPaintLayer: () =>
-    invoke<void>('clear_paint_layer'),
-
-  getAtlasBaseMap: () =>
-    invoke<string | null>('get_atlas_base_map'),
-
-  setAtlasBaseMap: (assetId: string) =>
-    invoke<void>('set_atlas_base_map', { assetId }),
-
-  clearAtlasBaseMap: () =>
-    invoke<void>('clear_atlas_base_map'),
-
   // ─── Search ──────────────────────────────────────────────────────────────
   searchWorld: (query: string) =>
     invoke<SearchResult[]>('search_world', { query }),
@@ -828,8 +674,6 @@ export const commands = {
   // ─── Recycle Bin ─────────────────────────────────────────────────────────
   listDeletedCharacters: () =>
     invoke<DeletedCharacter[]>('list_deleted_characters'),
-  listDeletedMapEntities: () =>
-    invoke<DeletedMapEntity[]>('list_deleted_map_entities'),
   listDeletedLoreDocuments: () =>
     invoke<DeletedLoreDocument[]>('list_deleted_lore_documents'),
   listDeletedLoreFolders: () =>
@@ -840,8 +684,6 @@ export const commands = {
 
   purgeCharacter: (characterId: string) =>
     withLinkInvalidation(invoke<void>('purge_character', { characterId })),
-  purgeMapEntity: (entityId: string) =>
-    withLinkInvalidation(invoke<void>('purge_map_entity', { entityId })),
   purgeLoreDocument: (documentId: string) =>
     withLinkInvalidation(invoke<void>('purge_lore_document', { documentId })),
   purgeLoreFolder: (folderId: string) =>

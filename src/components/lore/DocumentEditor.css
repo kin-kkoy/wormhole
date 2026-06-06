@@ -97,7 +97,10 @@
 .doc-editor__content .tiptap {
   outline: none;
   min-height: 200px;
-  font-size: 14px;
+  /* Packet 10: lore typography tokens (per-world; per-doc overrides set these
+     same vars locally on .doc-editor__doc). */
+  font-family: var(--lore-font-body);
+  font-size: var(--lore-size-body);
   line-height: 1.7;
   color: var(--text-primary);
   max-width: 720px;
@@ -120,11 +123,12 @@
 .doc-editor__content .tiptap h3 {
   margin: 1em 0 0.5em;
   font-weight: 600;
+  font-family: var(--lore-font-display);
   color: var(--text-primary);
 }
 
 .doc-editor__content .tiptap h1 {
-  font-size: 1.5em;
+  font-size: var(--lore-size-display);
 }
 
 .doc-editor__content .tiptap h2 {
@@ -149,6 +153,8 @@
   margin: 0.5em 0;
   padding-left: 1em;
   border-left: 3px solid var(--accent-lore);
+  font-family: var(--lore-font-quote);
+  font-size: var(--lore-size-quote);
   color: var(--text-secondary);
 }
 
@@ -230,11 +236,6 @@
 .doc-editor__autocomplete-badge[data-type="character"] {
   background: rgba(167, 139, 250, 0.15);
   color: var(--accent-characters);
-}
-
-.doc-editor__autocomplete-badge[data-type="map_entity"] {
-  background: rgba(74, 158, 255, 0.15);
-  color: var(--accent-atlas);
 }
 
 .doc-editor__autocomplete-badge[data-type="lore_document"] {

@@ -1,0 +1,116 @@
+/* Packet 10 — themed font/size picker (trigger + portalled menu). Fully
+   theme-aware via CSS vars; accent defaults to lore amber, overridable with
+   --fontctl-accent. */
+
+.fontctl-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  max-width: 170px;
+  padding: 0 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+.fontctl-trigger:hover {
+  border-color: var(--fontctl-accent, var(--accent-lore));
+}
+.fontctl-trigger--size {
+  max-width: 64px;
+}
+.fontctl-trigger__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fontctl-trigger__caret {
+  font-size: 9px;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+/* Portalled menu */
+.fontctl-menu {
+  position: fixed;
+  z-index: 400;
+  max-height: 320px;
+  overflow-y: auto;
+  min-width: 180px;
+  padding: 4px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.fontctl-group__label {
+  position: sticky;
+  top: 0;
+  background: var(--bg-elevated);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 6px 8px 2px;
+}
+
+.fontctl-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 6px 10px;
+  border-radius: 5px;
+  font-size: 13px;
+  color: var(--text-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.fontctl-item:hover {
+  background: var(--bg-tertiary);
+}
+.fontctl-item.is-active {
+  color: var(--fontctl-accent, var(--accent-lore));
+  background: var(--bg-tertiary);
+}
+
+/* Size menu */
+.fontctl-sizes {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+}
+.fontctl-item--size {
+  text-align: center;
+  padding: 6px 0;
+}
+.fontctl-custom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 6px 4px 2px;
+  border-top: 1px solid var(--border-subtle);
+}
+.fontctl-custom input {
+  width: 60px;
+  padding: 4px 6px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-primary);
+  font-size: 12px;
+}
+.fontctl-custom input:focus {
+  outline: none;
+  border-color: var(--fontctl-accent, var(--accent-lore));
+}
+.fontctl-custom span {
+  font-size: 11px;
+  color: var(--text-muted);
+}

@@ -7,8 +7,8 @@ use std::sync::Mutex;
 use tauri::Manager;
 
 use commands::{
-    assets, atlas, character_blocks, character_sections, characters, graph, links, lore, search,
-    worlds,
+    assets, character_blocks, character_sections, characters, graph, links, lore,
+    search, worlds,
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -48,7 +48,6 @@ pub fn run() {
             assets::import_asset,
             assets::get_asset,
             assets::get_asset_bytes,
-            graph::get_atlas_graph_data,
             graph::get_characters_graph_data,
             graph::get_lore_graph_data,
             graph::create_shared_node,
@@ -92,6 +91,7 @@ pub fn run() {
             lore::create_lore_document,
             lore::get_lore_document,
             lore::update_lore_document,
+            lore::update_document_typography,
             lore::delete_lore_document,
             lore::restore_lore_document,
             lore::move_lore_document,
@@ -109,22 +109,6 @@ pub fn run() {
             links::get_next_page_link,
             links::set_next_page_link,
             links::list_next_page_links,
-            // Atlas Canvas (Stage 5)
-            atlas::list_map_entities,
-            atlas::get_map_entity,
-            atlas::create_map_entity,
-            atlas::update_map_entity,
-            atlas::update_map_entity_position,
-            atlas::delete_map_entity,
-            atlas::restore_map_entity,
-            atlas::get_paint_layer,
-            atlas::save_paint_layer,
-            atlas::clear_paint_layer,
-            atlas::get_atlas_base_map,
-            atlas::set_atlas_base_map,
-            atlas::clear_atlas_base_map,
-            atlas::list_deleted_map_entities,
-            atlas::purge_map_entity,
             // Search
             search::search_world,
         ])

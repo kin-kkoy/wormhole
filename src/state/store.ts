@@ -2,9 +2,11 @@ import { create } from 'zustand';
 import type { WorldSummary, WorldDetail } from '../lib/commands';
 import { getSettingsStore } from '../lib/settings-store';
 
+// NOTE: the 'atlas' tab/sub-tab render an "In Development" placeholder — the
+// Atlas Canvas system is detached for redesign (see
+// references/atlas-2d-foundation.md for the forward architecture).
 export type TabId = 'overview' | 'atlas' | 'characters' | 'lore';
 export type OverviewTab = 'atlas' | 'characters' | 'lore';
-export type AtlasTool = 'select' | 'brush' | 'erase' | 'pan';
 export type LoreMode = 'edit' | 'read';
 /** Read-mode page layout. Paginated = CSS-columns sub-paging within a doc;
  *  Continuous = single scrolling surface (infinite-scroll feel). */
@@ -16,7 +18,7 @@ export const LOOSE_BOOK_ID = '__loose__';
  *  activeFolderPath, the view shows each previously-stacked doc as an
  *  individual PageTile. */
 export const STACK_SEGMENT = '__stack__';
-export type PeekEntityType = 'character' | 'map_entity' | 'lore_document';
+export type PeekEntityType = 'character' | 'lore_document';
 
 export interface PeekTarget {
   entityType: PeekEntityType;
@@ -27,7 +29,6 @@ export interface PeekReturn {
   tab: TabId;
   selectedCharacterId: string | null;
   selectedDocumentId: string | null;
-  selectedMapEntityId: string | null;
   peekTarget: PeekTarget | null;
 }
 
@@ -50,11 +51,6 @@ interface AppState {
   readerLayout: ReaderLayout;
   /** Read-mode TOC sidebar collapsed state. Persists across sessions. */
   tocCollapsed: boolean;
-  // Atlas Canvas (Stage 5)
-  selectedMapEntityId: string | null;
-  atlasTool: AtlasTool;
-  atlasBrushColor: string;
-  atlasBrushSize: number;
   // Cross-system peek panel
   peekTarget: PeekTarget | null;
   peekReturn: PeekReturn | null;
@@ -68,10 +64,6 @@ interface AppState {
   setCardFlipped: (flipped: boolean) => void;
   setSelectedFolderId: (id: string | null) => void;
   setSelectedDocumentId: (id: string | null) => void;
-  setSelectedMapEntityId: (id: string | null) => void;
-  setAtlasTool: (tool: AtlasTool) => void;
-  setAtlasBrushColor: (color: string) => void;
-  setAtlasBrushSize: (size: number) => void;
   setPeekTarget: (target: PeekTarget | null) => void;
   openFullFromPeek: () => void;
   restoreFromPeekReturn: () => void;
@@ -101,10 +93,6 @@ export const useAppStore = create<AppState>((set) => ({
   activeFolderPath: [],
   readerLayout: 'paginated',
   tocCollapsed: false,
-  selectedMapEntityId: null,
-  atlasTool: 'select',
-  atlasBrushColor: '#d4a574',
-  atlasBrushSize: 40,
   peekTarget: null,
   peekReturn: null,
 
@@ -119,8 +107,6 @@ export const useAppStore = create<AppState>((set) => ({
       selectedFolderId: null,
       selectedDocumentId: null,
       activeFolderPath: [],
-      selectedMapEntityId: null,
-      atlasTool: 'select',
       peekTarget: null,
       peekReturn: null,
     }),
@@ -133,8 +119,6 @@ export const useAppStore = create<AppState>((set) => ({
       selectedFolderId: null,
       selectedDocumentId: null,
       activeFolderPath: [],
-      selectedMapEntityId: null,
-      atlasTool: 'select',
       // Manual tab change cancels any pending "return to peek" affordance.
       peekReturn: null,
     }),
@@ -142,10 +126,6 @@ export const useAppStore = create<AppState>((set) => ({
   setCardFlipped: (flipped) => set({ cardFlipped: flipped }),
   setSelectedFolderId: (id) => set({ selectedFolderId: id }),
   setSelectedDocumentId: (id) => set({ selectedDocumentId: id }),
-  setSelectedMapEntityId: (id) => set({ selectedMapEntityId: id }),
-  setAtlasTool: (tool) => set({ atlasTool: tool }),
-  setAtlasBrushColor: (color) => set({ atlasBrushColor: color }),
-  setAtlasBrushSize: (size) => set({ atlasBrushSize: size }),
 
   setPeekTarget: (target) => set({ peekTarget: target }),
 
@@ -157,7 +137,6 @@ export const useAppStore = create<AppState>((set) => ({
         tab: state.activeTab,
         selectedCharacterId: state.selectedCharacterId,
         selectedDocumentId: state.selectedDocumentId,
-        selectedMapEntityId: state.selectedMapEntityId,
         peekTarget: target,
       };
       const next: Partial<AppState> = {
@@ -169,12 +148,9 @@ export const useAppStore = create<AppState>((set) => ({
         next.activeTab = 'characters';
         next.selectedCharacterId = target.entityId;
         next.cardFlipped = false;
-      } else if (target.entityType === 'lore_document') {
+      } else {
         next.activeTab = 'lore';
         next.selectedDocumentId = target.entityId;
-      } else {
-        next.activeTab = 'atlas';
-        next.selectedMapEntityId = target.entityId;
       }
       return next;
     }),
@@ -187,7 +163,6 @@ export const useAppStore = create<AppState>((set) => ({
         activeTab: ret.tab,
         selectedCharacterId: ret.selectedCharacterId,
         selectedDocumentId: ret.selectedDocumentId,
-        selectedMapEntityId: ret.selectedMapEntityId,
         peekTarget: ret.peekTarget,
         peekReturn: null,
         editMode: false,

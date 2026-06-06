@@ -52,11 +52,6 @@
   color: var(--accent-characters);
 }
 
-.link-picker__result-badge[data-type="map_entity"] {
-  background: rgba(74, 158, 255, 0.15);
-  color: var(--accent-atlas);
-}
-
 .link-picker__result-badge[data-type="lore_document"] {
   background: rgba(245, 166, 35, 0.15);
   color: var(--accent-lore);

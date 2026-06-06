@@ -34,7 +34,6 @@ export function BookReferencesRail({ documentId, variant }: BookReferencesRailPr
   }, [documentId]);
 
   const characterLinks = links.filter((l) => l.entity_type === 'character');
-  const locationLinks = links.filter((l) => l.entity_type === 'map_entity');
   const documentLinks = links.filter((l) => l.entity_type === 'lore_document');
 
   if (loading && variant === 'rail') {
@@ -62,9 +61,6 @@ export function BookReferencesRail({ documentId, variant }: BookReferencesRailPr
       {characterLinks.length > 0 && (
         <Section title="Characters" items={characterLinks} />
       )}
-      {locationLinks.length > 0 && (
-        <Section title="Locations" items={locationLinks} />
-      )}
       {documentLinks.length > 0 && (
         <Section title="Documents" items={documentLinks} />
       )}
@@ -83,12 +79,7 @@ function Section({
     <div className="book-refs__section">
       <div className="book-refs__section-title">{title}</div>
       {items.map((link) => {
-        const badge =
-          link.entity_type === 'character'
-            ? 'CHR'
-            : link.entity_type === 'map_entity'
-              ? 'LOC'
-              : 'DOC';
+        const badge = link.entity_type === 'character' ? 'CHR' : 'DOC';
         return (
           <div
             key={link.link_id}

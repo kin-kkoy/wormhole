@@ -2,6 +2,7 @@ import { useEditor, EditorContent, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import FontFamily from '@tiptap/extension-font-family';
+import TextAlign from '@tiptap/extension-text-align';
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { LinkableRecord } from '../../lib/commands';
@@ -147,6 +148,8 @@ export function TipTapEditor({
       // FontFamily where to write — same mark, different attr.
       TextStyleWithFontSize,
       FontFamily.configure({ types: ['textStyle'] }),
+      // Underline + strike come from StarterKit; only TextAlign needs adding.
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
       ...(placeholder
         ? [Placeholder.configure({ placeholder })]
         : []),
@@ -298,11 +301,7 @@ export function TipTapEditor({
                 className="tiptap-editor__autocomplete-badge"
                 data-type={record.entity_type}
               >
-                {record.entity_type === 'character'
-                  ? 'CHR'
-                  : record.entity_type === 'map_entity'
-                    ? 'LOC'
-                    : 'DOC'}
+                {record.entity_type === 'character' ? 'CHR' : 'DOC'}
               </span>
               <span className="tiptap-editor__autocomplete-name">{record.name}</span>
             </button>

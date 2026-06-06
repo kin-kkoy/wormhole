@@ -7,8 +7,6 @@ import './EditDockPanel.css';
 interface EditDockPanelProps {
   graphType: OverviewTab;
   sharedNodes: SharedNodeData[];
-  showLocationAffiliation?: boolean;
-  onToggleLocationAffiliation?: () => void;
   onSharedNodesChanged: () => void;
   onStartLinkMode: (sharedNodeId: string) => void;
 }
@@ -16,8 +14,6 @@ interface EditDockPanelProps {
 export function EditDockPanel({
   graphType,
   sharedNodes,
-  showLocationAffiliation,
-  onToggleLocationAffiliation,
   onSharedNodesChanged,
   onStartLinkMode,
 }: EditDockPanelProps) {
@@ -78,20 +74,6 @@ export function EditDockPanel({
           + Shared Node
         </button>
       </div>
-
-      {graphType === 'characters' && onToggleLocationAffiliation && (
-        <div className="edit-dock__section">
-          <label className="edit-dock__toggle-label">
-            <input
-              type="checkbox"
-              checked={showLocationAffiliation ?? false}
-              onChange={onToggleLocationAffiliation}
-              className="edit-dock__checkbox"
-            />
-            <span>Location Affiliation</span>
-          </label>
-        </div>
-      )}
 
       {sharedNodes.length > 0 && (
         <div className="edit-dock__section">

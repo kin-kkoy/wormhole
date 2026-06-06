@@ -116,34 +116,6 @@ pub fn search_world(
         }
     }
 
-    // Map entities
-    {
-        let mut stmt = conn
-            .prepare(
-                "SELECT id, title, description FROM map_entities \
-                 WHERE deleted_at IS NULL AND LOWER(title) LIKE ?1 \
-                 ORDER BY LOWER(title) ASC",
-            )
-            .map_err(|e| format!("Failed to prepare map entity search: {}", e))?;
-        let rows = stmt
-            .query_map([&like_pattern], |row| {
-                let id: String = row.get(0)?;
-                let title: String = row.get(1)?;
-                let description: Option<String> = row.get(2)?;
-                Ok((id, title, description))
-            })
-            .map_err(|e| format!("Map entity search failed: {}", e))?;
-        for r in rows.flatten() {
-            let (id, title, description) = r;
-            results.push(SearchResult {
-                record_type: "map_entity".to_string(),
-                id,
-                title,
-                snippet: description.map(|s| extract_snippet(&s)).unwrap_or_default(),
-            });
-        }
-    }
-
     // Lore documents
     {
         let mut stmt = conn

@@ -33,6 +33,7 @@ pub struct LoreDocumentFull {
     pub folder_id: Option<String>,
     pub title: String,
     pub content: String,
+    pub typography_overrides_json: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -69,8 +70,9 @@ fn row_to_doc_full(row: &rusqlite::Row) -> rusqlite::Result<LoreDocumentFull> {
         folder_id: row.get(2)?,
         title: row.get(3)?,
         content: row.get(4)?,
-        created_at: row.get(5)?,
-        updated_at: row.get(6)?,
+        typography_overrides_json: row.get(5)?,
+        created_at: row.get(6)?,
+        updated_at: row.get(7)?,
     })
 }
 
@@ -78,7 +80,8 @@ fn row_to_doc_full(row: &rusqlite::Row) -> rusqlite::Result<LoreDocumentFull> {
 
 const FOLDER_COLUMNS: &str = "id, world_id, parent_folder_id, title, sort_order, created_at, updated_at";
 const DOC_SUMMARY_COLUMNS: &str = "id, world_id, folder_id, title, created_at, updated_at";
-const DOC_FULL_COLUMNS: &str = "id, world_id, folder_id, title, content, created_at, updated_at";
+const DOC_FULL_COLUMNS: &str =
+    "id, world_id, folder_id, title, content, typography_overrides_json, created_at, updated_at";
 
 fn query_folder(conn: &rusqlite::Connection, folder_id: &str) -> Result<LoreFolder, String> {
     conn.query_row(
@@ -543,6 +546,29 @@ pub fn update_lore_document(
     conn.execute(&sql, param_refs.as_slice())
         .map_err(|e| format!("Failed to update document: {}", e))?;
 
+    query_document_full(conn, &document_id)
+}
+
+/// Packet 10 §4.3 — set or clear a document's per-doc typography overrides.
+/// `overrides_json = None` clears the column (reverts to world-level defaults).
+#[tauri::command]
+pub fn update_document_typography(
+    document_id: String,
+    overrides_json: Option<String>,
+    state: State<Mutex<AppDatabase>>,
+) -> Result<LoreDocumentFull, String> {
+    let db = state.lock().map_err(|e| format!("Lock error: {}", e))?;
+    let (_, conn) = db
+        .active_world
+        .as_ref()
+        .ok_or("No world is currently open")?;
+    let now = chrono::Utc::now().to_rfc3339();
+    conn.execute(
+        "UPDATE lore_documents SET typography_overrides_json = ?1, updated_at = ?2 \
+         WHERE id = ?3 AND deleted_at IS NULL",
+        rusqlite::params![overrides_json, now, document_id],
+    )
+    .map_err(|e| format!("Failed to update document typography: {}", e))?;
     query_document_full(conn, &document_id)
 }
 

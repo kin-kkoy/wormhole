@@ -8,6 +8,8 @@ import { LinkedRecordsPanel } from '../../components/lore/LinkedRecordsPanel';
 import { ModeToggle } from '../../components/lore/read/ModeToggle';
 import { ReadModeShell } from './read/ReadModeShell';
 import { LoreRecycleBin } from './LoreRecycleBin';
+import { LoreTypographySettings } from './LoreTypographySettings';
+import { useLoreTypography } from '../../hooks/useLoreTypography';
 import { LOOSE_BOOK_ID, STACK_SEGMENT } from '../../state/store';
 import './LoreArchive.css';
 import './read/ReadMode.css';
@@ -20,6 +22,9 @@ export function LoreArchive() {
   const activeFolderPath = useAppStore((s) => s.activeFolderPath);
   const setActiveFolderPath = useAppStore((s) => s.setActiveFolderPath);
   const popFolderPathTo = useAppStore((s) => s.popFolderPathTo);
+  const activeWorld = useAppStore((s) => s.activeWorld);
+  const loreTypography = useLoreTypography(activeWorld?.id ?? null);
+  const [showTypography, setShowTypography] = useState(false);
 
   const [folders, setFolders] = useState<LoreFolder[]>([]);
   const [documents, setDocuments] = useState<LoreDocumentSummary[]>([]);
@@ -165,6 +170,23 @@ export function LoreArchive() {
           <button
             type="button"
             className="lore-archive__icon-btn"
+            onClick={() => setShowTypography(true)}
+            title="Typography"
+            aria-label="Lore typography settings"
+          >
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M3 13 L 6.5 3 L 9.5 3 L 13 13 M 5 9.5 L 11 9.5"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="lore-archive__icon-btn"
             onClick={() => setShowRecycleBin(true)}
             title="Recycle Bin"
             aria-label="Lore Recycle Bin"
@@ -196,6 +218,7 @@ export function LoreArchive() {
           documents={documents}
           selectedDocumentId={selectedDocumentId}
           activeDocument={activeDocument}
+          worldLoreSettings={loreTypography.settings}
           onSelectDocument={handleSelectDocument}
           onRefresh={refresh}
           onDocumentUpdated={handleDocumentUpdated}
@@ -204,6 +227,15 @@ export function LoreArchive() {
             setLinkRefreshToken((n) => n + 1);
           }}
           linkRefreshToken={linkRefreshToken}
+        />
+      )}
+
+      {showTypography && (
+        <LoreTypographySettings
+          settings={loreTypography.settings}
+          onChange={loreTypography.update}
+          onReset={loreTypography.reset}
+          onClose={() => setShowTypography(false)}
         />
       )}
     </div>
@@ -252,6 +284,7 @@ interface EditLayoutProps {
   documents: LoreDocumentSummary[];
   selectedDocumentId: string | null;
   activeDocument: LoreDocumentFull | null;
+  worldLoreSettings: import('../../hooks/useLoreTypography').LoreTypographySettings;
   onSelectDocument: (id: string | null) => void;
   onRefresh: () => Promise<void>;
   onDocumentUpdated: () => void;
@@ -264,6 +297,7 @@ function EditLayout({
   documents,
   selectedDocumentId,
   activeDocument,
+  worldLoreSettings,
   onSelectDocument,
   onRefresh,
   onDocumentUpdated,
@@ -288,6 +322,7 @@ function EditLayout({
             <DocumentEditor
               document={activeDocument}
               onDocumentUpdated={onDocumentUpdated}
+              worldLoreSettings={worldLoreSettings}
               linkRefreshToken={linkRefreshToken}
             />
           ) : (

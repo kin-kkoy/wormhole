@@ -104,10 +104,6 @@
   background: rgba(var(--accent-characters-rgb), 0.035);
   border-color: rgba(var(--accent-characters-rgb), 0.18);
 }
-.linked-records__section[data-section-type="map_entity"] {
-  background: rgba(var(--accent-atlas-rgb), 0.035);
-  border-color: rgba(var(--accent-atlas-rgb), 0.18);
-}
 .linked-records__section[data-section-type="lore_document"] {
   background: rgba(var(--accent-lore-rgb), 0.04);
   border-color: rgba(var(--accent-lore-rgb), 0.18);
@@ -124,9 +120,6 @@
 .linked-records__section[data-section-type="character"] .linked-records__section-header {
   border-bottom-color: rgba(var(--accent-characters-rgb), 0.18);
 }
-.linked-records__section[data-section-type="map_entity"] .linked-records__section-header {
-  border-bottom-color: rgba(var(--accent-atlas-rgb), 0.18);
-}
 .linked-records__section[data-section-type="lore_document"] .linked-records__section-header {
   border-bottom-color: rgba(var(--accent-lore-rgb), 0.18);
 }
@@ -142,9 +135,6 @@
 
 .linked-records__section-glyph[data-type="character"] {
   color: var(--accent-characters);
-}
-.linked-records__section-glyph[data-type="map_entity"] {
-  color: var(--accent-atlas);
 }
 .linked-records__section-glyph[data-type="lore_document"] {
   color: var(--accent-lore);
@@ -200,10 +190,6 @@
   border-color: rgba(var(--accent-characters-rgb), 0.4);
   background: rgba(var(--accent-characters-rgb), 0.06);
 }
-.linked-records__item[data-entity-type="map_entity"]:hover {
-  border-color: rgba(var(--accent-atlas-rgb), 0.4);
-  background: rgba(var(--accent-atlas-rgb), 0.06);
-}
 .linked-records__item[data-entity-type="lore_document"]:hover {
   border-color: rgba(var(--accent-lore-rgb), 0.4);
   background: rgba(var(--accent-lore-rgb), 0.06);
@@ -221,9 +207,6 @@
 
 .linked-records__item-glyph[data-type="character"] {
   color: var(--accent-characters);
-}
-.linked-records__item-glyph[data-type="map_entity"] {
-  color: var(--accent-atlas);
 }
 .linked-records__item-glyph[data-type="lore_document"] {
   color: var(--accent-lore);

@@ -20,7 +20,6 @@ export function CharactersGraph({ searchQuery }: CharactersGraphProps) {
   const [data, setData] = useState<CharactersGraphData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const [showLocationAffiliation, setShowLocationAffiliation] = useState(false);
   const [hover, setHover] = useState<{ x: number; y: number; name: string; count?: number; subtitle?: string } | null>(null);
   const [linkModeTarget, setLinkModeTarget] = useState<string | null>(null);
   const [positions, setPositions] = useState<Map<string, { x: number; y: number }>>(new Map());
@@ -57,8 +56,8 @@ export function CharactersGraph({ searchQuery }: CharactersGraphProps) {
   }, []);
 
   // Build tree (pure computation)
-  const { roots, hierarchyLinks, locationCrossLinks, parentChildMap } = useMemo(() => {
-    if (!data) return { roots: [] as LayoutNode[], hierarchyLinks: [] as [string, string][], locationCrossLinks: [] as [string, string][], parentChildMap: new Map<string, string[]>() };
+  const { roots, hierarchyLinks, parentChildMap } = useMemo(() => {
+    if (!data) return { roots: [] as LayoutNode[], hierarchyLinks: [] as [string, string][], parentChildMap: new Map<string, string[]>() };
 
     const hLinks: [string, string][] = [];
     const roots: LayoutNode[] = [];
@@ -81,38 +80,12 @@ export function CharactersGraph({ searchQuery }: CharactersGraphProps) {
       roots.push({ id: `shared-${sn.id}`, children: memberChildren, collapsed: collapsed[`shared-${sn.id}`] ?? false, isGroup: true });
     }
 
-    const locCrossLinks: [string, string][] = [];
-    if (showLocationAffiliation) {
-      const locationGroups = new Map<string, string[]>();
-      for (const ll of data.location_links) {
-        if (!locationGroups.has(ll.map_entity_id)) locationGroups.set(ll.map_entity_id, []);
-        locationGroups.get(ll.map_entity_id)!.push(ll.character_id);
-      }
-      for (const [locId, charIds] of locationGroups) {
-        const locNodeId = `loc-${locId}`;
-        const memberChildren: LayoutNode[] = [];
-        const childIds: string[] = [];
-        for (const cid of charIds) {
-          if (!charInGroup.has(cid)) {
-            memberChildren.push({ id: cid, children: [], collapsed: false, isGroup: false });
-            hLinks.push([locNodeId, cid]);
-            charInGroup.add(cid);
-            childIds.push(cid);
-          } else {
-            locCrossLinks.push([locNodeId, cid]);
-          }
-        }
-        pcMap.set(locNodeId, childIds);
-        roots.push({ id: locNodeId, children: memberChildren, collapsed: collapsed[locNodeId] ?? false, isGroup: true });
-      }
-    }
-
     for (const c of data.characters) {
       if (!charInGroup.has(c.id)) roots.push({ id: c.id, children: [], collapsed: false, isGroup: false });
     }
 
-    return { roots, hierarchyLinks: hLinks, locationCrossLinks: locCrossLinks, parentChildMap: pcMap };
-  }, [data, collapsed, showLocationAffiliation]);
+    return { roots, hierarchyLinks: hLinks, parentChildMap: pcMap };
+  }, [data, collapsed]);
 
   // Layout in effect
   useEffect(() => {
@@ -159,30 +132,15 @@ export function CharactersGraph({ searchQuery }: CharactersGraphProps) {
 
   const visibleSharedNodes = data.shared_nodes.filter((sn) => !sn.hidden);
 
-  // Location groups for rendering
-  const locationGroups = new Map<string, { title: string; charIds: string[] }>();
-  if (showLocationAffiliation) {
-    for (const ll of data.location_links) {
-      if (!locationGroups.has(ll.map_entity_id)) locationGroups.set(ll.map_entity_id, { title: ll.map_entity_title, charIds: [] });
-      locationGroups.get(ll.map_entity_id)!.charIds.push(ll.character_id);
-    }
-  }
-
   return (
     <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
         <GraphCanvas ref={gRef}>
           {hierarchyLinks.map(([pid, cid]) => { const p1 = positions.get(pid), p2 = positions.get(cid); if (!p1 || !p2) return null; return <GraphLink key={`h-${pid}-${cid}`} x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} type="hierarchy" dimmed={dimmedIds.has(cid)} />; })}
-          {locationCrossLinks.map(([lid, cid]) => { const p1 = positions.get(lid), p2 = positions.get(cid); if (!p1 || !p2) return null; return <GraphLink key={`loc-${lid}-${cid}`} x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} type="crosslink" dimmed={dimmedIds.has(cid)} />; })}
 
           {visibleSharedNodes.map((sn) => { const pos = positions.get(`shared-${sn.id}`); if (!pos) return null; return (
             <g key={`shared-${sn.id}`} data-draggable onPointerDown={(e) => startDrag(e, `shared-${sn.id}`)} style={{ cursor: 'grab' }}>
               <SharedNode x={pos.x} y={pos.y} size={70} name={sn.name} color={sn.color} fontStyle={sn.font_style} fontSize={sn.font_size} dimmed={false} collapsed={collapsed[`shared-${sn.id}`] ?? false} memberCount={sn.member_ids.length} onClick={() => toggleCollapse(`shared-${sn.id}`)} onHoverStart={(e) => setHover({ x: e.clientX, y: e.clientY, name: sn.name, count: sn.member_ids.length })} onHoverEnd={() => setHover(null)} />
-            </g>); })}
-
-          {showLocationAffiliation && Array.from(locationGroups).map(([locId, { title, charIds }]) => { const pos = positions.get(`loc-${locId}`); if (!pos) return null; return (
-            <g key={`loc-${locId}`} data-draggable onPointerDown={(e) => startDrag(e, `loc-${locId}`)} style={{ cursor: 'grab' }}>
-              <SharedNode x={pos.x} y={pos.y} size={60} name={title} color="var(--accent-atlas)" fontStyle="normal" fontSize={11} dimmed={false} collapsed={collapsed[`loc-${locId}`] ?? false} memberCount={charIds.length} onClick={() => toggleCollapse(`loc-${locId}`)} onHoverStart={(e) => setHover({ x: e.clientX, y: e.clientY, name: title, count: charIds.length, subtitle: 'Location' })} onHoverEnd={() => setHover(null)} />
             </g>); })}
 
           {data.characters.map((char) => { const pos = positions.get(char.id); if (!pos) return null; return (
@@ -199,8 +157,6 @@ export function CharactersGraph({ searchQuery }: CharactersGraphProps) {
         <EditDockPanel
           graphType="characters"
           sharedNodes={data.shared_nodes}
-          showLocationAffiliation={showLocationAffiliation}
-          onToggleLocationAffiliation={() => setShowLocationAffiliation((v) => !v)}
           onSharedNodesChanged={refreshData}
           onStartLinkMode={setLinkModeTarget}
         />

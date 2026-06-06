@@ -1,0 +1,202 @@
+/* Packet 10 — shared typography dialog (Lore gear popover). */
+
+.type-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: type-dialog-in 180ms ease;
+}
+@keyframes type-dialog-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.type-dialog {
+  --type-accent: var(--accent-lore);
+  --type-accent-rgb: var(--accent-lore-rgb);
+  width: 100%;
+  max-width: 540px;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 0 0 1px rgba(var(--type-accent-rgb), 0.15), 0 24px 60px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.type-dialog__header {
+  position: relative;
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.type-dialog__eyebrow {
+  display: block;
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--type-accent);
+  margin-bottom: 4px;
+}
+.type-dialog__title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.type-dialog__close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.type-dialog__close:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+.type-dialog__preview {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-primary);
+  max-height: 30vh;
+  overflow-y: auto;
+}
+
+.type-dialog__rows {
+  padding: 8px 22px 12px;
+  overflow-y: auto;
+}
+.type-dialog__row {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.type-dialog__row:last-child {
+  border-bottom: none;
+}
+.type-dialog__row-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.type-dialog__row-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.type-dialog__row-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.type-dialog__row-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+/* The font picker (themed dropdown) fills the row and adopts the dialog accent. */
+.type-dialog {
+  --fontctl-accent: var(--type-accent);
+}
+.type-dialog__row-controls .type-dialog__family.fontctl-trigger {
+  flex: 1;
+  max-width: none;
+  height: 34px;
+  border-radius: 8px;
+}
+.type-dialog__size {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 150px;
+}
+.type-dialog__slider {
+  flex: 1;
+  accent-color: var(--type-accent);
+}
+.type-dialog__size-value {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  min-width: 34px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.type-dialog__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 22px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+}
+.type-dialog__reset {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+.type-dialog__reset:hover {
+  color: var(--text-secondary);
+  text-decoration: underline;
+}
+.type-dialog__done {
+  padding: 8px 22px;
+  background: var(--type-accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.type-dialog__done:hover {
+  filter: brightness(1.08);
+}
+
+/* Preview helpers (used by Lore preview blocks). */
+.type-preview__display {
+  font-family: var(--type-preview-display, inherit);
+  font-size: var(--type-preview-display-size, 1.6rem);
+  color: var(--text-primary);
+  margin: 0 0 8px;
+}
+.type-preview__body {
+  font-family: var(--type-preview-body, inherit);
+  font-size: var(--type-preview-body-size, 1rem);
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin: 0 0 10px;
+}
+.type-preview__quote {
+  font-family: var(--type-preview-quote, inherit);
+  font-size: var(--type-preview-quote-size, 1.0625rem);
+  color: var(--text-secondary);
+  border-left: 3px solid var(--type-accent);
+  padding-left: 12px;
+  font-style: italic;
+  margin: 0 0 10px;
+}
+.type-preview__label {
+  font-family: var(--type-preview-label, inherit);
+  font-size: var(--type-preview-label-size, 0.75rem);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}

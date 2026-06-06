@@ -47,10 +47,6 @@
   cursor: pointer;
 }
 
-.edit-dock__checkbox {
-  accent-color: var(--accent-atlas);
-}
-
 .edit-dock__node-list {
   list-style: none;
   display: flex;

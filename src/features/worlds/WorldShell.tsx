@@ -9,7 +9,7 @@ import { useInlineLinkClicks } from '../../components/linking/useInlineLinkClick
 import { useBrokenLinkResolver } from '../../components/linking/useBrokenLinkResolver';
 import { clearImageCache } from '../../hooks/useImageCache';
 import { WorldOverview } from './WorldOverview';
-import { AtlasCanvas } from '../atlas/AtlasCanvas';
+import { AtlasUnderConstruction } from '../atlas/AtlasUnderConstruction';
 import { CharacterCodex } from '../characters/CharacterCodex';
 import { LoreArchive } from '../lore/LoreArchive';
 import { ROUTES } from '../../app/routes';
@@ -107,7 +107,8 @@ export function WorldShell() {
         )}
         {visitedTabs.has('atlas') && (
           <TabPane active={activeTab === 'atlas'}>
-            <AtlasCanvas />
+            {/* Atlas Canvas is detached for redesign — placeholder only. */}
+            <AtlasUnderConstruction />
           </TabPane>
         )}
         {visitedTabs.has('characters') && (

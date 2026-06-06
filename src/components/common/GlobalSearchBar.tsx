@@ -9,13 +9,11 @@ interface GlobalSearchBarProps {
 
 const TYPE_LABEL: Record<SearchRecordType, string> = {
   character: 'Character',
-  map_entity: 'Map Entity',
   lore_document: 'Lore',
 };
 
 const TYPE_ACCENT: Record<SearchRecordType, string> = {
   character: 'var(--accent-characters)',
-  map_entity: 'var(--accent-atlas)',
   lore_document: 'var(--accent-lore)',
 };
 

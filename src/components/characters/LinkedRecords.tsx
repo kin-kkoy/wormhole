@@ -9,10 +9,10 @@ interface LinkedRecordsProps {
 }
 
 /**
- * Cross-system linked records for a character — characters, locations, and
- * lore documents. Character↔character links are explicit-direction (the
- * row shown mirrors how the user authored it); we don't auto-mirror A→B
- * onto B's panel.
+ * Cross-system linked records for a character — characters and lore
+ * documents. Character↔character links are explicit-direction (the row
+ * shown mirrors how the user authored it); we don't auto-mirror A→B onto
+ * B's panel.
  */
 export function LinkedRecords({ characterId }: LinkedRecordsProps) {
   const [links, setLinks] = useState<LinkedRecordDisplay[]>([]);
@@ -51,13 +51,9 @@ export function LinkedRecords({ characterId }: LinkedRecordsProps) {
   }
 
   const visibleLinks = links.filter(
-    (l) =>
-      l.entity_type === 'character' ||
-      l.entity_type === 'map_entity' ||
-      l.entity_type === 'lore_document',
+    (l) => l.entity_type === 'character' || l.entity_type === 'lore_document',
   );
   const characterLinks = visibleLinks.filter((l) => l.entity_type === 'character');
-  const locationLinks = visibleLinks.filter((l) => l.entity_type === 'map_entity');
   const loreLinks = visibleLinks.filter((l) => l.entity_type === 'lore_document');
 
   const existingLinkKeys = new Set(
@@ -115,14 +111,6 @@ export function LinkedRecords({ characterId }: LinkedRecordsProps) {
                   onRemove={handleRemove}
                 />
               )}
-              {locationLinks.length > 0 && (
-                <LinkSection
-                  label="Locations"
-                  type="map_entity"
-                  items={locationLinks}
-                  onRemove={handleRemove}
-                />
-              )}
               {loreLinks.length > 0 && (
                 <LinkSection
                   label="Lore"
@@ -140,7 +128,7 @@ export function LinkedRecords({ characterId }: LinkedRecordsProps) {
         <LinkPickerDialog
           sourceType="character"
           sourceId={characterId}
-          allowedTargetTypes={['character', 'map_entity', 'lore_document']}
+          allowedTargetTypes={['character', 'lore_document']}
           existingLinkKeys={existingLinkKeys}
           primaryVariant="characters"
           onClose={() => setShowPicker(false)}
@@ -151,20 +139,12 @@ export function LinkedRecords({ characterId }: LinkedRecordsProps) {
   );
 }
 
-function EntityGlyph({ type }: { type: 'character' | 'map_entity' | 'lore_document' }) {
+function EntityGlyph({ type }: { type: 'character' | 'lore_document' }) {
   if (type === 'character') {
     return (
       <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <circle cx="8" cy="5.5" r="2.5" />
         <path d="M3 14 C 3 11, 5 9, 8 9 C 11 9, 13 11, 13 14" />
-      </svg>
-    );
-  }
-  if (type === 'map_entity') {
-    return (
-      <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M8 14 C 4 10, 2 8, 2 6 A 6 6 0 0 1 14 6 C 14 8, 12 10, 8 14 Z" />
-        <circle cx="8" cy="6" r="1.8" />
       </svg>
     );
   }
@@ -183,7 +163,7 @@ function LinkSection({
   onRemove,
 }: {
   label: string;
-  type: 'character' | 'map_entity' | 'lore_document';
+  type: 'character' | 'lore_document';
   items: LinkedRecordDisplay[];
   onRemove: (linkId: string) => void;
 }) {

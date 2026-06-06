@@ -92,7 +92,7 @@
 /* Inline cross-system links rendered by InlineLinkExtension. The base inline
  * style (color + dotted underline) is inlined on the span, so we only need to
  * style the broken state and add a hover affordance here. Applied globally so
- * any TipTap surface (lore, atlas description, character sections, peek panel)
+ * any TipTap surface (lore, character sections, peek panel)
  * gets consistent broken-link rendering. */
 .tiptap-editor [data-inline-link] {
   border-radius: 2px;
@@ -121,10 +121,6 @@
 
 [data-inline-link][data-broken="1"][data-entity-type="character"] {
   color: color-mix(in srgb, var(--accent-characters) 55%, #000) !important;
-}
-
-[data-inline-link][data-broken="1"][data-entity-type="map_entity"] {
-  color: color-mix(in srgb, var(--accent-atlas) 55%, #000) !important;
 }
 
 [data-inline-link][data-broken="1"][data-entity-type="lore_document"] {
@@ -180,11 +176,6 @@
 .tiptap-editor__autocomplete-badge[data-type="character"] {
   background: rgba(167, 139, 250, 0.15);
   color: var(--accent-characters);
-}
-
-.tiptap-editor__autocomplete-badge[data-type="map_entity"] {
-  background: rgba(74, 158, 255, 0.15);
-  color: var(--accent-atlas);
 }
 
 .tiptap-editor__autocomplete-badge[data-type="lore_document"] {

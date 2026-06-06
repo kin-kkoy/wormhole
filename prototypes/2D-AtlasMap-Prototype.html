@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wormhole: Vector Contouring via Marching Squares</title>
+    <style>
+        body { margin: 0; padding: 20px; font-family: sans-serif; background: #1e1e1e; color: #fff; display: flex; flex-direction: column; align-items: center; }
+        .toolbar { display: flex; gap: 15px; background: #2d2d2d; padding: 15px; border-radius: 8px; margin-bottom: 20px; align-items: center; }
+        .btn { padding: 8px 16px; background: #444; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn.active { background: #3b82f6; }
+        .container { position: relative; width: 600px; height: 600px; background: #0a2540; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.5); cursor: crosshair; }
+        /* Notice we just use a standard 2D canvas, no WebGL */
+        canvas { width: 100%; height: 100%; display: block; } 
+    </style>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://d3js.org/d3-contour.v4.min.js"></script>
+</head>
+<body>
+
+    <div class="toolbar">
+        <strong>Tools:</strong>
+        <button class="btn active" onclick="setTool('SMART_PAINT')">Smart Paint Land</button>
+        <button class="btn" onclick="setTool('CARVE_OCEAN')">Carve Ocean</button>
+        <label style="margin-left: 15px;">Brush Size: <input type="range" id="brushSize" min="2" max="15" value="6"></label>
+        <label style="margin-left: 15px;"><input type="checkbox" id="showWireframe"> Show Wireframe Paths</label>
+    </div>
+
+    <div class="container">
+        <canvas id="vectorCanvas" width="600" height="600"></canvas>
+    </div>
+
+    <script>
+        // --- 1. THE DATA STRUCTURE (The same array as before) ---
+        const GRID_SIZE = 100; // Resolution of the math (not the screen)
+        const elevationArray = new Float32Array(GRID_SIZE * GRID_SIZE).fill(-2.0); // Deep ocean
+
+        // Thresholds
+        const SEA_LEVEL = 0.0;
+        const LAND_BASE = 0.5;
+        const SHALLOW_EDGE = -1.5;
+
+        // --- 2. D3 CONTOUR SETUP ---
+        // We tell D3 the dimensions of our flat array, and what exact elevations
+        // it should draw vector lines at.
+        const contourEngine = d3.contours()
+            .size([GRID_SIZE, GRID_SIZE])
+            .thresholds([-1.0, 0.0, 1.0]); 
+            // -1.0 = Edge of Shallow Water
+            //  0.0 = Coastline (Sea Level)
+            //  1.0 = Edge of Hills
+
+        const canvas = document.getElementById('vectorCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Maps the 100x100 grid vectors to the 600x600 canvas pixel space
+        const scaleFactor = 600 / GRID_SIZE;
+        const pathGenerator = d3.geoPath(d3.geoIdentity().scale(scaleFactor)).context(ctx);
+
+        // --- 3. RENDERING VECTOR PATHS ---
+        function render() {
+            // 1. Clear everything to the Deep Ocean base color
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#0a2540';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 2. Ask D3 to calculate the vector shapes from the Float32Array
+            const vectorShapes = contourEngine(elevationArray);
+            const wireframeMode = document.getElementById('showWireframe').checked;
+
+            // 3. Draw each shape tier
+            vectorShapes.forEach(shape => {
+                ctx.beginPath();
+                pathGenerator(shape); // This translates the GeoJSON into canvas draw commands
+
+                if (shape.value === -1.0) {
+                    ctx.fillStyle = '#286ba4'; // Shallow Water
+                    ctx.strokeStyle = '#5bc0de';
+                } else if (shape.value === 0.0) {
+                    ctx.fillStyle = '#649650'; // Land
+                    ctx.strokeStyle = '#5cb85c';
+                } else if (shape.value === 1.0) {
+                    ctx.fillStyle = '#969696'; // Hills
+                    ctx.strokeStyle = '#ffffff';
+                }
+
+                if (wireframeMode) {
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                } else {
+                    ctx.fill();
+                }
+            });
+        }
+
+        // --- 4. BRUSH LOGIC (Identical to previous examples) ---
+        let activeTool = 'SMART_PAINT';
+        let isMouseDown = false;
+
+        function applyBrush(gridX, gridY) {
+            const radius = parseInt(document.getElementById('brushSize').value);
+            const strength = 0.4;
+
+            const minX = Math.max(0, Math.floor(gridX - radius));
+            const maxX = Math.min(GRID_SIZE - 1, Math.ceil(gridX + radius));
+            const minY = Math.max(0, Math.floor(gridY - radius));
+            const maxY = Math.min(GRID_SIZE - 1, Math.ceil(gridY + radius));
+
+            for (let y = minY; y <= maxY; y++) {
+                for (let x = minX; x <= maxX; x++) {
+                    const dist = Math.sqrt((x - gridX)**2 + (y - gridY)**2);
+                    if (dist > radius) continue;
+
+                    const idx = y * GRID_SIZE + x;
+                    const currentElev = elevationArray[idx];
+                    const falloff = 1.0 - (dist / radius);
+
+                    if (activeTool === 'SMART_PAINT') {
+                        if (currentElev < SEA_LEVEL) {
+                            const target = LAND_BASE - ((dist / radius) * (LAND_BASE - SHALLOW_EDGE));
+                            elevationArray[idx] = Math.max(currentElev, target);
+                        } else {
+                            elevationArray[idx] += falloff * 0.15; 
+                        }
+                    } else if (activeTool === 'CARVE_OCEAN') {
+                        elevationArray[idx] -= falloff * strength;
+                    }
+                }
+            }
+            render(); // Redraw vectors
+        }
+
+        // --- 5. INTERACTION WIRING ---
+        function handleInput(e) {
+            if (!isMouseDown) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / rect.width;
+            const y = (e.clientY - rect.top) / rect.height;
+            
+            const gridX = Math.floor(x * GRID_SIZE);
+            const gridY = Math.floor(y * GRID_SIZE);
+
+            if (gridX >= 0 && gridX < GRID_SIZE && gridY >= 0 && gridY < GRID_SIZE) {
+                applyBrush(gridX, gridY);
+            }
+        }
+
+        canvas.addEventListener('mousedown', (e) => { isMouseDown = true; handleInput(e); });
+        window.addEventListener('mouseup', () => { isMouseDown = false; });
+        canvas.addEventListener('mousemove', handleInput);
+        document.getElementById('showWireframe').addEventListener('change', render);
+
+        window.setTool = (tool) => {
+            activeTool = tool;
+            document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        };
+
+        // Initial render
+        render();
+
+    </script>
+</body>
+</html>

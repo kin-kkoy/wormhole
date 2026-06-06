@@ -1,5 +1,4 @@
 pub mod worlds;
-pub mod atlas;
 pub mod characters;
 pub mod character_blocks;
 pub mod character_sections;

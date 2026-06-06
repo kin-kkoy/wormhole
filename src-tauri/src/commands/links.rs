@@ -68,13 +68,6 @@ fn resolve_entity_name(
                 |row| row.get::<_, String>(0),
             )
             .unwrap_or_else(|_| "[deleted]".to_string()),
-        "map_entity" => conn
-            .query_row(
-                "SELECT title FROM map_entities WHERE id = ?1 AND deleted_at IS NULL",
-                [entity_id],
-                |row| row.get::<_, String>(0),
-            )
-            .unwrap_or_else(|_| "[deleted]".to_string()),
         "lore_document" => conn
             .query_row(
                 "SELECT title FROM lore_documents WHERE id = ?1 AND deleted_at IS NULL",
@@ -175,7 +168,7 @@ pub fn create_entity_link(
         return Err("Cannot link an entity to itself".to_string());
     }
 
-    let valid_types = ["character", "map_entity", "lore_document"];
+    let valid_types = ["character", "lore_document"];
     if !valid_types.contains(&source_type.as_str())
         || !valid_types.contains(&target_type.as_str())
     {
@@ -279,30 +272,6 @@ pub fn search_linkable_records(
             .filter_map(|r| r.ok())
             .collect();
         results.extend(chars);
-    }
-
-    // Search map entities
-    {
-        let mut stmt = conn
-            .prepare(
-                "SELECT id, title FROM map_entities \
-                 WHERE world_id = ?1 AND deleted_at IS NULL AND title LIKE ?2 COLLATE NOCASE \
-                 ORDER BY title ASC LIMIT 10",
-            )
-            .map_err(|e| format!("Failed to search map entities: {}", e))?;
-
-        let entities: Vec<LinkableRecord> = stmt
-            .query_map(rusqlite::params![world_id, pattern], |row| {
-                Ok(LinkableRecord {
-                    id: row.get(0)?,
-                    entity_type: "map_entity".to_string(),
-                    name: row.get(1)?,
-                })
-            })
-            .map_err(|e| format!("Failed to read map entity results: {}", e))?
-            .filter_map(|r| r.ok())
-            .collect();
-        results.extend(entities);
     }
 
     // Search lore documents
@@ -494,13 +463,6 @@ pub fn resolve_inline_links(
             "character" => conn
                 .query_row(
                     "SELECT name FROM characters WHERE id = ?1 AND deleted_at IS NULL",
-                    [&r.entity_id],
-                    |row| row.get::<_, String>(0),
-                )
-                .ok(),
-            "map_entity" => conn
-                .query_row(
-                    "SELECT title FROM map_entities WHERE id = ?1 AND deleted_at IS NULL",
                     [&r.entity_id],
                     |row| row.get::<_, String>(0),
                 )

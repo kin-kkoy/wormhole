@@ -274,47 +274,6 @@ pub fn seed_example_world(
         ],
     ).map_err(|e| format!("Failed to insert world: {}", e))?;
 
-    // Insert map entities
-    let region_id = uuid::Uuid::new_v4().to_string();
-    let settlement_id = uuid::Uuid::new_v4().to_string();
-    let landmark_id = uuid::Uuid::new_v4().to_string();
-
-    conn.execute(
-        "INSERT INTO map_entities (id, world_id, type, title, description, x, y, width, height, tags_text, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
-        rusqlite::params![
-            region_id, world_id, "region",
-            "The Ashenmoor Expanse",
-            r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"A blighted marshland stretching across the eastern frontier. Once fertile farmland, it was cursed during the Sundering and now breeds strange creatures and stranger legends."}]}]}"#,
-            3200.0, 4500.0, 2000.0, 1500.0,
-            "cursed, marshland, eastern",
-            now, now
-        ],
-    ).map_err(|e| format!("Failed to insert region: {}", e))?;
-
-    conn.execute(
-        "INSERT INTO map_entities (id, world_id, parent_map_entity_id, type, title, description, x, y, tags_text, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
-        rusqlite::params![
-            settlement_id, world_id, region_id, "settlement",
-            "Thornwatch Keep",
-            r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"A fortified outpost on the edge of the Ashenmoor. Home to a garrison of rangers who monitor the marshland for threats and guide travelers through safe passages."}]}]}"#,
-            3800.0, 4200.0,
-            "fortress, rangers, outpost",
-            now, now
-        ],
-    ).map_err(|e| format!("Failed to insert settlement: {}", e))?;
-
-    conn.execute(
-        "INSERT INTO map_entities (id, world_id, type, title, description, x, y, tags_text, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
-        rusqlite::params![
-            landmark_id, world_id, "landmark",
-            "The Spiral Gate",
-            r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"A towering stone archway covered in spiraling runes. Scholars believe it was once a portal connecting Eldoria to other realms, but it has been dormant since the Sundering."}]}]}"#,
-            5500.0, 3000.0,
-            "ancient, portal, runes, mystery",
-            now, now
-        ],
-    ).map_err(|e| format!("Failed to insert landmark: {}", e))?;
-
     // Insert characters
     let char1_id = uuid::Uuid::new_v4().to_string();
     let char2_id = uuid::Uuid::new_v4().to_string();
@@ -483,23 +442,11 @@ pub fn seed_example_world(
 
     // Insert entity links
     let link1_id = uuid::Uuid::new_v4().to_string();
-    let link2_id = uuid::Uuid::new_v4().to_string();
-    let link3_id = uuid::Uuid::new_v4().to_string();
 
     conn.execute(
         "INSERT INTO entity_links (id, world_id, source_type, source_id, target_type, target_id, link_type, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-        rusqlite::params![link1_id, world_id, "character", char1_id, "map_entity", settlement_id, "resident_in", now],
-    ).map_err(|e| format!("Failed to insert link 1: {}", e))?;
-
-    conn.execute(
-        "INSERT INTO entity_links (id, world_id, source_type, source_id, target_type, target_id, link_type, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-        rusqlite::params![link2_id, world_id, "character", char1_id, "lore_document", doc2_id, "appears_in", now],
-    ).map_err(|e| format!("Failed to insert link 2: {}", e))?;
-
-    conn.execute(
-        "INSERT INTO entity_links (id, world_id, source_type, source_id, target_type, target_id, link_type, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-        rusqlite::params![link3_id, world_id, "map_entity", landmark_id, "lore_document", doc1_id, "appears_in", now],
-    ).map_err(|e| format!("Failed to insert link 3: {}", e))?;
+        rusqlite::params![link1_id, world_id, "character", char1_id, "lore_document", doc2_id, "appears_in", now],
+    ).map_err(|e| format!("Failed to insert link: {}", e))?;
 
     // Register in registry
     let seed_summary = "A vast realm of ancient magic, warring kingdoms, and forgotten ruins. The land is shaped by the echoes of a cataclysm known as the Sundering, which shattered the great empire that once unified all peoples under a single banner.";
@@ -673,7 +620,6 @@ pub struct SystemOverview {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct WorldOverviewData {
     pub characters: SystemOverview,
-    pub atlas: SystemOverview,
     pub lore: SystemOverview,
 }
 
@@ -716,34 +662,6 @@ pub fn get_world_overview(
         .filter_map(|r| r.ok())
         .collect();
 
-    // Map entities (Atlas)
-    let atlas_count: u32 = conn
-        .query_row(
-            "SELECT COUNT(*) FROM map_entities WHERE deleted_at IS NULL",
-            [],
-            |row| row.get(0),
-        )
-        .map_err(|e| format!("Failed to count map entities: {}", e))?;
-
-    let mut atlas_stmt = conn
-        .prepare(
-            "SELECT id, title, updated_at FROM map_entities \
-             WHERE deleted_at IS NULL ORDER BY updated_at DESC LIMIT 5",
-        )
-        .map_err(|e| format!("Failed to prepare atlas query: {}", e))?;
-
-    let atlas_recent: Vec<OverviewRecord> = atlas_stmt
-        .query_map([], |row| {
-            Ok(OverviewRecord {
-                id: row.get(0)?,
-                title: row.get(1)?,
-                updated_at: row.get(2)?,
-            })
-        })
-        .map_err(|e| format!("Failed to query map entities: {}", e))?
-        .filter_map(|r| r.ok())
-        .collect();
-
     // Lore documents
     let lore_count: u32 = conn
         .query_row(
@@ -776,10 +694,6 @@ pub fn get_world_overview(
         characters: SystemOverview {
             count: char_count,
             recent: char_recent,
-        },
-        atlas: SystemOverview {
-            count: atlas_count,
-            recent: atlas_recent,
         },
         lore: SystemOverview {
             count: lore_count,

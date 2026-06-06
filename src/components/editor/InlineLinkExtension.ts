@@ -9,7 +9,6 @@ export interface InlineLinkAttrs {
 
 const ENTITY_COLORS: Record<string, string> = {
   character: 'var(--accent-characters)',
-  map_entity: 'var(--accent-atlas)',
   lore_document: 'var(--accent-lore)',
 };
 

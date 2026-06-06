@@ -106,7 +106,6 @@ impl AppDatabase {
                 let tables_with_soft_delete = [
                     "entity_links",
                     "characters",
-                    "map_entities",
                     "lore_documents",
                     "lore_folders",
                 ];

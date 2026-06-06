@@ -1,0 +1,169 @@
+/* Atlas "In Development" placeholder — looping hammer-on-anvil forge.
+ * Pure CSS keyframes (no JS / no rAF — WebKitGTK can stall rAF entirely on
+ * non-composited pages, CSS animations keep running). One strike per cycle:
+ * raise → fast strike → spark burst → slow lift. */
+
+.atlas-wip {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--bg-primary);
+  user-select: none;
+}
+
+.atlas-wip__forge {
+  width: 220px;
+  height: auto;
+  margin-bottom: 10px;
+}
+
+.atlas-wip--compact .atlas-wip__forge {
+  width: 160px;
+}
+
+/* ── Anvil ── */
+.atlas-wip__anvil path,
+.atlas-wip__anvil rect {
+  fill: #3a4254;
+}
+
+.atlas-wip__anvil-face {
+  fill: #59637a;
+}
+
+/* The whole anvil shudders for a beat right at impact. */
+.atlas-wip__anvil {
+  animation: atlas-wip-shudder 1.8s infinite;
+  transform-origin: 100px 138px;
+}
+
+@keyframes atlas-wip-shudder {
+  0%, 47.9%, 56%, 100% {
+    transform: translateY(0);
+  }
+  49.5% {
+    transform: translateY(2px);
+  }
+  52% {
+    transform: translateY(0.5px);
+  }
+}
+
+/* ── Hammer ── */
+.atlas-wip__hammer rect {
+  fill: #6b7690;
+}
+
+.atlas-wip__hammer-face {
+  fill: #8a96b2;
+}
+
+.atlas-wip__hammer {
+  /* Pivot near the wrist end of the handle. */
+  transform-origin: 196px 46px;
+  animation: atlas-wip-swing 1.8s infinite;
+}
+
+@keyframes atlas-wip-swing {
+  /* held high */
+  0% {
+    transform: rotate(-38deg);
+    animation-timing-function: ease-in-out;
+  }
+  30% {
+    transform: rotate(-44deg);
+    animation-timing-function: cubic-bezier(0.7, 0, 1, 0.6);
+  }
+  /* the strike — fast */
+  48% {
+    transform: rotate(7deg);
+    animation-timing-function: ease-out;
+  }
+  /* tiny rebound off the face */
+  53% {
+    transform: rotate(1deg);
+    animation-timing-function: ease-in-out;
+  }
+  60% {
+    transform: rotate(5deg);
+    animation-timing-function: ease-in-out;
+  }
+  /* slow lift back up */
+  100% {
+    transform: rotate(-38deg);
+  }
+}
+
+/* ── Sparks ── */
+.atlas-wip__sparks line {
+  stroke: #f5c560;
+  stroke-width: 3;
+  stroke-linecap: round;
+  opacity: 0;
+  transform-origin: 104px 100px;
+  animation: atlas-wip-sparks 1.8s infinite;
+}
+
+.atlas-wip__sparks line:nth-child(2) {
+  animation-delay: 0.02s;
+}
+.atlas-wip__sparks line:nth-child(3) {
+  animation-delay: 0.04s;
+}
+.atlas-wip__sparks line:nth-child(4) {
+  animation-delay: 0.03s;
+}
+.atlas-wip__sparks line:nth-child(5) {
+  animation-delay: 0.05s;
+}
+
+@keyframes atlas-wip-sparks {
+  0%, 47% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(0.75);
+  }
+  62% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+  74%, 100% {
+    opacity: 0;
+    transform: scale(1.25);
+  }
+}
+
+/* ── Copy ── */
+.atlas-wip__quote {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+}
+
+.atlas-wip--compact .atlas-wip__quote {
+  font-size: 18px;
+}
+
+.atlas-wip__sub {
+  margin: 0;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .atlas-wip__hammer,
+  .atlas-wip__anvil,
+  .atlas-wip__sparks line {
+    animation: none;
+  }
+}

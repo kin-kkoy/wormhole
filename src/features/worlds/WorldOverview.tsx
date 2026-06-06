@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { useAppStore } from '../../state/store';
 import { OverviewTabSelector } from '../../components/worlds/OverviewTabSelector';
 import { SearchOverlay } from '../../components/worlds/graph/SearchOverlay';
-import { AtlasGraph } from '../../components/worlds/graph/AtlasGraph';
 import { CharactersGraph } from '../../components/worlds/graph/CharactersGraph';
 import { LoreGraph } from '../../components/worlds/graph/LoreGraph';
+import { AtlasUnderConstruction } from '../atlas/AtlasUnderConstruction';
 import './WorldOverview.css';
 
 export function WorldOverview() {
@@ -31,24 +31,25 @@ export function WorldOverview() {
   }
 
   const searchPlaceholder =
-    overviewTab === 'atlas' ? 'Search places...'
-    : overviewTab === 'characters' ? 'Search characters...'
-    : 'Search lore...';
+    overviewTab === 'characters' ? 'Search characters...' : 'Search lore...';
 
   return (
     <div className="world-overview">
       <div className="world-overview__toolbar">
         <OverviewTabSelector />
-        <SearchOverlay
-          query={searchQuery}
-          onQueryChange={setSearchQuery}
-          placeholder={searchPlaceholder}
-        />
+        {overviewTab !== 'atlas' && (
+          <SearchOverlay
+            query={searchQuery}
+            onQueryChange={setSearchQuery}
+            placeholder={searchPlaceholder}
+          />
+        )}
       </div>
 
       <div className="world-overview__content">
         {overviewTab === 'atlas' && (
-          <AtlasGraph searchQuery={searchQuery} />
+          // Atlas Canvas is detached for redesign — placeholder only.
+          <AtlasUnderConstruction compact />
         )}
         {overviewTab === 'characters' && (
           <CharactersGraph searchQuery={searchQuery} />

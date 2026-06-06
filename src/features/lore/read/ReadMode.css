@@ -1567,7 +1567,6 @@
 }
 
 .book-refs__badge[data-type='character'] { color: var(--accent-characters); }
-.book-refs__badge[data-type='map_entity'] { color: var(--accent-atlas); }
 .book-refs__badge[data-type='lore_document'] { color: var(--accent-lore); }
 
 .book-refs__item-name {

@@ -7,11 +7,10 @@ import { useAppStore, type PeekEntityType, type TabId } from '../../state/store'
  */
 const SYSTEM_TAB: Record<PeekEntityType, TabId> = {
   character: 'characters',
-  map_entity: 'atlas',
   lore_document: 'lore',
 };
 
-const VALID_ENTITY_TYPES: PeekEntityType[] = ['character', 'map_entity', 'lore_document'];
+const VALID_ENTITY_TYPES: PeekEntityType[] = ['character', 'lore_document'];
 
 function isInlineLink(el: HTMLElement | null): el is HTMLElement {
   return !!el && (el.hasAttribute('data-inline-link') || el.hasAttribute('data-peek-link'));
@@ -39,7 +38,6 @@ export function useInlineLinkClicks() {
   const setPeekTarget = useAppStore((s) => s.setPeekTarget);
   const setSelectedCharacterId = useAppStore((s) => s.setSelectedCharacterId);
   const setSelectedDocumentId = useAppStore((s) => s.setSelectedDocumentId);
-  const setSelectedMapEntityId = useAppStore((s) => s.setSelectedMapEntityId);
 
   useEffect(() => {
     function findLink(target: EventTarget | null): HTMLElement | null {
@@ -98,8 +96,7 @@ export function useInlineLinkClicks() {
       // Same-system exception: navigate in-place rather than open peek.
       if (state.activeTab === targetTab) {
         if (entityType === 'character') setSelectedCharacterId(entityId);
-        else if (entityType === 'lore_document') setSelectedDocumentId(entityId);
-        else setSelectedMapEntityId(entityId);
+        else setSelectedDocumentId(entityId);
 
         // Replace any open peek so we don't leave a stale panel hovering.
         if (state.peekTarget) setPeekTarget(null);

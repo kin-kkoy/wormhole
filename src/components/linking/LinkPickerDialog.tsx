@@ -3,7 +3,7 @@ import type { LinkableRecord } from '../../lib/commands';
 import { commands } from '../../lib/commands';
 import './LinkPickerDialog.css';
 
-export type EntityType = 'character' | 'map_entity' | 'lore_document';
+export type EntityType = 'character' | 'lore_document';
 
 interface LinkPickerDialogProps {
   sourceType: EntityType;
@@ -15,7 +15,7 @@ interface LinkPickerDialogProps {
    *  still allowed — the backend will reject the duplicate with an error. */
   existingLinkKeys?: Set<string>;
   /** Variant button styling for the primary "Link" action. */
-  primaryVariant?: 'lore' | 'characters' | 'atlas' | 'default';
+  primaryVariant?: 'lore' | 'characters' | 'default';
   onClose: () => void;
   onLinkCreated: () => void;
 }
@@ -50,7 +50,6 @@ function validateLinkType(value: string): string | null {
 const PRIMARY_VARIANT_CLASS: Record<NonNullable<LinkPickerDialogProps['primaryVariant']>, string> = {
   lore: 'btn--lore-primary',
   characters: 'btn--primary',
-  atlas: 'btn--primary',
   default: 'btn--primary',
 };
 
@@ -146,8 +145,7 @@ export function LinkPickerDialog({
     setSaving(false);
   }
 
-  const badgeLabel = (type: string) =>
-    type === 'character' ? 'CHR' : type === 'map_entity' ? 'LOC' : 'DOC';
+  const badgeLabel = (type: string) => (type === 'character' ? 'CHR' : 'DOC');
 
   return (
     <div className="dialog-overlay">
@@ -162,7 +160,7 @@ export function LinkPickerDialog({
             type="text"
             value={query}
             onChange={(e) => handleQueryChange(e.target.value)}
-            placeholder="Search characters, locations, documents..."
+            placeholder="Search characters, documents..."
           />
         </div>
 

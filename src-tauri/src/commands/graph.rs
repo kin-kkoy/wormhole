@@ -8,16 +8,6 @@ use tauri::State;
 // ─── Data types ───────────────────────────────────────────────────────────────
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct AtlasNodeData {
-    pub id: String,
-    pub title: String,
-    pub entity_type: String,
-    pub parent_map_entity_id: Option<String>,
-    pub image_asset_id: Option<String>,
-    pub tags_text: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct EntityLinkData {
     pub id: String,
     pub source_type: String,
@@ -41,13 +31,6 @@ pub struct SharedNodeData {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct AtlasGraphData {
-    pub entities: Vec<AtlasNodeData>,
-    pub links: Vec<EntityLinkData>,
-    pub shared_nodes: Vec<SharedNodeData>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct CharacterNodeData {
     pub id: String,
     pub name: String,
@@ -56,17 +39,8 @@ pub struct CharacterNodeData {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct CharacterLocationLink {
-    pub character_id: String,
-    pub map_entity_id: String,
-    pub map_entity_title: String,
-    pub link_type: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct CharactersGraphData {
     pub characters: Vec<CharacterNodeData>,
-    pub location_links: Vec<CharacterLocationLink>,
     pub shared_nodes: Vec<SharedNodeData>,
 }
 
@@ -161,73 +135,6 @@ fn query_shared_nodes(
 // ─── Graph data queries ───────────────────────────────────────────────────────
 
 #[tauri::command]
-pub fn get_atlas_graph_data(
-    state: State<Mutex<AppDatabase>>,
-) -> Result<AtlasGraphData, String> {
-    let db = state.lock().map_err(|e| format!("Lock error: {}", e))?;
-    let (_, conn) = db
-        .active_world
-        .as_ref()
-        .ok_or("No world is currently open")?;
-
-    // All non-deleted map entities
-    let mut entity_stmt = conn
-        .prepare(
-            "SELECT id, title, type, parent_map_entity_id, image_asset_id, tags_text \
-             FROM map_entities WHERE deleted_at IS NULL ORDER BY title",
-        )
-        .map_err(|e| format!("Failed to prepare atlas query: {}", e))?;
-
-    let entities: Vec<AtlasNodeData> = entity_stmt
-        .query_map([], |row| {
-            Ok(AtlasNodeData {
-                id: row.get(0)?,
-                title: row.get(1)?,
-                entity_type: row.get(2)?,
-                parent_map_entity_id: row.get(3)?,
-                image_asset_id: row.get(4)?,
-                tags_text: row.get(5)?,
-            })
-        })
-        .map_err(|e| format!("Failed to query atlas entities: {}", e))?
-        .filter_map(|r| r.ok())
-        .collect();
-
-    // Entity links between map entities only
-    let mut link_stmt = conn
-        .prepare(
-            "SELECT id, source_type, source_id, target_type, target_id, link_type \
-             FROM entity_links \
-             WHERE source_type = 'map_entity' AND target_type = 'map_entity' \
-             AND deleted_at IS NULL",
-        )
-        .map_err(|e| format!("Failed to prepare atlas links query: {}", e))?;
-
-    let links: Vec<EntityLinkData> = link_stmt
-        .query_map([], |row| {
-            Ok(EntityLinkData {
-                id: row.get(0)?,
-                source_type: row.get(1)?,
-                source_id: row.get(2)?,
-                target_type: row.get(3)?,
-                target_id: row.get(4)?,
-                link_type: row.get(5)?,
-            })
-        })
-        .map_err(|e| format!("Failed to query atlas links: {}", e))?
-        .filter_map(|r| r.ok())
-        .collect();
-
-    let shared_nodes = query_shared_nodes(conn, "atlas")?;
-
-    Ok(AtlasGraphData {
-        entities,
-        links,
-        shared_nodes,
-    })
-}
-
-#[tauri::command]
 pub fn get_characters_graph_data(
     state: State<Mutex<AppDatabase>>,
 ) -> Result<CharactersGraphData, String> {
@@ -258,41 +165,10 @@ pub fn get_characters_graph_data(
         .filter_map(|r| r.ok())
         .collect();
 
-    // Character → map_entity links (for Location Affiliation)
-    let mut loc_stmt = conn
-        .prepare(
-            "SELECT el.source_id, el.target_id, me.title, el.link_type \
-             FROM entity_links el \
-             JOIN map_entities me ON me.id = el.target_id \
-             WHERE el.source_type = 'character' AND el.target_type = 'map_entity' \
-             AND el.deleted_at IS NULL AND me.deleted_at IS NULL \
-             UNION ALL \
-             SELECT el.target_id, el.source_id, me.title, el.link_type \
-             FROM entity_links el \
-             JOIN map_entities me ON me.id = el.source_id \
-             WHERE el.target_type = 'character' AND el.source_type = 'map_entity' \
-             AND el.deleted_at IS NULL AND me.deleted_at IS NULL",
-        )
-        .map_err(|e| format!("Failed to prepare location links query: {}", e))?;
-
-    let location_links: Vec<CharacterLocationLink> = loc_stmt
-        .query_map([], |row| {
-            Ok(CharacterLocationLink {
-                character_id: row.get(0)?,
-                map_entity_id: row.get(1)?,
-                map_entity_title: row.get(2)?,
-                link_type: row.get(3)?,
-            })
-        })
-        .map_err(|e| format!("Failed to query location links: {}", e))?
-        .filter_map(|r| r.ok())
-        .collect();
-
     let shared_nodes = query_shared_nodes(conn, "characters")?;
 
     Ok(CharactersGraphData {
         characters,
-        location_links,
         shared_nodes,
     })
 }
@@ -589,10 +465,6 @@ pub fn auto_detect_shared_nodes(
 
     // Collect tags from the relevant table
     let (query, entity_type_str) = match graph_type.as_str() {
-        "atlas" => (
-            "SELECT id, tags_text FROM map_entities WHERE deleted_at IS NULL AND tags_text IS NOT NULL",
-            "map_entity",
-        ),
         "characters" => (
             "SELECT id, tags_text FROM characters WHERE deleted_at IS NULL AND tags_text IS NOT NULL",
             "character",
