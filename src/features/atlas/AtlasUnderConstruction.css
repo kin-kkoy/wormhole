@@ -1,7 +1,9 @@
-/* Atlas "In Development" placeholder — looping hammer-on-anvil forge.
+/* Atlas "Still being written" placeholder — a quill writing on parchment.
  * Pure CSS keyframes (no JS / no rAF — WebKitGTK can stall rAF entirely on
- * non-composited pages, CSS animations keep running). One strike per cycle:
- * raise → fast strike → spark burst → slow lift. */
+ * non-composited pages, CSS animations keep running). One loop: the quill
+ * scratches a line across the page (the ink draws under it), lifts, glides
+ * back, and starts the next line. Cost: one transform animation + one
+ * stroke-dashoffset — negligible. */
 
 .atlas-wip {
   width: 100%;
@@ -15,128 +17,164 @@
   user-select: none;
 }
 
-.atlas-wip__forge {
-  width: 220px;
+.atlas-wip__scene {
+  width: 260px;
   height: auto;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
-.atlas-wip--compact .atlas-wip__forge {
-  width: 160px;
+.atlas-wip--compact .atlas-wip__scene {
+  width: 190px;
 }
 
-/* ── Anvil ── */
-.atlas-wip__anvil path,
-.atlas-wip__anvil rect {
+/* ── Parchment ── */
+.atlas-wip__paper path {
   fill: #3a4254;
 }
 
-.atlas-wip__anvil-face {
-  fill: #59637a;
+.atlas-wip__paper-curl {
+  fill: #4a5468 !important;
 }
 
-/* The whole anvil shudders for a beat right at impact. */
-.atlas-wip__anvil {
-  animation: atlas-wip-shudder 1.8s infinite;
-  transform-origin: 100px 138px;
+.atlas-wip__old-line {
+  fill: none !important;
+  stroke: #545f78;
+  stroke-width: 1.6;
+  stroke-linecap: round;
 }
 
-@keyframes atlas-wip-shudder {
-  0%, 47.9%, 56%, 100% {
-    transform: translateY(0);
+/* ── Ink line being written ── */
+.atlas-wip__ink {
+  fill: none;
+  stroke: #8fb3e8;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: atlas-wip-ink 4.4s infinite;
+}
+
+@keyframes atlas-wip-ink {
+  /* draws left → right while the quill travels (linear with it) */
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 1;
+    animation-timing-function: linear;
   }
-  49.5% {
-    transform: translateY(2px);
+  58% {
+    stroke-dashoffset: 0;
+    opacity: 1;
   }
-  52% {
-    transform: translateY(0.5px);
+  /* sits a beat, then dries away while the quill glides back */
+  74% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  90% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+  /* reset while invisible */
+  91%, 100% {
+    stroke-dashoffset: 1;
+    opacity: 1;
   }
 }
 
-/* ── Hammer ── */
-.atlas-wip__hammer rect {
+/* ── Quill ── */
+.atlas-wip__feather {
   fill: #6b7690;
 }
 
-.atlas-wip__hammer-face {
-  fill: #8a96b2;
-}
-
-.atlas-wip__hammer {
-  /* Pivot near the wrist end of the handle. */
-  transform-origin: 196px 46px;
-  animation: atlas-wip-swing 1.8s infinite;
-}
-
-@keyframes atlas-wip-swing {
-  /* held high */
-  0% {
-    transform: rotate(-38deg);
-    animation-timing-function: ease-in-out;
-  }
-  30% {
-    transform: rotate(-44deg);
-    animation-timing-function: cubic-bezier(0.7, 0, 1, 0.6);
-  }
-  /* the strike — fast */
-  48% {
-    transform: rotate(7deg);
-    animation-timing-function: ease-out;
-  }
-  /* tiny rebound off the face */
-  53% {
-    transform: rotate(1deg);
-    animation-timing-function: ease-in-out;
-  }
-  60% {
-    transform: rotate(5deg);
-    animation-timing-function: ease-in-out;
-  }
-  /* slow lift back up */
-  100% {
-    transform: rotate(-38deg);
-  }
-}
-
-/* ── Sparks ── */
-.atlas-wip__sparks line {
-  stroke: #f5c560;
-  stroke-width: 3;
+.atlas-wip__spine {
+  fill: none;
+  stroke: #98a4c2;
+  stroke-width: 1.6;
   stroke-linecap: round;
-  opacity: 0;
-  transform-origin: 104px 100px;
-  animation: atlas-wip-sparks 1.8s infinite;
 }
 
-.atlas-wip__sparks line:nth-child(2) {
-  animation-delay: 0.02s;
-}
-.atlas-wip__sparks line:nth-child(3) {
-  animation-delay: 0.04s;
-}
-.atlas-wip__sparks line:nth-child(4) {
-  animation-delay: 0.03s;
-}
-.atlas-wip__sparks line:nth-child(5) {
-  animation-delay: 0.05s;
+.atlas-wip__barb {
+  fill: none;
+  stroke: #4a5468;
+  stroke-width: 1.2;
+  stroke-linecap: round;
 }
 
-@keyframes atlas-wip-sparks {
-  0%, 47% {
+.atlas-wip__nib {
+  fill: #aab4cc;
+}
+
+.atlas-wip__quill {
+  animation: atlas-wip-write 4.4s infinite;
+}
+
+@keyframes atlas-wip-write {
+  /* writing pass — steady advance with a scratchy wiggle */
+  0% {
+    transform: translate(84px, 123px) rotate(-2deg);
+    animation-timing-function: linear;
+  }
+  12% {
+    transform: translate(105px, 124px) rotate(2deg);
+    animation-timing-function: linear;
+  }
+  24% {
+    transform: translate(125px, 122px) rotate(-2deg);
+    animation-timing-function: linear;
+  }
+  36% {
+    transform: translate(145px, 124px) rotate(2deg);
+    animation-timing-function: linear;
+  }
+  47% {
+    transform: translate(164px, 122px) rotate(-1deg);
+    animation-timing-function: linear;
+  }
+  58% {
+    transform: translate(184px, 123px) rotate(0deg);
+    animation-timing-function: ease-in-out;
+  }
+  /* lift off the page */
+  68% {
+    transform: translate(192px, 108px) rotate(7deg);
+    animation-timing-function: ease-in-out;
+  }
+  /* glide back for the next line, still raised */
+  88% {
+    transform: translate(78px, 106px) rotate(-7deg);
+    animation-timing-function: ease-in-out;
+  }
+  /* touch down at the start */
+  100% {
+    transform: translate(84px, 123px) rotate(-2deg);
+  }
+}
+
+/* ── Ink flecks by the nib (only while writing) ── */
+.atlas-wip__fleck {
+  fill: #8fb3e8;
+  animation: atlas-wip-fleck 4.4s infinite;
+}
+
+.atlas-wip__fleck:nth-child(odd) {
+  animation-delay: 0.25s;
+}
+
+@keyframes atlas-wip-fleck {
+  0%, 8% {
     opacity: 0;
-    transform: scale(0.3);
   }
-  50% {
-    opacity: 1;
-    transform: scale(0.75);
+  14%, 30% {
+    opacity: 0.9;
   }
-  62% {
+  38%, 46% {
+    opacity: 0.2;
+  }
+  52% {
     opacity: 0.8;
-    transform: scale(1.1);
   }
-  74%, 100% {
+  60%, 100% {
     opacity: 0;
-    transform: scale(1.25);
   }
 }
 
@@ -161,9 +199,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .atlas-wip__hammer,
-  .atlas-wip__anvil,
-  .atlas-wip__sparks line {
+  .atlas-wip__quill,
+  .atlas-wip__ink,
+  .atlas-wip__fleck {
     animation: none;
+  }
+  .atlas-wip__ink {
+    stroke-dashoffset: 0; /* show the finished line instead */
   }
 }
