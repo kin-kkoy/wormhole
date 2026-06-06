@@ -3,6 +3,16 @@
 .codex
 CLAUDE.md
 Future-Feature-Plans.md
+Logs To Fix.md
+
+# ─── Local captures / stray reference files ──────────────────────
+screenshots/
+/*.png
+/*.jpg
+/*.jpeg
+/*.webp
+/*.gif
+/*.mp4
 
 # ─── Node / Vite ──────────────────────────────────────────────────
 node_modules/
