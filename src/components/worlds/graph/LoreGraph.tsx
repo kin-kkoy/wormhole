@@ -145,7 +145,7 @@ export function LoreGraph({ searchQuery }: LoreGraphProps) {
           if (!pos) return null;
           return (
             <g key={doc.id} data-draggable onPointerDown={(e) => startDrag(e, doc.id)} style={{ cursor: 'grab' }}>
-              <ImageNode x={pos.x} y={pos.y} radius={24} imageUrl={null} fallbackType="document" dimmed={dimmedIds.has(doc.id)} onHoverStart={(e) => setHover({ x: e.clientX, y: e.clientY, name: doc.title })} onHoverEnd={() => setHover(null)} />
+              <ImageNode x={pos.x} y={pos.y} radius={24} imageUrl={null} fallbackType="document" accentColor="var(--accent-lore)" dimmed={dimmedIds.has(doc.id)} onHoverStart={(e) => setHover({ x: e.clientX, y: e.clientY, name: doc.title })} onHoverEnd={() => setHover(null)} />
             </g>
           );
         })}

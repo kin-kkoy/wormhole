@@ -54,6 +54,21 @@ interface AppState {
   // Cross-system peek panel
   peekTarget: PeekTarget | null;
   peekReturn: PeekReturn | null;
+  /** Staged "resume where you left off" destination from the world index.
+   *  Applied by WorldShell AFTER the world opens — setActiveWorld resets
+   *  tab/selection state, so staging directly would be clobbered. Scoped to
+   *  a worldId (and cleared only on application) so StrictMode's double
+   *  mount/cleanup cycle can't wipe it before it lands, and so it can never
+   *  leak into a different world. */
+  pendingResume: {
+    worldId: string;
+    tab: TabId;
+    entityType: 'character' | 'lore_document' | null;
+    entityId: string | null;
+    /** Staging time — the resume is only honored briefly after the click,
+     *  so a stale stage can never hijack a later plain world open. */
+    stagedAt: number;
+  } | null;
 
   setWorlds: (worlds: WorldSummary[]) => void;
   setActiveWorld: (world: WorldDetail | null) => void;
@@ -64,6 +79,7 @@ interface AppState {
   setCardFlipped: (flipped: boolean) => void;
   setSelectedFolderId: (id: string | null) => void;
   setSelectedDocumentId: (id: string | null) => void;
+  setPendingResume: (resume: AppState['pendingResume']) => void;
   setPeekTarget: (target: PeekTarget | null) => void;
   openFullFromPeek: () => void;
   restoreFromPeekReturn: () => void;
@@ -95,20 +111,37 @@ export const useAppStore = create<AppState>((set) => ({
   tocCollapsed: false,
   peekTarget: null,
   peekReturn: null,
+  pendingResume: null,
 
   setWorlds: (worlds) => set({ worlds }),
+  setPendingResume: (resume) => set({ pendingResume: resume }),
   setActiveWorld: (world) =>
-    set({
-      activeWorld: world,
-      activeTab: 'overview',
-      selectedCharacterId: null,
-      cardFlipped: false,
-      editMode: false,
-      selectedFolderId: null,
-      selectedDocumentId: null,
-      activeFolderPath: [],
-      peekTarget: null,
-      peekReturn: null,
+    set((state) => {
+      // "Resume where you left off": consume a fresh staged resume for THIS
+      // world. Consumed idempotently and NOT cleared here — React StrictMode
+      // mounts WorldShell twice in dev, so open_world resolves twice and the
+      // second setActiveWorld must re-apply the same destination instead of
+      // resetting to Overview. The freshness window keeps a leftover stage
+      // from hijacking a later, ordinary world open.
+      const pr = state.pendingResume;
+      const resume =
+        world && pr && pr.worldId === world.id && Date.now() - pr.stagedAt < 8000
+          ? pr
+          : null;
+      return {
+        activeWorld: world,
+        activeTab: resume ? resume.tab : 'overview',
+        selectedCharacterId:
+          resume && resume.entityType === 'character' ? resume.entityId : null,
+        cardFlipped: false,
+        editMode: false,
+        selectedFolderId: null,
+        selectedDocumentId:
+          resume && resume.entityType === 'lore_document' ? resume.entityId : null,
+        activeFolderPath: [],
+        peekTarget: null,
+        peekReturn: null,
+      };
     }),
   setActiveTab: (tab) =>
     set({

@@ -174,6 +174,7 @@ export function CardGrid({ blocks, characterId, editMode, onRefresh, presetDragR
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
     const cursor = getCellFromEvent(e);
     if (!cursor) {
       setGhost(null);

@@ -15,6 +15,8 @@ export function CharacterFlipContainer({ characterId }: CharacterFlipContainerPr
   const cardFlipped = useAppStore((s) => s.cardFlipped);
   const setCardFlipped = useAppStore((s) => s.setCardFlipped);
   const setSelectedCharacterId = useAppStore((s) => s.setSelectedCharacterId);
+  const editMode = useAppStore((s) => s.editMode);
+  const setEditMode = useAppStore((s) => s.setEditMode);
   // Ref callback pattern: setTabSlotEl re-renders CharacterDetails once the
   // slot div mounts, giving it a DOM target for its React portal.
   const [tabSlotEl, setTabSlotEl] = useState<HTMLDivElement | null>(null);
@@ -57,70 +59,100 @@ export function CharacterFlipContainer({ characterId }: CharacterFlipContainerPr
 
   return (
     <div className="flip-outer">
+      {/* ── Compact icon bar ─── */}
       <div className="flip-toolbar" data-face={cardFlipped ? 'details' : 'card'}>
         <button
-          className="btn btn--ghost flip-toolbar__back"
+          className="flip-toolbar__back"
           onClick={() => setSelectedCharacterId(null)}
+          title="Back to character list"
         >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
             <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          Back to List
         </button>
-        <div ref={setTabSlotEl} className="flip-toolbar__tab-slot" />
+
+        <span className="flip-toolbar__char-name">{character?.name ?? ''}</span>
+        {character?.short_role && (
+          <>
+            <span className="flip-toolbar__char-sep">·</span>
+            <span className="flip-toolbar__char-role">{character.short_role}</span>
+          </>
+        )}
+
+        <div className="flip-toolbar__pill">
+          <button
+            className={`flip-toolbar__pill-seg ${!cardFlipped ? 'flip-toolbar__pill-seg--active' : ''}`}
+            onClick={() => setCardFlipped(false)}
+          >
+            Card
+          </button>
+          <button
+            className={`flip-toolbar__pill-seg ${cardFlipped ? 'flip-toolbar__pill-seg--active' : ''}`}
+            onClick={() => setCardFlipped(true)}
+          >
+            Details
+          </button>
+        </div>
+
+        <div className="flip-toolbar__sep" />
+
         <button
-          className={`btn btn--secondary flip-toolbar__cine-preview ${previewToggle && !isLocked ? 'flip-toolbar__cine-preview--active' : ''}`}
+          className={`flip-toolbar__icon-btn ${previewToggle && !isLocked ? 'flip-toolbar__icon-btn--active' : ''}`}
           onClick={() => setPreviewToggle((p) => !p)}
           title={
             isLocked
-              ? 'Preview is disabled while the view is locked — unlock to switch faces'
+              ? 'Showcase is disabled while the view is locked'
               : previewToggle
-                ? 'Showing cinematic preview — click to return to card'
-                : 'Preview cinematic view'
+                ? 'Showing showcase — click to return to card'
+                : 'Showcase'
           }
           disabled={!character || isLocked}
         >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
             <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5S1 8 1 8z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
             <circle cx="8" cy="8" r="2.2" stroke="currentColor" strokeWidth="1.3"/>
           </svg>
-          Preview
         </button>
+
         <button
-          className={`btn btn--secondary flip-toolbar__cine-lock ${isLocked ? 'flip-toolbar__cine-lock--active' : ''}`}
+          className={`flip-toolbar__icon-btn ${isLocked ? 'flip-toolbar__icon-btn--active' : ''}`}
           onClick={handleToggleLock}
           title={
             isLocked
               ? `Locked to ${lockedFace} view — click to unlock`
-              : `Click to lock the current ${effectiveCinematic ? 'cinematic' : 'card'} view as the default`
+              : `Lock the current ${effectiveCinematic ? 'showcase' : 'card'} view as default`
           }
           disabled={!character}
         >
           {isLocked ? (
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
               <rect x="3" y="7" width="10" height="7" rx="1.2" stroke="currentColor" strokeWidth="1.3"/>
               <path d="M5 7V5a3 3 0 016 0v2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
             </svg>
           ) : (
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
               <rect x="3" y="7" width="10" height="7" rx="1.2" stroke="currentColor" strokeWidth="1.3"/>
               <path d="M5 7V5a3 3 0 015.5-1.6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
             </svg>
           )}
-          {isLocked ? 'Locked' : 'Lock'}
         </button>
+
         <button
-          className={`btn btn--secondary flip-toolbar__toggle ${cardFlipped ? 'flip-toolbar__toggle--flipped' : ''}`}
-          onClick={() => setCardFlipped(!cardFlipped)}
-          title={cardFlipped ? 'Show Card Front' : 'Show Details'}
+          className={`flip-toolbar__icon-btn ${editMode ? 'flip-toolbar__icon-btn--active' : ''}`}
+          onClick={() => setEditMode(!editMode)}
+          title={editMode ? 'Exit edit mode' : 'Edit'}
         >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M4 1h8a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V3a2 2 0 012-2z" stroke="currentColor" strokeWidth="1.2"/>
-            <path d="M8 1v14" stroke="currentColor" strokeWidth="1.2" strokeDasharray="2 2"/>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <path d="M11.5 1.5l3 3L5 14H2v-3L11.5 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          {cardFlipped ? 'Card' : 'Details'}
         </button>
       </div>
+
+      {/* ── Tab row (visible on details face, hidden on card via CSS) ─── */}
+      <div className="flip-toolbar__tab-row" data-face={cardFlipped ? 'details' : 'card'}>
+        <div ref={setTabSlotEl} className="flip-toolbar__tab-slot" />
+      </div>
+
       <div className="flip-container" data-flipped={cardFlipped}>
         <div className="flip-inner">
           <div className="flip-front">

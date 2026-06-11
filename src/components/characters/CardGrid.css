@@ -21,7 +21,7 @@
 
 .card-grid--editing {
   border: 2px dashed var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 8px;
 }
 
@@ -32,14 +32,14 @@
 
 .card-grid--editing .card-grid__cell {
   border-color: var(--border-subtle);
-  background: rgba(167, 139, 250, 0.02);
+  background: rgba(var(--accent-characters-rgb), 0.03);
 }
 
 /* Single ghost block rendered at the would-be drop position. Replaces the
    old per-cell green/red highlights — much clearer view of where a block
    will actually land. */
 .card-grid__ghost {
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 2px solid;
   pointer-events: none;
   z-index: 3;
@@ -50,9 +50,12 @@
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.05em;
   text-align: center;
-  transition: background 0.08s ease, border-color 0.08s ease, color 0.08s ease;
+  transition:
+    background var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    color var(--duration-fast) ease;
 }
 
 .card-grid__ghost--valid {

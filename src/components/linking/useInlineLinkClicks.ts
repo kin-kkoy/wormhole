@@ -79,6 +79,18 @@ export function useInlineLinkClicks() {
       if (link.dataset.broken === '1') {
         e.preventDefault();
         e.stopPropagation();
+        // Hand off to the repair menu (BrokenLinkRepairMenu, mounted at the
+        // WorldShell level) instead of dead-ending the click.
+        window.dispatchEvent(
+          new CustomEvent('wormhole:broken-link-click', {
+            detail: {
+              element: link,
+              entityType: link.dataset.entityType,
+              entityId: link.dataset.entityId,
+              label: link.textContent ?? '',
+            },
+          }),
+        );
         return;
       }
 

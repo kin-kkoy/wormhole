@@ -19,6 +19,11 @@ pub fn run_registry_migrations(conn: &Connection) -> Result<(), rusqlite::Error>
             "migrations/registry/002_add_summary_world_type.sql"
         ))?;
     }
+    if version < 3 {
+        conn.execute_batch(include_str!(
+            "migrations/registry/003_add_last_position.sql"
+        ))?;
+    }
     Ok(())
 }
 
@@ -89,6 +94,31 @@ pub fn run_world_migrations(conn: &Connection) -> Result<(), rusqlite::Error> {
         // Rust because the spans live arbitrarily deep inside TipTap JSON.
         strip_map_entity_inline_links(conn)?;
         conn.execute("UPDATE schema_version SET version = 12", [])?;
+    }
+    if version < 13 {
+        conn.execute_batch(include_str!(
+            "migrations/world/013_character_shelves.sql"
+        ))?;
+    }
+    if version < 14 {
+        conn.execute_batch(include_str!(
+            "migrations/world/014_ribbon_icon.sql"
+        ))?;
+    }
+    if version < 15 {
+        conn.execute_batch(include_str!(
+            "migrations/world/015_shelf_icon.sql"
+        ))?;
+    }
+    if version < 16 {
+        conn.execute_batch(include_str!(
+            "migrations/world/016_lore_doc_status.sql"
+        ))?;
+    }
+    if version < 17 {
+        conn.execute_batch(include_str!(
+            "migrations/world/017_read_progress.sql"
+        ))?;
     }
     Ok(())
 }

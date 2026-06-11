@@ -3,6 +3,26 @@
    into these vars in a later pass without touching downstream CSS. */
 
 :root {
+  /* ── Chrome voice — ONE family (Option E, 2026-06-11) ──────────────────
+     The chrome formerly spoke three voices (Cinzel display / Cormorant
+     editorial / JetBrains Mono micro). All three tokens now resolve to
+     iA Writer Quattro — the uniform "writer's desk" chrome font. The
+     tokens are kept (rather than merged) so chrome surfaces stay
+     re-skinnable later without another sweep. Hierarchy comes from
+     weight, size, case, and tracking — never typeface changes.
+     Content typography (the --char- and --lore- vars) stays
+     user-configurable below — the chrome voice never styles the user's
+     writing. */
+  --font-display:
+    'iA Writer Quattro', ui-sans-serif, system-ui, -apple-system,
+    'Segoe UI', sans-serif;
+  --font-voice-body:
+    'iA Writer Quattro', ui-sans-serif, system-ui, -apple-system,
+    'Segoe UI', sans-serif;
+  --font-micro:
+    'iA Writer Quattro', ui-sans-serif, system-ui, -apple-system,
+    'Segoe UI', sans-serif;
+
   /* Base families — bundled OFL webfonts (loaded from src/assets/fonts/) with
      system stacks as fallback if the woff2 fails to resolve. */
   --char-font-display:
@@ -31,8 +51,9 @@
   --char-size-label:    0.6875rem; /* 11px — uppercase eyebrows, card labels*/
   --char-size-value:    0.8125rem; /* 13px — KV values (separate from body) */
 
-  /* Letter-spacing for the label/eyebrow voice. */
-  --char-letter-label:  0.08em;
+  /* Letter-spacing for the label/eyebrow voice. Wide tracking — these are
+     plaque inscriptions in the micro voice, not UI labels. */
+  --char-letter-label:  0.14em;
 
   /* ── Lore Archive typography (Packet 10 §4.1). Write-mode only — Read Mode
         keeps its own --paper-* tokens. User-overridable via the Lore gear. ── */

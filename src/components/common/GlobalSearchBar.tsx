@@ -113,7 +113,7 @@ export function GlobalSearchBar({ onClose }: GlobalSearchBarProps) {
           ref={inputRef}
           className="global-search__input"
           type="text"
-          placeholder="Search characters, map entities, and lore documents"
+          placeholder="Search across all characters and lore…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -147,7 +147,12 @@ export function GlobalSearchBar({ onClose }: GlobalSearchBarProps) {
             <span className="global-search__result-body">
               <span className="global-search__title">{r.title}</span>
               {r.snippet && (
-                <span className="global-search__snippet">{r.snippet}</span>
+                <span className="global-search__snippet">
+                  {r.match_field === 'content' && (
+                    <span className="global-search__match-field">in content</span>
+                  )}
+                  {r.snippet}
+                </span>
               )}
             </span>
           </button>

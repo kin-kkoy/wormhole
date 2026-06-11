@@ -2,6 +2,12 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  animation: world-shell-enter 0.3s ease-out;
+}
+
+@keyframes world-shell-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .world-shell__content {
@@ -40,6 +46,12 @@
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .world-shell {
+    animation: none;
   }
 }
 

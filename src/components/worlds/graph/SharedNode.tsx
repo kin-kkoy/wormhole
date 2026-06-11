@@ -44,7 +44,8 @@ export function SharedNode({
       style={{ cursor: onClick ? 'pointer' : 'default' }}
       opacity={dimmed ? 0.15 : 1}
     >
-      {/* Square with rounded corners */}
+      {/* Square with rounded corners — hover brightens this same shape
+       *  (no surrounding halo ring; see GraphCanvas.css). */}
       <rect
         x={-half}
         y={-half}
@@ -52,9 +53,11 @@ export function SharedNode({
         height={size}
         rx={6}
         fill={fill}
-        opacity={0.2}
+        fillOpacity={0.15}
         stroke={fill}
-        strokeWidth={2}
+        strokeWidth={1.5}
+        strokeOpacity={0.5}
+        className="shared-node__box"
       />
 
       {/* Label text */}

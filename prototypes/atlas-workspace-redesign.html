@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atlas — The Cartographer's Table · Wormhole redesign prototype</title>
+<style>
+/* ============================================================
+   ATLAS WORKSPACE REDESIGN — "The Cartographer's Table"
+   Design reference prototype for the Wormhole Atlas rebuild.
+   Astral Scriptorium: void + paper, gold hairlines, three voices.
+   Fonts below mirror the app's bundled OFL catalog (Cinzel,
+   Cormorant Garamond, Inter, JetBrains Mono); production uses
+   the local bundles — this import is preview-only.
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root[data-theme="dark"] {
+  --bg-primary: #08090f;
+  --bg-secondary: #0f1118;
+  --bg-tertiary: #161924;
+  --bg-elevated: #1e2233;
+  --text-primary: #eae5da;
+  --text-secondary: #a8a092;
+  --text-muted: #6e6759;
+  --border: rgba(201, 184, 152, 0.13);
+  --border-subtle: rgba(201, 184, 152, 0.06);
+  --border-strong: rgba(201, 184, 152, 0.26);
+  --accent: #4a90ff;
+  --accent-rgb: 74, 144, 255;
+  --accent-characters: #9b6dff;
+  --accent-lore: #f0a830;
+  --accent-overview: #3dd68c;
+  --hover: rgba(232, 227, 216, 0.04);
+  --hover-bright: rgba(232, 227, 216, 0.08);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,.25), 0 20px 56px rgba(0,0,0,.40);
+  --glass-bg: rgba(15, 17, 24, 0.78);
+  --glass-border: rgba(201, 184, 152, 0.10);
+  --stage: radial-gradient(ellipse 120% 90% at 50% -10%, #10131e 0%, #08090f 60%);
+  --canvas-vignette: radial-gradient(ellipse 90% 85% at 50% 45%, transparent 55%, rgba(4,5,9,.55) 100%);
+}
+:root[data-theme="light"] {
+  --bg-primary: #f6f2e9;
+  --bg-secondary: #efe9db;
+  --bg-tertiary: #e4dcc8;
+  --bg-elevated: #fffcf4;
+  --text-primary: #261f12;
+  --text-secondary: #4f4534;
+  --text-muted: #7d735f;
+  --border: rgba(94, 75, 42, 0.16);
+  --border-subtle: rgba(94, 75, 42, 0.08);
+  --border-strong: rgba(94, 75, 42, 0.26);
+  --accent: #2563eb;
+  --accent-rgb: 37, 99, 235;
+  --accent-characters: #7c3aed;
+  --accent-lore: #c27803;
+  --accent-overview: #059669;
+  --hover: rgba(94, 75, 42, 0.05);
+  --hover-bright: rgba(94, 75, 42, 0.08);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,.08), 0 20px 56px rgba(0,0,0,.10);
+  --glass-bg: rgba(255, 252, 244, 0.82);
+  --glass-border: rgba(94, 75, 42, 0.09);
+  --stage: radial-gradient(ellipse 120% 90% at 50% -10%, #fbf8f0 0%, #f0ebdd 60%);
+  --canvas-vignette: radial-gradient(ellipse 90% 85% at 50% 45%, transparent 60%, rgba(94,75,42,.12) 100%);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+kbd {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  padding: 1px 5px;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+input[type="text"] { font: inherit; color: inherit; }
+
+/* ── App frame ─────────────────────────────────────────── */
+.app { display: flex; flex-direction: column; height: 100vh; }
+
+/* ── Top dock ──────────────────────────────────────────── */
+.topdock {
+  display: flex; align-items: center; gap: 16px;
+  height: 50px; padding: 0 14px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.topdock__back {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px; border-radius: 8px; color: var(--text-secondary);
+}
+.topdock__back:hover { background: var(--hover-bright); color: var(--text-primary); }
+.topdock__world {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 17px; font-weight: 600; letter-spacing: .02em;
+  white-space: nowrap;
+}
+.topdock__world em { font-style: italic; color: var(--text-muted); font-size: 13px; font-weight: 400; margin-left: 8px; }
+.topdock__tabs { display: flex; gap: 2px; margin: 0 auto; }
+.tab {
+  position: relative;
+  padding: 8px 18px; border-radius: 8px;
+  font-size: 12.5px; font-weight: 500; letter-spacing: .04em;
+  color: var(--text-secondary);
+}
+.tab:hover { background: var(--hover); color: var(--text-primary); }
+.tab--active { color: var(--accent); }
+.tab--active::after {
+  content: ''; position: absolute; left: 16px; right: 16px; bottom: -1px;
+  height: 2px; border-radius: 2px; background: var(--accent);
+  box-shadow: 0 0 12px rgba(var(--accent-rgb), .7);
+}
+.tab--ov.tab--active { color: var(--accent-overview); }
+.topdock__right { display: flex; align-items: center; gap: 8px; }
+.searchbtn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text-muted); font-size: 12px;
+}
+.searchbtn:hover { border-color: var(--border-strong); color: var(--text-secondary); }
+.iconbtn {
+  display: grid; place-items: center; width: 32px; height: 32px;
+  border-radius: 8px; color: var(--text-secondary);
+}
+.iconbtn:hover { background: var(--hover-bright); color: var(--text-primary); }
+.iconbtn svg { width: 17px; height: 17px; }
+
+/* ── Workspace ─────────────────────────────────────────── */
+.workspace { display: flex; flex: 1; min-height: 0; }
+
+/* ── Tool rail ─────────────────────────────────────────── */
+.rail {
+  width: 58px; flex-shrink: 0;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 10px 0; gap: 2px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+}
+.rail__group-label {
+  font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: .22em;
+  color: var(--text-muted); text-transform: uppercase;
+  margin: 8px 0 4px;
+}
+.rail__rule { width: 26px; height: 1px; background: var(--border); margin: 8px 0; }
+.tool {
+  position: relative;
+  display: grid; place-items: center;
+  width: 40px; height: 38px; border-radius: 9px;
+  color: var(--text-secondary);
+}
+.tool svg { width: 19px; height: 19px; }
+.tool:hover { background: var(--hover-bright); color: var(--text-primary); }
+.tool--active {
+  background: rgba(var(--accent-rgb), .14);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), .35);
+}
+.tool .tip {
+  position: absolute; left: 50px; top: 50%; transform: translateY(-50%);
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px; border-radius: 8px; white-space: nowrap;
+  background: var(--bg-elevated); border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg); font-size: 12px; color: var(--text-primary);
+  opacity: 0; pointer-events: none; transition: opacity .12s; z-index: 60;
+}
+.tool:hover .tip { opacity: 1; transition-delay: .25s; }
+.rail__spacer { flex: 1; }
+
+/* ── Canvas stage ──────────────────────────────────────── */
+.stage { position: relative; flex: 1; min-width: 0; background: var(--stage); }
+#map { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.stage__grain {
+  position: absolute; inset: 0; pointer-events: none; opacity: .35; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.48 0 0 0 0 0.42 0 0 0 0.5 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.stage__vignette { position: absolute; inset: 0; pointer-events: none; background: var(--canvas-vignette); }
+
+/* Pins */
+.pin {
+  position: absolute; transform: translate(-50%, -100%);
+  display: flex; flex-direction: column; align-items: center;
+  cursor: pointer; z-index: 10;
+}
+.pin__glyph {
+  width: 26px; height: 26px; display: grid; place-items: center;
+  border-radius: 50% 50% 50% 4px; transform: rotate(0deg);
+  background: var(--bg-elevated);
+  border: 1.5px solid var(--pin-color, var(--accent));
+  color: var(--pin-color, var(--accent));
+  box-shadow: 0 3px 10px rgba(0,0,0,.45);
+  transition: transform .15s cubic-bezier(.34,1.56,.64,1);
+}
+.pin__glyph svg { width: 13px; height: 13px; }
+.pin:hover .pin__glyph { transform: scale(1.18); }
+.pin--selected .pin__glyph {
+  background: var(--pin-color, var(--accent)); color: #08090f;
+  box-shadow: 0 0 0 4px rgba(var(--accent-rgb), .22), 0 3px 12px rgba(0,0,0,.5);
+}
+.pin__label {
+  margin-top: 4px;
+  font-family: 'Cormorant Garamond', serif; font-weight: 600;
+  font-size: 13px; letter-spacing: .03em; white-space: nowrap;
+  color: var(--text-primary);
+  text-shadow: 0 1px 4px rgba(0,0,0,.8), 0 0 10px rgba(0,0,0,.5);
+}
+:root[data-theme="light"] .pin__label { text-shadow: 0 1px 3px rgba(255,252,244,.9); }
+
+/* Floating tool options bar */
+.toolbar-float {
+  position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 14px;
+  padding: 8px 16px; border-radius: 12px;
+  background: var(--glass-bg); border: 1px solid var(--glass-border);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-lg); z-index: 20;
+}
+.toolbar-float__tool {
+  font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--accent);
+  display: flex; align-items: center; gap: 8px;
+}
+.toolbar-float__rule { width: 1px; height: 20px; background: var(--border); }
+.opt { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--text-secondary); }
+.opt output { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-primary); min-width: 20px; text-align: right; }
+input[type="range"] {
+  -webkit-appearance: none; appearance: none; width: 90px; height: 3px; border-radius: 2px;
+  background: linear-gradient(to right, var(--accent) var(--fill, 40%), var(--bg-elevated) var(--fill, 40%));
+  outline: none; cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 13px; height: 13px; border-radius: 50%;
+  background: var(--text-primary); border: 2px solid var(--accent);
+  box-shadow: 0 1px 4px rgba(0,0,0,.4);
+}
+
+/* Minimap */
+.minimap {
+  position: absolute; left: 14px; bottom: 40px; z-index: 20;
+  padding: 6px; border-radius: 10px;
+  background: var(--glass-bg); border: 1px solid var(--glass-border);
+  backdrop-filter: blur(16px); box-shadow: var(--shadow-lg);
+}
+.minimap canvas { display: block; border-radius: 6px; }
+.minimap__title {
+  font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: .2em;
+  text-transform: uppercase; color: var(--text-muted);
+  text-align: center; padding: 4px 0 2px;
+}
+
+/* Onboarding coach card */
+.coach {
+  position: absolute; top: 70px; left: 14px; z-index: 20; width: 252px;
+  padding: 14px 16px; border-radius: 12px;
+  background: var(--glass-bg); border: 1px solid var(--glass-border);
+  backdrop-filter: blur(16px); box-shadow: var(--shadow-lg);
+  animation: coach-in .5s cubic-bezier(.16,1,.3,1) both .3s;
+}
+@keyframes coach-in { from { opacity: 0; transform: translateY(-8px); } }
+.coach__title {
+  font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 10px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.coach__close { color: var(--text-muted); font-size: 14px; line-height: 1; padding: 2px 4px; border-radius: 4px; }
+.coach__close:hover { color: var(--text-primary); background: var(--hover-bright); }
+.coach__row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 5px 0; font-size: 12px; color: var(--text-secondary); }
+.coach__row span:first-child { color: var(--text-primary); }
+.coach__kbds { display: flex; gap: 4px; }
+
+/* Status bar */
+.statusbar {
+  display: flex; align-items: center; gap: 18px;
+  height: 27px; padding: 0 14px;
+  background: var(--bg-secondary); border-top: 1px solid var(--border);
+  font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+  color: var(--text-muted); flex-shrink: 0;
+}
+.statusbar .sep { width: 1px; height: 12px; background: var(--border); }
+.statusbar__saved { display: flex; align-items: center; gap: 6px; margin-left: auto; font-family: 'Inter', sans-serif; font-size: 11px; }
+.statusbar__saved::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent-overview); box-shadow: 0 0 6px var(--accent-overview);
+}
+
+/* ── Right context panel ───────────────────────────────── */
+.panel {
+  width: 296px; flex-shrink: 0; display: flex; flex-direction: column;
+  background: var(--bg-secondary); border-left: 1px solid var(--border);
+}
+.panel__tabs { display: flex; border-bottom: 1px solid var(--border); }
+.panel__tab {
+  flex: 1; padding: 11px 0 10px;
+  font-family: 'Cinzel', serif; font-size: 9.5px; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--text-muted);
+  border-bottom: 2px solid transparent;
+}
+.panel__tab:hover { color: var(--text-secondary); }
+.panel__tab--active { color: var(--accent); border-bottom-color: var(--accent); }
+.panel__body { flex: 1; overflow-y: auto; padding: 14px; }
+.panel__body::-webkit-scrollbar { width: 8px; }
+.panel__body::-webkit-scrollbar-thumb { background: var(--bg-elevated); border-radius: 4px; }
+
+/* Layers */
+.tier { margin-bottom: 16px; }
+.tier__head {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+  font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--text-secondary);
+}
+.tier__head::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.tier__hint { font-size: 11px; color: var(--text-muted); font-style: italic; font-family: 'Cormorant Garamond', serif; font-size: 13px; padding: 4px 2px 0; line-height: 1.45; }
+.layer {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 8px; border-radius: 8px; cursor: pointer;
+}
+.layer:hover { background: var(--hover); }
+.layer__eye { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; color: var(--text-secondary); flex-shrink: 0; }
+.layer__eye svg { width: 15px; height: 15px; }
+.layer--off .layer__eye, .layer--off .layer__name { color: var(--text-muted); }
+.layer--off .layer__name { text-decoration: line-through; text-decoration-color: var(--border-strong); }
+.layer__name { font-size: 12.5px; color: var(--text-primary); flex: 1; }
+.layer__swatch { width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--border); flex-shrink: 0; }
+
+/* Inspector */
+.insp-empty {
+  text-align: center; padding: 44px 18px; color: var(--text-muted);
+}
+.insp-empty svg { width: 38px; height: 38px; opacity: .5; margin-bottom: 12px; }
+.insp-empty p { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14.5px; line-height: 1.5; }
+.insp__type {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px; border-radius: 99px; font-size: 10.5px; letter-spacing: .08em;
+  text-transform: uppercase; font-weight: 600;
+  background: rgba(var(--accent-rgb), .12); color: var(--accent);
+  border: 1px solid rgba(var(--accent-rgb), .3);
+  margin-bottom: 10px;
+}
+.insp__name {
+  width: 100%; background: none; border: none; outline: none;
+  font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 600;
+  color: var(--text-primary); border-bottom: 1px solid transparent;
+  padding-bottom: 2px; margin-bottom: 4px;
+}
+.insp__name:focus { border-bottom-color: var(--accent); }
+.insp__coords { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--text-muted); margin-bottom: 16px; }
+.insp__sect {
+  font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--text-muted);
+  margin: 16px 0 8px; display: flex; align-items: center; gap: 8px;
+}
+.insp__sect::after { content: ''; flex: 1; height: 1px; background: var(--border-subtle); }
+.linkchip {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 10px; border-radius: 9px; margin-bottom: 6px;
+  border: 1px solid var(--border-subtle); cursor: pointer;
+}
+.linkchip:hover { background: var(--hover); border-color: var(--border); }
+.linkchip__dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.linkchip__name { font-size: 12.5px; color: var(--text-primary); flex: 1; }
+.linkchip__kind { font-size: 10px; color: var(--text-muted); letter-spacing: .05em; text-transform: uppercase; }
+.insp__notes {
+  font-family: 'Cormorant Garamond', serif; font-size: 14.5px; line-height: 1.55;
+  color: var(--text-secondary); padding: 2px;
+}
+.ghostbtn {
+  width: 100%; padding: 8px; margin-top: 4px;
+  border: 1px dashed var(--border); border-radius: 9px;
+  color: var(--text-muted); font-size: 12px;
+}
+.ghostbtn:hover { color: var(--accent); border-color: rgba(var(--accent-rgb), .4); }
+
+/* Legend */
+.legend-row { display: flex; align-items: center; gap: 10px; padding: 5px 4px; }
+.legend-row__swatch { width: 26px; height: 15px; border-radius: 4px; border: 1px solid var(--border); }
+.legend-row__name { font-size: 12px; color: var(--text-secondary); flex: 1; }
+.legend-row__elev { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-muted); }
+
+/* ── Command palette ───────────────────────────────────── */
+.palette-veil {
+  position: fixed; inset: 0; z-index: 100; display: none;
+  background: rgba(4, 5, 9, .55); backdrop-filter: blur(3px);
+}
+.palette-veil--open { display: block; }
+.palette {
+  position: absolute; top: 14%; left: 50%; transform: translateX(-50%);
+  width: 480px; max-width: 92vw;
+  background: var(--bg-elevated); border: 1px solid var(--border-strong);
+  border-radius: 14px; box-shadow: var(--shadow-lg); overflow: hidden;
+  animation: coach-in .22s cubic-bezier(.16,1,.3,1) both;
+}
+.palette input {
+  width: 100%; padding: 14px 18px; background: none; border: none; outline: none;
+  font-size: 14px; border-bottom: 1px solid var(--border);
+}
+.palette__list { max-height: 320px; overflow-y: auto; padding: 6px; }
+.palette__item {
+  display: flex; align-items: center; gap: 11px;
+  padding: 9px 12px; border-radius: 8px; cursor: pointer;
+  color: var(--text-secondary); font-size: 13px;
+}
+.palette__item svg { width: 15px; height: 15px; flex-shrink: 0; }
+.palette__item span { flex: 1; color: var(--text-primary); }
+.palette__item small { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); }
+.palette__item:hover, .palette__item--hi { background: rgba(var(--accent-rgb), .12); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ Top dock — world shell chrome ═══ -->
+  <header class="topdock">
+    <button class="topdock__back" title="Back to world index">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="topdock__world">Aerthos<em>Third Age · 412 entries</em></div>
+    <nav class="topdock__tabs">
+      <button class="tab tab--ov">Overview</button>
+      <button class="tab tab--active">Atlas</button>
+      <button class="tab">Characters</button>
+      <button class="tab">Lore</button>
+    </nav>
+    <div class="topdock__right">
+      <button class="searchbtn" id="openPalette">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        Search or command… <kbd>Ctrl K</kbd>
+      </button>
+      <button class="iconbtn" id="themeToggle" title="Toggle theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="workspace">
+
+    <!-- ═══ Tool rail ═══ -->
+    <aside class="rail" id="rail">
+      <button class="tool tool--active" data-tool="select" aria-label="Select & pan">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 3l7.5 18 2.4-7.1L21 11.5 4 3z"/></svg>
+        <span class="tip">Select &amp; Pan <kbd>V</kbd></span>
+      </button>
+      <div class="rail__rule"></div>
+      <div class="rail__group-label">Terrain</div>
+      <button class="tool" data-tool="paint" aria-label="Raise land">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 18h18M6 18l4.5-9L14 15l2.5-4.5L20 18"/></svg>
+        <span class="tip">Raise Land <kbd>B</kbd></span>
+      </button>
+      <button class="tool" data-tool="carve" aria-label="Carve ocean">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 8c2.5 0 2.5 2 5 2s2.5-2 5-2 2.5 2 5 2 2.5-2 3-2M3 14c2.5 0 2.5 2 5 2s2.5-2 5-2 2.5 2 5 2 2.5-2 3-2"/></svg>
+        <span class="tip">Carve Ocean <kbd>C</kbd></span>
+      </button>
+      <button class="tool" data-tool="smooth" aria-label="Smooth terrain">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 16c4-6 12-6 16 0"/><path d="M4 20h16"/></svg>
+        <span class="tip">Smooth <kbd>S</kbd></span>
+      </button>
+      <div class="rail__rule"></div>
+      <div class="rail__group-label">Marks</div>
+      <button class="tool" data-tool="pin" aria-label="Place marker">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 21s-7-6.1-7-11a7 7 0 0 1 14 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <span class="tip">Place Marker <kbd>P</kbd></span>
+      </button>
+      <div class="rail__spacer"></div>
+      <button class="tool" id="undoBtn" aria-label="Undo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>
+        <span class="tip">Undo <kbd>Ctrl Z</kbd></span>
+      </button>
+    </aside>
+
+    <!-- ═══ Canvas stage ═══ -->
+    <main class="stage" id="stage">
+      <canvas id="map"></canvas>
+      <div class="stage__grain"></div>
+      <div class="stage__vignette"></div>
+      <div id="pinHost"></div>
+
+      <div class="toolbar-float" id="toolOpts">
+        <div class="toolbar-float__tool" id="toolName">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 3l7.5 18 2.4-7.1L21 11.5 4 3z"/></svg>
+          <span>Select</span>
+        </div>
+        <div class="toolbar-float__rule"></div>
+        <label class="opt">Brush
+          <input type="range" id="brushSize" min="2" max="22" value="8">
+          <output id="brushOut">8</output>
+        </label>
+        <label class="opt">Strength
+          <input type="range" id="brushStr" min="1" max="10" value="4">
+          <output id="strOut">4</output>
+        </label>
+      </div>
+
+      <div class="coach" id="coach">
+        <div class="coach__title">Getting started
+          <button class="coach__close" id="coachClose">✕</button>
+        </div>
+        <div class="coach__row"><span>Raise your first coastline</span><span class="coach__kbds"><kbd>B</kbd></span></div>
+        <div class="coach__row"><span>Pan &amp; zoom the table</span><span class="coach__kbds"><kbd>drag</kbd><kbd>scroll</kbd></span></div>
+        <div class="coach__row"><span>Mark a place of note</span><span class="coach__kbds"><kbd>P</kbd></span></div>
+        <div class="coach__row"><span>Everything else</span><span class="coach__kbds"><kbd>Ctrl K</kbd></span></div>
+      </div>
+
+      <div class="minimap">
+        <canvas id="minimap" width="140" height="140"></canvas>
+        <div class="minimap__title">Aerthos · 160 × 160</div>
+      </div>
+    </main>
+
+    <!-- ═══ Context panel ═══ -->
+    <aside class="panel">
+      <div class="panel__tabs">
+        <button class="panel__tab panel__tab--active" data-panel="layers">Layers</button>
+        <button class="panel__tab" data-panel="inspector">Inspector</button>
+        <button class="panel__tab" data-panel="legend">Legend</button>
+      </div>
+
+      <div class="panel__body" id="panel-layers">
+        <div class="tier">
+          <div class="tier__head">Sky</div>
+          <div class="layer" data-layer="pins">
+            <span class="layer__eye"></span>
+            <span class="layer__name">Markers &amp; labels</span>
+            <span class="layer__swatch" style="background: rgba(74,144,255,.5)"></span>
+          </div>
+        </div>
+        <div class="tier">
+          <div class="tier__head">Surface</div>
+          <div class="layer" data-layer="shade">
+            <span class="layer__eye"></span>
+            <span class="layer__name">Terrain shading</span>
+            <span class="layer__swatch" style="background: linear-gradient(135deg,#5d7d4e,#9aa0a8)"></span>
+          </div>
+          <div class="layer" data-layer="contours">
+            <span class="layer__eye"></span>
+            <span class="layer__name">Contour ink</span>
+            <span class="layer__swatch" style="background: repeating-linear-gradient(45deg,#c9b898 0 1px,transparent 1px 4px)"></span>
+          </div>
+          <div class="layer" data-layer="grid">
+            <span class="layer__eye"></span>
+            <span class="layer__name">Survey grid</span>
+            <span class="layer__swatch" style="background: repeating-linear-gradient(90deg,rgba(201,184,152,.4) 0 1px,transparent 1px 5px)"></span>
+          </div>
+        </div>
+        <div class="tier">
+          <div class="tier__head">Underground</div>
+          <div class="tier__hint">Cavern networks arrive with the tunnels update — carved as subtractive node graphs beneath the surface crust.</div>
+        </div>
+      </div>
+
+      <div class="panel__body" id="panel-inspector" hidden></div>
+
+      <div class="panel__body" id="panel-legend" hidden>
+        <div class="tier"><div class="tier__head">Elevation bands</div></div>
+        <div id="legendRows"></div>
+        <div class="tier" style="margin-top:18px"><div class="tier__head">Reading the map</div></div>
+        <div class="tier__hint">The gold line is the mathematical coastline — elevation zero. Faint inner rings mark each rise of two units toward the peaks.</div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ═══ Status bar ═══ -->
+  <footer class="statusbar">
+    <span id="statCoords">x —, z —</span>
+    <span class="sep"></span>
+    <span id="statZoom">100%</span>
+    <span class="sep"></span>
+    <span>grid 160×160</span>
+    <span class="sep"></span>
+    <span id="statTool">select</span>
+    <span class="statusbar__saved">All changes saved locally</span>
+  </footer>
+</div>
+
+<!-- ═══ Command palette ═══ -->
+<div class="palette-veil" id="paletteVeil">
+  <div class="palette">
+    <input type="text" id="paletteInput" placeholder="Search markers, switch tools, toggle layers…">
+    <div class="palette__list" id="paletteList"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ════════════════════════════════════════════════════════════
+   TERRAIN MODEL — per references/atlas-2d-foundation.md:
+   Float32Array elevation grid, sea level 0.0, deep-ocean
+   baseline, marching squares for all boundary ink.
+   ════════════════════════════════════════════════════════════ */
+const GRID = 160;
+const elev = new Float32Array(GRID * GRID).fill(-8);
+
+/* Deterministic value noise to seed a believable starter continent */
+function hash(x, y) { let h = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return h - Math.floor(h); }
+function noise(x, y) {
+  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+  return hash(xi, yi) * (1-u) * (1-v) + hash(xi+1, yi) * u * (1-v)
+       + hash(xi, yi+1) * (1-u) * v + hash(xi+1, yi+1) * u * v;
+}
+(function seed() {
+  for (let y = 0; y < GRID; y++) for (let x = 0; x < GRID; x++) {
+    const nx = x / GRID - 0.5, ny = y / GRID - 0.5;
+    let e = 0, f = 3.2, a = 1, sum = 0;
+    for (let o = 0; o < 4; o++) { e += noise(x / GRID * f + 7, y / GRID * f + 3) * a; sum += a; a *= .5; f *= 2.1; }
+    e /= sum;
+    const d = Math.sqrt(nx*nx + ny*ny) * 2.1;           // radial falloff → island
+    const elevation = (e - 0.34 - d * d * 0.55) * 26;
+    elev[y * GRID + x] = Math.max(-9, Math.min(9, elevation));
+  }
+})();
+
+/* ── Elevation → color bands (Astral Scriptorium terrain palette) ── */
+const BANDS = [
+  { t: -9,   c: [10, 24, 44],   name: 'Abyssal deep',   label: '< −6' },
+  { t: -6,   c: [16, 38, 66],   name: 'Open ocean',     label: '−6 … −3' },
+  { t: -3,   c: [27, 60, 94],   name: 'Coastal shelf',  label: '−3 … 0' },
+  { t: 0,    c: [196, 176, 134],name: 'Strand & sand',  label: '0 … 0.6' },
+  { t: 0.6,  c: [98, 122, 76],  name: 'Lowland green',  label: '0.6 … 3' },
+  { t: 3,    c: [124, 132, 96], name: 'Highland',       label: '3 … 5' },
+  { t: 5,    c: [138, 138, 130],name: 'Mountain rock',  label: '5 … 7' },
+  { t: 7,    c: [226, 224, 214],name: 'Snowline',       label: '> 7' },
+];
+function bandColor(e) {
+  for (let i = BANDS.length - 1; i >= 0; i--) if (e >= BANDS[i].t) return BANDS[i].c;
+  return BANDS[0].c;
+}
+
+/* ── Offscreen watercolor fill (supersampled bilinear) ── */
+const SS = 3, OW = GRID * SS;
+const off = document.createElement('canvas'); off.width = OW; off.height = OW;
+const offCtx = off.getContext('2d');
+const offImg = offCtx.createImageData(OW, OW);
+function sampleElev(gx, gy) {
+  gx = Math.max(0, Math.min(GRID - 1.001, gx)); gy = Math.max(0, Math.min(GRID - 1.001, gy));
+  const x0 = Math.floor(gx), y0 = Math.floor(gy), fx = gx - x0, fy = gy - y0;
+  const i = y0 * GRID + x0;
+  return elev[i] * (1-fx) * (1-fy) + elev[i+1] * fx * (1-fy)
+       + elev[i+GRID] * (1-fx) * fy + elev[i+GRID+1] * fx * fy;
+}
+let layerShade = true;
+function paintTerrain() {
+  const d = offImg.data;
+  const inv = 1 / SS;
+  for (let py = 0; py < OW; py++) {
+    for (let px = 0; px < OW; px++) {
+      const gx = px * inv, gy = py * inv;
+      const e = sampleElev(gx, gy);
+      const c = bandColor(e);
+      let sh = 1;
+      if (layerShade && e > 0) {
+        const dx = sampleElev(gx + .6, gy) - sampleElev(gx - .6, gy);
+        const dy = sampleElev(gx, gy + .6) - sampleElev(gx, gy - .6);
+        sh = Math.max(.72, Math.min(1.22, 1 + (dx - dy) * 0.10));
+      } else if (e <= 0) {
+        sh = 1 + Math.max(-0.14, e * 0.012);            // gentle depth falloff
+      }
+      const o = (py * OW + px) * 4;
+      d[o] = c[0] * sh; d[o+1] = c[1] * sh; d[o+2] = c[2] * sh; d[o+3] = 255;
+    }
+  }
+  offCtx.putImageData(offImg, 0, 0);
+}
+
+/* ── Marching squares isoline strokes (the "contour ink") ── */
+function strokeIso(ctx, t, toX, toY) {
+  const lerp = (a, b) => (t - a) / (b - a);
+  ctx.beginPath();
+  for (let y = 0; y < GRID - 1; y++) {
+    for (let x = 0; x < GRID - 1; x++) {
+      const i = y * GRID + x;
+      const tl = elev[i], tr = elev[i+1], br = elev[i+GRID+1], bl = elev[i+GRID];
+      const code = (tl > t ? 8 : 0) | (tr > t ? 4 : 0) | (br > t ? 2 : 0) | (bl > t ? 1 : 0);
+      if (code === 0 || code === 15) continue;
+      const top    = [x + lerp(tl, tr), y];
+      const right  = [x + 1, y + lerp(tr, br)];
+      const bottom = [x + lerp(bl, br), y + 1];
+      const left   = [x, y + lerp(tl, bl)];
+      const segs = {
+        1:[[left,bottom]], 2:[[bottom,right]], 3:[[left,right]], 4:[[top,right]],
+        5:[[top,left],[bottom,right]], 6:[[top,bottom]], 7:[[top,left]],
+        8:[[top,left]], 9:[[top,bottom]], 10:[[top,right],[bottom,left]],
+        11:[[top,right]], 12:[[left,right]], 13:[[bottom,right]], 14:[[left,bottom]]
+      }[code];
+      for (const [a, b] of segs) {
+        ctx.moveTo(toX(a[0]), toY(a[1]));
+        ctx.lineTo(toX(b[0]), toY(b[1]));
+      }
+    }
+  }
+  ctx.stroke();
+}
+
+/* ════════════════════════════════════════════════════════════
+   VIEWPORT — pan / zoom transform (blueprint §4 inversion math)
+   ════════════════════════════════════════════════════════════ */
+const canvas = document.getElementById('map');
+const ctx = canvas.getContext('2d');
+const stage = document.getElementById('stage');
+const view = { x: 0, y: 0, k: 4 };
+let needsRender = true;
+
+function resize() {
+  const r = stage.getBoundingClientRect();
+  canvas.width = r.width * devicePixelRatio;
+  canvas.height = r.height * devicePixelRatio;
+  needsRender = true;
+}
+function fitView() {
+  const r = stage.getBoundingClientRect();
+  view.k = Math.min(r.width, r.height) / GRID * 0.86;
+  view.x = (r.width - GRID * view.k) / 2;
+  view.y = (r.height - GRID * view.k) / 2;
+}
+const toScreenX = wx => wx * view.k + view.x;
+const toScreenY = wy => wy * view.k + view.y;
+const toWorldX = sx => (sx - view.x) / view.k;
+const toWorldY = sy => (sy - view.y) / view.k;
+
+let layerContours = true, layerGrid = false, layerPins = true;
+
+function render() {
+  const dpr = devicePixelRatio;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+
+  /* parchment drop shadow under the map sheet */
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,.55)';
+  ctx.shadowBlur = 40; ctx.shadowOffsetY = 12;
+  ctx.fillStyle = '#0b1d33';
+  ctx.fillRect(toScreenX(0), toScreenY(0), GRID * view.k, GRID * view.k);
+  ctx.restore();
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(toScreenX(0), toScreenY(0), GRID * view.k, GRID * view.k);
+  ctx.clip();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(off, toScreenX(0), toScreenY(0), GRID * view.k, GRID * view.k);
+
+  if (layerGrid) {
+    ctx.strokeStyle = 'rgba(201,184,152,.14)'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let g = 0; g <= GRID; g += 20) {
+      ctx.moveTo(toScreenX(g), toScreenY(0)); ctx.lineTo(toScreenX(g), toScreenY(GRID));
+      ctx.moveTo(toScreenX(0), toScreenY(g)); ctx.lineTo(toScreenX(GRID), toScreenY(g));
+    }
+    ctx.stroke();
+  }
+
+  if (layerContours) {
+    ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(234,229,218,.13)';
+    for (const t of [2, 4, 6]) strokeIso(ctx, t, toScreenX, toScreenY);
+    ctx.lineWidth = 1.4; ctx.strokeStyle = 'rgba(201,184,152,.75)';
+    strokeIso(ctx, 0, toScreenX, toScreenY);                 // the coastline, in gold ink
+    ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(91,160,222,.25)';
+    strokeIso(ctx, -3, toScreenX, toScreenY);                // shelf edge
+  }
+  ctx.restore();
+
+  /* gold frame around the sheet — the drafting table's brass rule */
+  ctx.strokeStyle = 'rgba(201,184,152,.4)'; ctx.lineWidth = 1;
+  ctx.strokeRect(toScreenX(0) - .5, toScreenY(0) - .5, GRID * view.k + 1, GRID * view.k + 1);
+
+  drawMinimap();
+  updatePinPositions();
+}
+
+function frame() {
+  if (needsRender) { render(); needsRender = false; }
+  requestAnimationFrame(frame);
+}
+
+/* ── Minimap ── */
+const mm = document.getElementById('minimap');
+const mmCtx = mm.getContext('2d');
+function drawMinimap() {
+  mmCtx.clearRect(0, 0, 140, 140);
+  mmCtx.drawImage(off, 0, 0, 140, 140);
+  const r = stage.getBoundingClientRect();
+  const s = 140 / GRID;
+  mmCtx.strokeStyle = 'rgba(234,229,218,.85)'; mmCtx.lineWidth = 1;
+  mmCtx.strokeRect(toWorldX(0) * s, toWorldY(0) * s, (r.width / view.k) * s, (r.height / view.k) * s);
+}
+
+/* ════════════════════════════════════════════════════════════
+   MARKERS — sample world entities with cross-system links
+   ════════════════════════════════════════════════════════════ */
+const PIN_COLORS = { settlement: 'var(--accent)', landmark: 'var(--accent-lore)', character: 'var(--accent-characters)' };
+const pins = [
+  { id: 'p1', name: 'Vehl Harbor', type: 'settlement', x: 58, y: 96,
+    notes: 'The last deep-water port before the Shelf. Salt-stained piers, customs houses of the Third Age.',
+    links: [ { name: 'Captain Ysolde Marr', sys: 'character' }, { name: 'The Tides Ledger', sys: 'lore' } ] },
+  { id: 'p2', name: 'The Sundered Spire', type: 'landmark', x: 96, y: 52,
+    notes: 'A mountain split clean in two during the Reckoning. Pilgrims climb the eastern half only.',
+    links: [ { name: 'The Reckoning of Aerthos', sys: 'lore' } ] },
+  { id: 'p3', name: 'Ashfall Reach', type: 'settlement', x: 78, y: 70,
+    notes: 'Seat of the inland kingdom. Grey banners, grey stone, long memories.',
+    links: [ { name: 'King Valdris', sys: 'character' }, { name: 'House Ashfall Annals', sys: 'lore' } ] },
+];
+const SYS_COLOR = { character: 'var(--accent-characters)', lore: 'var(--accent-lore)' };
+let selectedPin = null;
+
+const pinHost = document.getElementById('pinHost');
+function renderPins() {
+  pinHost.innerHTML = '';
+  if (!layerPins) return;
+  for (const p of pins) {
+    const el = document.createElement('div');
+    el.className = 'pin' + (selectedPin === p.id ? ' pin--selected' : '');
+    el.style.setProperty('--pin-color', PIN_COLORS[p.type] || 'var(--accent)');
+    el.dataset.id = p.id;
+    el.innerHTML = `<div class="pin__glyph">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="4.5"/></svg>
+      </div><div class="pin__label">${p.name}</div>`;
+    el.addEventListener('pointerdown', e => e.stopPropagation());
+    el.addEventListener('click', e => { e.stopPropagation(); selectPin(p.id); });
+    pinHost.appendChild(el);
+  }
+  updatePinPositions();
+}
+function updatePinPositions() {
+  for (const el of pinHost.children) {
+    const p = pins.find(q => q.id === el.dataset.id);
+    el.style.left = toScreenX(p.x) + 'px';
+    el.style.top = toScreenY(p.y) + 'px';
+  }
+}
+function selectPin(id) {
+  selectedPin = id;
+  renderPins();
+  showPanel('inspector');
+  renderInspector();
+}
+
+/* ── Inspector panel ── */
+const inspBody = document.getElementById('panel-inspector');
+function renderInspector() {
+  const p = pins.find(q => q.id === selectedPin);
+  if (!p) {
+    inspBody.innerHTML = `<div class="insp-empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 21s-7-6.1-7-11a7 7 0 0 1 14 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+      <p>Nothing under the glass.<br>Select a marker on the map, or press <kbd>P</kbd> to place one.</p></div>`;
+    return;
+  }
+  inspBody.innerHTML = `
+    <div class="insp__type">${p.type}</div>
+    <input class="insp__name" value="${p.name}" spellcheck="false">
+    <div class="insp__coords">x ${p.x.toFixed(1)} · z ${p.y.toFixed(1)} · elev ${sampleElev(p.x, p.y).toFixed(2)}</div>
+    <div class="insp__sect">Linked records</div>
+    ${p.links.map(l => `<div class="linkchip">
+        <span class="linkchip__dot" style="background:${SYS_COLOR[l.sys]}"></span>
+        <span class="linkchip__name">${l.name}</span>
+        <span class="linkchip__kind">${l.sys}</span></div>`).join('')}
+    <button class="ghostbtn">＋ Link a record…</button>
+    <div class="insp__sect">Field notes</div>
+    <div class="insp__notes">${p.notes || '<i>No notes yet.</i>'}</div>`;
+  inspBody.querySelector('.insp__name').addEventListener('input', e => {
+    p.name = e.target.value; renderPins();
+  });
+}
+renderInspector();
+
+/* ════════════════════════════════════════════════════════════
+   TOOLS & BRUSH (smart-paint logic from the validated prototype)
+   ════════════════════════════════════════════════════════════ */
+let tool = 'select';
+const TOOL_NAMES = { select: 'Select', paint: 'Raise Land', carve: 'Carve Ocean', smooth: 'Smooth', pin: 'Place Marker' };
+const undoStack = [];
+
+function setTool(t) {
+  tool = t;
+  document.querySelectorAll('.tool[data-tool]').forEach(b =>
+    b.classList.toggle('tool--active', b.dataset.tool === t));
+  document.getElementById('toolName').querySelector('span').textContent = TOOL_NAMES[t];
+  document.getElementById('statTool').textContent = t;
+  document.getElementById('toolOpts').style.opacity = (t === 'paint' || t === 'carve' || t === 'smooth') ? 1 : .55;
+  canvas.style.cursor = t === 'select' ? 'grab' : t === 'pin' ? 'copy' : 'crosshair';
+}
+document.querySelectorAll('.tool[data-tool]').forEach(b =>
+  b.addEventListener('click', () => setTool(b.dataset.tool)));
+
+const brushSize = document.getElementById('brushSize');
+const brushStr = document.getElementById('brushStr');
+function syncSlider(el, out) {
+  document.getElementById(out).textContent = el.value;
+  el.style.setProperty('--fill', ((el.value - el.min) / (el.max - el.min) * 100) + '%');
+}
+brushSize.addEventListener('input', () => syncSlider(brushSize, 'brushOut'));
+brushStr.addEventListener('input', () => syncSlider(brushStr, 'strOut'));
+syncSlider(brushSize, 'brushOut'); syncSlider(brushStr, 'strOut');
+
+function applyBrush(gx, gy) {
+  const radius = +brushSize.value;
+  const strength = +brushStr.value / 10;
+  const minX = Math.max(0, Math.floor(gx - radius)), maxX = Math.min(GRID - 1, Math.ceil(gx + radius));
+  const minY = Math.max(0, Math.floor(gy - radius)), maxY = Math.min(GRID - 1, Math.ceil(gy + radius));
+  for (let y = minY; y <= maxY; y++) for (let x = minX; x <= maxX; x++) {
+    const dist = Math.hypot(x - gx, y - gy);
+    if (dist > radius) continue;
+    const idx = y * GRID + x;
+    const falloff = 1 - dist / radius;
+    if (tool === 'paint') {
+      const cur = elev[idx];
+      if (cur < 0) {                                   /* smart paint: lift seabed toward a beach profile */
+        const target = 0.8 - (dist / radius) * 2.6;
+        elev[idx] = Math.max(cur, target);
+      } else {
+        elev[idx] = Math.min(9, cur + falloff * strength * 0.5);
+      }
+    } else if (tool === 'carve') {
+      elev[idx] = Math.max(-9, elev[idx] - falloff * strength);
+    } else if (tool === 'smooth') {
+      let sum = 0, n = 0;
+      for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) {
+        const xx = x + ox, yy = y + oy;
+        if (xx >= 0 && xx < GRID && yy >= 0 && yy < GRID) { sum += elev[yy * GRID + xx]; n++; }
+      }
+      elev[idx] += (sum / n - elev[idx]) * falloff * 0.5;
+    }
+  }
+}
+
+/* ── Pointer interaction ── */
+let dragging = false, painting = false, lastSX = 0, lastSY = 0;
+canvas.addEventListener('pointerdown', e => {
+  if (e.button === 1 || tool === 'select' || e.shiftKey) {
+    dragging = true; lastSX = e.clientX; lastSY = e.clientY;
+    canvas.style.cursor = 'grabbing';
+  } else if (tool === 'pin') {
+    const r = canvas.getBoundingClientRect();
+    const wx = toWorldX(e.clientX - r.left), wy = toWorldY(e.clientY - r.top);
+    if (wx >= 0 && wx <= GRID && wy >= 0 && wy <= GRID) {
+      const p = { id: 'p' + Date.now(), name: 'Unnamed Place', type: 'landmark', x: wx, y: wy, notes: '', links: [] };
+      pins.push(p); selectPin(p.id);
+      inspBody.querySelector('.insp__name')?.select();
+    }
+  } else {
+    undoStack.push(elev.slice()); if (undoStack.length > 24) undoStack.shift();
+    painting = true; paintAt(e);
+    if (selectedPin) { selectedPin = null; renderPins(); renderInspector(); }
+  }
+  canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointermove', e => {
+  const r = canvas.getBoundingClientRect();
+  const wx = toWorldX(e.clientX - r.left), wy = toWorldY(e.clientY - r.top);
+  document.getElementById('statCoords').textContent =
+    (wx >= 0 && wx <= GRID && wy >= 0 && wy <= GRID)
+      ? `x ${wx.toFixed(1)}, z ${wy.toFixed(1)} · elev ${sampleElev(wx, wy).toFixed(2)}`
+      : 'x —, z —';
+  if (dragging) {
+    view.x += e.clientX - lastSX; view.y += e.clientY - lastSY;
+    lastSX = e.clientX; lastSY = e.clientY;
+    needsRender = true;
+  } else if (painting) paintAt(e);
+});
+window.addEventListener('pointerup', () => {
+  dragging = false; painting = false;
+  canvas.style.cursor = tool === 'select' ? 'grab' : tool === 'pin' ? 'copy' : 'crosshair';
+});
+function paintAt(e) {
+  const r = canvas.getBoundingClientRect();
+  applyBrush(toWorldX(e.clientX - r.left), toWorldY(e.clientY - r.top));
+  paintTerrain(); needsRender = true;
+}
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const r = canvas.getBoundingClientRect();
+  const mx = e.clientX - r.left, my = e.clientY - r.top;
+  const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+  const k2 = Math.max(1.5, Math.min(28, view.k * factor));
+  view.x = mx - (mx - view.x) * (k2 / view.k);
+  view.y = my - (my - view.y) * (k2 / view.k);
+  view.k = k2;
+  document.getElementById('statZoom').textContent = Math.round(view.k / 4 * 100) + '%';
+  needsRender = true;
+}, { passive: false });
+
+/* Undo */
+function undo() {
+  const prev = undoStack.pop();
+  if (prev) { elev.set(prev); paintTerrain(); needsRender = true; }
+}
+document.getElementById('undoBtn').addEventListener('click', undo);
+
+/* ════════════════════════════════════════════════════════════
+   PANELS, LAYERS, LEGEND
+   ════════════════════════════════════════════════════════════ */
+function showPanel(name) {
+  document.querySelectorAll('.panel__tab').forEach(t =>
+    t.classList.toggle('panel__tab--active', t.dataset.panel === name));
+  for (const n of ['layers', 'inspector', 'legend'])
+    document.getElementById('panel-' + n).hidden = n !== name;
+}
+document.querySelectorAll('.panel__tab').forEach(t =>
+  t.addEventListener('click', () => showPanel(t.dataset.panel)));
+
+const EYE_ON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg>`;
+const EYE_OFF = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3l18 18M10.6 10.7a2.6 2.6 0 0 0 3.6 3.7M6.6 6.7C3.8 8.6 2 12 2 12s3.5 6.5 10 6.5c1.8 0 3.4-.5 4.7-1.2M12 5.5c6.5 0 10 6.5 10 6.5s-.9 1.7-2.6 3.4"/></svg>`;
+const layerState = { pins: true, shade: true, contours: true, grid: false };
+function applyLayers() {
+  layerPins = layerState.pins; layerContours = layerState.contours;
+  layerGrid = layerState.grid;
+  if (layerShade !== layerState.shade) { layerShade = layerState.shade; paintTerrain(); }
+  document.querySelectorAll('.layer').forEach(el => {
+    const on = layerState[el.dataset.layer];
+    el.classList.toggle('layer--off', !on);
+    el.querySelector('.layer__eye').innerHTML = on ? EYE_ON : EYE_OFF;
+  });
+  renderPins(); needsRender = true;
+}
+document.querySelectorAll('.layer').forEach(el =>
+  el.addEventListener('click', () => { layerState[el.dataset.layer] = !layerState[el.dataset.layer]; applyLayers(); }));
+
+/* Legend rows */
+document.getElementById('legendRows').innerHTML = BANDS.map(b =>
+  `<div class="legend-row">
+     <span class="legend-row__swatch" style="background:rgb(${b.c.join(',')})"></span>
+     <span class="legend-row__name">${b.name}</span>
+     <span class="legend-row__elev">${b.label}</span></div>`).join('');
+
+/* ════════════════════════════════════════════════════════════
+   COMMAND PALETTE
+   ════════════════════════════════════════════════════════════ */
+const PAL_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"/></svg>`;
+function paletteCommands() {
+  return [
+    ...Object.entries(TOOL_NAMES).map(([k, n]) => ({ label: n, kind: 'tool', run: () => setTool(k) })),
+    ...Object.keys(layerState).map(k => ({ label: `Toggle ${k} layer`, kind: 'layer', run: () => { layerState[k] = !layerState[k]; applyLayers(); } })),
+    ...pins.map(p => ({ label: p.name, kind: p.type, run: () => {
+      const r = stage.getBoundingClientRect();
+      view.k = 9; view.x = r.width / 2 - p.x * view.k; view.y = r.height / 2 - p.y * view.k;
+      selectPin(p.id); needsRender = true;
+    } })),
+    { label: 'Toggle theme', kind: 'app', run: toggleTheme },
+    { label: 'Fit map to view', kind: 'view', run: () => { fitView(); needsRender = true; } },
+  ];
+}
+const veil = document.getElementById('paletteVeil');
+const palInput = document.getElementById('paletteInput');
+const palList = document.getElementById('paletteList');
+function openPalette() {
+  veil.classList.add('palette-veil--open');
+  palInput.value = ''; renderPalette(''); palInput.focus();
+}
+function closePalette() { veil.classList.remove('palette-veil--open'); }
+function renderPalette(q) {
+  const items = paletteCommands().filter(c => c.label.toLowerCase().includes(q.toLowerCase()));
+  palList.innerHTML = items.map((c, i) =>
+    `<div class="palette__item${i === 0 ? ' palette__item--hi' : ''}" data-i="${i}">${PAL_ICON}<span>${c.label}</span><small>${c.kind}</small></div>`).join('')
+    || `<div class="palette__item"><span style="color:var(--text-muted)">No matches</span></div>`;
+  palList.querySelectorAll('[data-i]').forEach(el =>
+    el.addEventListener('click', () => { items[+el.dataset.i].run(); closePalette(); }));
+  palList._items = items;
+}
+palInput.addEventListener('input', () => renderPalette(palInput.value));
+palInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && palList._items?.length) { palList._items[0].run(); closePalette(); }
+  if (e.key === 'Escape') closePalette();
+});
+veil.addEventListener('click', e => { if (e.target === veil) closePalette(); });
+document.getElementById('openPalette').addEventListener('click', openPalette);
+
+/* ════════════════════════════════════════════════════════════
+   GLOBAL KEYS, THEME, BOOT
+   ════════════════════════════════════════════════════════════ */
+window.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openPalette(); return; }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); return; }
+  const map = { v: 'select', b: 'paint', c: 'carve', s: 'smooth', p: 'pin' };
+  if (map[e.key.toLowerCase()]) setTool(map[e.key.toLowerCase()]);
+  if (e.key === '[') { brushSize.value = +brushSize.value - 2; syncSlider(brushSize, 'brushOut'); }
+  if (e.key === ']') { brushSize.value = +brushSize.value + 2; syncSlider(brushSize, 'brushOut'); }
+  if (e.key === 'Escape' && selectedPin) { selectedPin = null; renderPins(); renderInspector(); }
+});
+
+function toggleTheme() {
+  const root = document.documentElement;
+  root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+}
+document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+document.getElementById('coachClose').addEventListener('click', () =>
+  document.getElementById('coach').remove());
+
+window.addEventListener('resize', () => { resize(); needsRender = true; });
+
+resize(); fitView(); paintTerrain(); applyLayers(); setTool('select');
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

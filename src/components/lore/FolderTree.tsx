@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import type { LoreFolder, LoreDocumentSummary } from '../../lib/commands';
+import type { LoreFolder, LoreDocumentSummary, LoreDocStatus } from '../../lib/commands';
 import { commands } from '../../lib/commands';
 import { ContextMenu } from '../common/ContextMenu';
 import { ConfirmDialog } from '../common/ConfirmDialog';
@@ -57,6 +57,22 @@ interface DragState {
 
 // Drop zone: 'before' = insert above, 'into' = reparent into folder, 'after' = insert below
 type DropZone = 'before' | 'into' | 'after';
+
+/** Worldbuilding lifecycle (Proposal 01) — order matters: it's the legend
+ *  order and the progress-bar segment order (most → least finished). */
+const DOC_STATUSES: { key: LoreDocStatus; label: string }[] = [
+  { key: 'done', label: 'Done' },
+  { key: 'wip', label: 'WIP' },
+  { key: 'draft', label: 'Draft' },
+  { key: 'stub', label: 'Stub' },
+];
+
+const STATUS_LABELS: Record<LoreDocStatus, string> = {
+  stub: 'Stub — a name and little else',
+  draft: 'Draft',
+  wip: 'In progress',
+  done: 'Complete',
+};
 
 interface DragOverState {
   targetId: string;
@@ -227,7 +243,20 @@ export function FolderTree({
     }
 
     // document
+    const ctxDoc = documents.find((d) => d.id === contextMenu.id);
     return [
+      ...DOC_STATUSES.map((s) => ({
+        label: `${ctxDoc?.status === s.key ? '● ' : '○ '}Mark as ${s.label}`,
+        onClick: async () => {
+          if (!contextMenu.id) return;
+          try {
+            await commands.updateLoreDocument({ documentId: contextMenu.id, status: s.key });
+            onRefresh();
+          } catch (e) {
+            console.error('Failed to set document status:', e);
+          }
+        },
+      })),
       {
         label: 'Rename',
         onClick: () => {
@@ -456,6 +485,10 @@ export function FolderTree({
         <span className="folder-tree__label" title={doc.title}>
           {doc.title}
         </span>
+        <span
+          className={`folder-tree__status folder-tree__status--${doc.status}`}
+          title={STATUS_LABELS[doc.status] ?? doc.status}
+        />
       </div>
     );
   }
@@ -497,9 +530,9 @@ export function FolderTree({
           <span className="folder-tree__label" title={folder.title}>
             {folder.title}
           </span>
-          {folder.docs.length + folder.children.length > 0 && (
+          {folder.docs.length > 0 && (
             <span className="folder-tree__count">
-              {folder.docs.length + folder.children.length}
+              {folder.docs.length}
             </span>
           )}
         </div>
@@ -512,6 +545,13 @@ export function FolderTree({
       </div>
     );
   }
+
+  // Status roll-up for the progress bar (Proposal 01).
+  const statusCounts = DOC_STATUSES.map((s) => ({
+    ...s,
+    count: documents.filter((d) => d.status === s.key).length,
+  }));
+  const totalDocs = documents.length;
 
   const trimmedQuery = searchQuery.trim().toLowerCase();
   const isFiltering = searchMode && trimmedQuery.length > 0;
@@ -623,6 +663,36 @@ export function FolderTree({
           </>
         )}
       </div>
+
+      {totalDocs > 0 && (
+        <div className="folder-tree__progress">
+          <div
+            className="folder-tree__progress-bar"
+            title={statusCounts
+              .filter((s) => s.count > 0)
+              .map((s) => `${s.count} ${s.label.toLowerCase()}`)
+              .join(' · ')}
+          >
+            {statusCounts
+              .filter((s) => s.count > 0)
+              .map((s) => (
+                <span
+                  key={s.key}
+                  className={`folder-tree__progress-seg folder-tree__progress-seg--${s.key}`}
+                  style={{ width: `${(s.count / totalDocs) * 100}%` }}
+                />
+              ))}
+          </div>
+          <div className="folder-tree__progress-legend">
+            {statusCounts.map((s) => (
+              <span key={s.key} className="folder-tree__progress-item">
+                <span className={`folder-tree__status folder-tree__status--${s.key}`} />
+                {s.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {contextMenu && (
         <ContextMenu

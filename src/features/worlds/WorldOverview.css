@@ -3,6 +3,35 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  position: relative;
+  isolation: isolate;
+}
+
+/* (The former multi-sun ambient radial glow was removed — it read as a
+   strange off-color light behind the graph.) */
+
+/* Star grain — pin-prick stars in the four suns' colors, tiled as a static layer */
+.world-overview::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.4;
+  background-image:
+    radial-gradient(1px 1px at 18% 15%, rgba(234, 229, 218, 0.45) 50%, transparent 51%),
+    radial-gradient(1px 1px at 72% 8%, rgba(234, 229, 218, 0.3) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 88% 55%, rgba(var(--accent-characters-rgb), 0.35) 50%, transparent 51%),
+    radial-gradient(1px 1px at 35% 72%, rgba(var(--accent-atlas-rgb), 0.3) 50%, transparent 51%),
+    radial-gradient(1px 1px at 95% 25%, rgba(234, 229, 218, 0.25) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 52% 40%, rgba(var(--accent-lore-rgb), 0.2) 50%, transparent 51%),
+    radial-gradient(1px 1px at 10% 48%, rgba(var(--accent-overview-rgb), 0.25) 50%, transparent 51%),
+    radial-gradient(1px 1px at 62% 85%, rgba(234, 229, 218, 0.35) 50%, transparent 51%);
+  background-size: 920px 720px;
+}
+
+:root[data-theme="light"] .world-overview::after {
+  display: none;
 }
 
 .world-overview--loading {
@@ -18,15 +47,91 @@
 .world-overview__toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 12px 20px;
+  padding: 14px 22px;
   flex-shrink: 0;
   gap: 12px;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border);
+  background: rgba(var(--bg-secondary-rgb), 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.world-overview__toolbar .graph-search {
+  flex: 1;
+  max-width: none;
+}
+
+/* ── World stats bar ────────────────────────────────────────────────── */
+.world-overview__stats {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.world-overview__stat {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.world-overview__stat-value {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.world-overview__stat[data-accent="characters"] .world-overview__stat-value {
+  color: var(--accent-characters);
+}
+
+.world-overview__stat[data-accent="lore"] .world-overview__stat-value {
+  color: var(--accent-lore);
+}
+
+.world-overview__stat-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.world-overview__edit-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  transition:
+    background-color var(--duration-fast),
+    color var(--duration-fast),
+    border-color var(--duration-fast),
+    transform var(--duration-fast) var(--ease-out-expo);
+  border: 1px solid transparent;
+  flex-shrink: 0;
+}
+
+.world-overview__edit-toggle:hover {
+  background: var(--hover-bright);
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+}
+
+.world-overview__edit-toggle:active {
+  transform: scale(0.93);
+}
+
+.world-overview__edit-toggle--active {
+  color: var(--accent-overview);
+  background: rgba(var(--accent-overview-rgb), 0.10);
+  border-color: rgba(var(--accent-overview-rgb), 0.2);
 }
 
 .world-overview__content {
   flex: 1;
   display: flex;
   overflow: hidden;
+  position: relative;
 }

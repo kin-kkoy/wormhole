@@ -8,37 +8,48 @@
   gap: 8px;
 }
 
-/* Name */
+/* Name — engraved, not labelled. No pill, no fill: ink with a faint
+   violet halo, as if struck into the card. */
 .card-header__name {
   font-family: var(--char-font-heading);
   font-size: var(--char-size-heading);
-  font-weight: 600;
-  color: var(--accent-characters);
+  font-weight: 500;
+  color: var(--text-primary);
   margin: 0;
-  padding: 6px 12px;
-  background: rgba(var(--accent-characters-rgb), 0.1);
-  border-radius: 6px;
-  line-height: 1.15;
-  letter-spacing: 0.005em;
+  padding: 0;
+  line-height: 1.18;
+  letter-spacing: 0.05em;
+  text-shadow: 0 0 28px rgba(var(--accent-characters-rgb), 0.45);
+}
+
+/* Edit-mode affordance: the engraving warms under the cursor. */
+.character-card--editing .card-header__name:hover {
+  color: var(--accent-characters);
+  cursor: text;
 }
 
 .card-header__name-input {
   font-family: var(--char-font-heading);
   font-size: var(--char-size-heading);
-  font-weight: 600;
+  font-weight: 500;
   color: var(--accent-characters);
-  background: var(--bg-primary);
-  border: 2px solid var(--accent-characters);
-  border-radius: 6px;
-  padding: 4px 10px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--accent-characters);
+  border-radius: 0;
+  padding: 0 0 2px;
   outline: none;
   width: 100%;
-  letter-spacing: 0.005em;
+  letter-spacing: 0.05em;
+  line-height: 1.18;
 }
 
-/* Ribbon */
+/* Plain color ribbon — thin horizontal fade */
 .card-header__ribbon {
-  height: 4px;
+  height: 3px;
   border-radius: 2px;
   width: 100%;
+  -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 38%, transparent 100%);
+  mask-image: linear-gradient(90deg, #000 0%, #000 38%, transparent 100%);
 }
+

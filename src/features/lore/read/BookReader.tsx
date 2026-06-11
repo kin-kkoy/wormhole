@@ -13,6 +13,7 @@ import {
 } from '../../../components/lore/read/BookPage';
 import type { AdjacentDocPosition } from '../../../components/lore/read/BookPage';
 import { BookReferencesRail } from '../../../components/lore/read/BookReferencesRail';
+import { BookColophon } from '../../../components/lore/read/BookColophon';
 import {
   flattenBookOrder,
   toRomanNumeral,
@@ -28,6 +29,9 @@ interface BookReaderProps {
   nextPageMap: Map<string, string>;
   selectedDocumentId: string | null;
   onSelectDocument: (id: string | null) => void;
+  /** Called after the colophon's "choose another volume" persists a new
+   *  next_page_link, so the owner (LoreArchive) can refresh nextPageMap. */
+  onNextPageLinksChanged?: () => void;
 }
 
 /** Find the chapter-level folder that contains the given doc, and return an
@@ -51,6 +55,7 @@ function chapterContains(chapter: ChapterNode, docId: string): boolean {
 
 const NARROW_BREAKPOINT = 1100;
 const NEW_DOC_TOAST_MS = 2500;
+const EMPTY_SET: Set<string> = new Set();
 
 export function BookReader({
   book,
@@ -58,6 +63,7 @@ export function BookReader({
   nextPageMap,
   selectedDocumentId,
   onSelectDocument,
+  onNextPageLinksChanged,
 }: BookReaderProps) {
   const readerLayout = useAppStore((s) => s.readerLayout);
   const setReaderLayout = useAppStore((s) => s.setReaderLayout);
@@ -69,6 +75,54 @@ export function BookReader({
 
   const [activeDoc, setActiveDoc] = useState<LoreDocumentFull | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Per-doc read/bookmark state (Proposal 03) — backed by the world DB's
+  // read_progress table so it travels with the .wormhole file.
+  // readDocIds is null until the initial load resolves, so the mark-read
+  // effect can't double-write the first opened doc.
+  const [readDocIds, setReadDocIds] = useState<Set<string> | null>(null);
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(() => new Set());
+  useEffect(() => {
+    let cancelled = false;
+    commands
+      .listReadProgress()
+      .then((entries) => {
+        if (cancelled) return;
+        setReadDocIds(new Set(entries.filter((e) => e.read_at).map((e) => e.document_id)));
+        setBookmarkedIds(new Set(entries.filter((e) => e.bookmarked).map((e) => e.document_id)));
+      })
+      .catch(console.error);
+    return () => {
+      cancelled = true;
+    };
+  }, [book.id]);
+
+  // Opening a document marks it read — once the initial load has resolved.
+  useEffect(() => {
+    if (!activeDoc || readDocIds === null) return;
+    const id = activeDoc.id;
+    if (readDocIds.has(id)) return;
+    commands
+      .markDocumentRead(id)
+      .then(() => setReadDocIds((prev) => new Set(prev ?? []).add(id)))
+      .catch(console.error);
+  }, [activeDoc, readDocIds]);
+
+  async function handleToggleBookmark() {
+    if (!activeDoc) return;
+    const id = activeDoc.id;
+    try {
+      const nowBookmarked = await commands.toggleDocumentBookmark(id);
+      setBookmarkedIds((prev) => {
+        const next = new Set(prev);
+        if (nowBookmarked) next.add(id);
+        else next.delete(id);
+        return next;
+      });
+    } catch (e) {
+      console.error('Failed to toggle bookmark:', e);
+    }
+  }
   const [isNarrow, setIsNarrow] = useState(() =>
     typeof window !== 'undefined' && window.innerWidth < NARROW_BREAKPOINT,
   );
@@ -90,6 +144,14 @@ export function BookReader({
     position: AdjacentDocPosition;
   };
   const [crossDocPrompt, setCrossDocPrompt] = useState<CrossDocPrompt | null>(null);
+
+  // End-of-book colophon. Next at the last sub-page of the book's final
+  // document opens this interstitial page instead of a confirm popup — the
+  // colophon itself is the deliberate gate for leaving the book.
+  const [showColophon, setShowColophon] = useState(false);
+  useEffect(() => {
+    setShowColophon(false);
+  }, [selectedDocumentId, book.id]);
 
   // Subtle "Now reading: <title>" chip that appears briefly when the user
   // crosses a document boundary via prev/next. Null = hidden.
@@ -189,6 +251,13 @@ export function BookReader({
   }
   function handleNextDoc(_position: AdjacentDocPosition) {
     if (currentIndex < 0) return;
+    // Last document in reading order → the colophon page, regardless of any
+    // next_page_link override (the override is surfaced as the colophon's
+    // continue card rather than via the popup).
+    if (currentIndex === flatOrder.length - 1) {
+      setShowColophon(true);
+      return;
+    }
     const current = flatOrder[currentIndex];
     const overrideId = current ? nextPageMap.get(current.id) : undefined;
     let next: LoreDocumentSummary | undefined;
@@ -231,18 +300,49 @@ export function BookReader({
   }
 
   const onPrevDoc = currentIndex > 0 ? handlePrevDoc : null;
-  // Next is enabled whenever there's either a flat-order neighbour OR a
-  // valid override target (the override can extend Next past the last
-  // flat-order doc, e.g. into another book).
-  const currentDoc = currentIndex >= 0 ? flatOrder[currentIndex] : undefined;
-  const overrideIdForNext = currentDoc ? nextPageMap.get(currentDoc.id) : undefined;
-  const overrideAlive = overrideIdForNext
-    ? documents.some((d) => d.id === overrideIdForNext)
-    : false;
-  const onNextDoc =
-    currentIndex >= 0 && (overrideAlive || currentIndex < flatOrder.length - 1)
-      ? handleNextDoc
-      : null;
+  // Next is always enabled while a doc is selected: mid-book it proposes the
+  // flat-order neighbour (or override) via the confirm popup; on the final
+  // document it opens the end-of-book colophon page.
+  const onNextDoc = currentIndex >= 0 ? handleNextDoc : null;
+
+  // Colophon data: the book's final document owns the continue-to override.
+  const lastDoc = flatOrder.length > 0 ? flatOrder[flatOrder.length - 1] : undefined;
+  const colophonOverrideId = lastDoc ? nextPageMap.get(lastDoc.id) : undefined;
+  const colophonTarget = colophonOverrideId
+    ? documents.find((d) => d.id === colophonOverrideId) ?? null
+    : null;
+
+  function handleColophonContinue(targetId: string) {
+    pendingToastRef.current = true;
+    setInitialSubPagePos('start');
+    setShowColophon(false);
+    onSelectDocument(targetId);
+  }
+
+  async function handleColophonChooseVolume(target: LoreDocumentSummary) {
+    if (!lastDoc) return;
+    try {
+      await commands.setNextPageLink({ documentId: lastDoc.id, targetId: target.id });
+      onNextPageLinksChanged?.();
+    } catch (e) {
+      console.error('Failed to set next page link:', e);
+    }
+  }
+
+  function handleColophonBack() {
+    // Land on the last sub-page of the final doc (paginated mode); the
+    // BookPage remount picks up 'end' via its pendingPosition mechanism.
+    setInitialSubPagePos('end');
+    setShowColophon(false);
+  }
+
+  function handleColophonReturnToLibrary() {
+    if (canGoUpLevel) {
+      handleGoUpLevel();
+    } else {
+      setSelectedDocumentId(null);
+    }
+  }
   // Only offer "go up a level" as the Prev fallback when the normal
   // doc-prev would be unavailable, so we don't short-circuit the popup.
   const onGoUpLevel = !onPrevDoc && canGoUpLevel ? handleGoUpLevel : null;
@@ -330,6 +430,7 @@ export function BookReader({
           <BookTableOfContents
             book={book}
             selectedDocumentId={selectedDocumentId}
+            readDocIds={readDocIds ?? EMPTY_SET}
             onSelectDocument={(id) => {
               // TOC click is not a cross-doc "prev/next" — no toast.
               pendingToastRef.current = false;
@@ -392,9 +493,22 @@ export function BookReader({
           </div>
         )}
 
-        {activeDoc ? (
+        {showColophon && lastDoc ? (
+          <BookColophon
+            bookTitle={book.title}
+            lastDocId={lastDoc.id}
+            continueTarget={colophonTarget}
+            documents={documents}
+            onContinue={handleColophonContinue}
+            onChooseVolume={handleColophonChooseVolume}
+            onBack={handleColophonBack}
+            onReturnToLibrary={handleColophonReturnToLibrary}
+          />
+        ) : activeDoc ? (
           <BookPage
             document={activeDoc}
+            bookmarked={bookmarkedIds.has(activeDoc.id)}
+            onToggleBookmark={handleToggleBookmark}
             chapterLabel={chapterEyebrow}
             docIndex={Math.max(currentIndex, 0)}
             docCount={flatOrder.length}

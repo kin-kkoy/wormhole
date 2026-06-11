@@ -1,12 +1,14 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { commands } from '../../lib/commands';
-import type { CharacterSummary } from '../../lib/commands';
+import type { CharacterSummary, CharacterShelf } from '../../lib/commands';
 import { useAppStore } from '../../state/store';
 import { useImageCache } from '../../hooks/useImageCache';
 import { CharacterCreateDialog } from '../../components/characters/CharacterCreateDialog';
+import { ShelfCreateDialog } from '../../components/characters/ShelfCreateDialog';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { CharacterRecycleBin } from './CharacterRecycleBin';
 import { CharacterTypographySettings } from './CharacterTypographySettings';
+import { ShelfIconPicker } from '../../components/characters/ShelfIconPicker';
 import { useCharacterTypography } from '../../hooks/useCharacterTypography';
 import './CharacterList.css';
 
@@ -44,9 +46,14 @@ export function CharacterList() {
   const [showBulkTagInput, setShowBulkTagInput] = useState(false);
   const [showRecycleBin, setShowRecycleBin] = useState(false);
   const [showTypographySettings, setShowTypographySettings] = useState(false);
+  const [shelves, setShelves] = useState<CharacterShelf[]>([]);
+  const [renamingShelfId, setRenamingShelfId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [showNewShelfInput, setShowNewShelfInput] = useState(false);
 
   const setSelectedCharacterId = useAppStore((s) => s.setSelectedCharacterId);
   const editMode = useAppStore((s) => s.editMode);
+  const setEditMode = useAppStore((s) => s.setEditMode);
   const activeWorld = useAppStore((s) => s.activeWorld);
   const typography = useCharacterTypography(activeWorld?.id ?? null);
   const { getImageUrl, loadImages } = useImageCache();
@@ -54,8 +61,33 @@ export function CharacterList() {
 
   const refresh = useCallback(async () => {
     try {
-      const data = await commands.listCharacters();
-      setCharacters(data);
+      const [data, shelfData] = await Promise.all([
+        commands.listCharacters(),
+        commands.listCharacterShelves(),
+      ]);
+
+      // One-time fixup: rename legacy "Unassigned" shelf to "Unshelved"
+      const legacy = shelfData.find((s) => s.name === 'Unassigned');
+      if (legacy) {
+        await commands.renameCharacterShelf(legacy.id, 'Unshelved');
+        legacy.name = 'Unshelved';
+      }
+
+      if (shelfData.length === 0 && data.length > 0) {
+        const shelf = await commands.createCharacterShelf('Unshelved');
+        await Promise.all(
+          data.map((c) => commands.assignCharacterToShelf(c.id, shelf.id)),
+        );
+        const [freshChars, freshShelves] = await Promise.all([
+          commands.listCharacters(),
+          commands.listCharacterShelves(),
+        ]);
+        setCharacters(freshChars);
+        setShelves(freshShelves);
+      } else {
+        setCharacters(data);
+        setShelves(shelfData);
+      }
     } catch (e) {
       console.error('Failed to list characters:', e);
     } finally {
@@ -68,11 +100,15 @@ export function CharacterList() {
   }, [refresh]);
 
   useEffect(() => {
-    const ids = characters
+    const charIds = characters
       .map((c) => c.image_asset_id)
       .filter((id): id is string => id != null);
+    const shelfIds = shelves
+      .map((s) => s.icon_asset_id)
+      .filter((id): id is string => id != null);
+    const ids = [...charIds, ...shelfIds];
     if (ids.length > 0) loadImages(ids);
-  }, [characters, loadImages]);
+  }, [characters, shelves, loadImages]);
 
   // All unique tags across the unfiltered list — so tag chips don't disappear
   // as the user narrows the selection.
@@ -122,12 +158,40 @@ export function CharacterList() {
     return result;
   }, [characters, searchQuery, activeTags, sortMode]);
 
+  const shelfGroups = useMemo(() => {
+    const groups: { shelf: CharacterShelf | null; chars: CharacterSummary[] }[] = [];
+    const byShelf = new Map<string, CharacterSummary[]>();
+    const unshelved: CharacterSummary[] = [];
+    for (const c of filteredCharacters) {
+      if (c.shelf_id) {
+        if (!byShelf.has(c.shelf_id)) byShelf.set(c.shelf_id, []);
+        byShelf.get(c.shelf_id)!.push(c);
+      } else {
+        unshelved.push(c);
+      }
+    }
+    for (const shelf of shelves) {
+      const chars = byShelf.get(shelf.id) ?? [];
+      if (chars.length > 0 || !searchQuery) {
+        groups.push({ shelf, chars });
+      }
+    }
+    if (unshelved.length > 0) {
+      groups.push({ shelf: null, chars: unshelved });
+    }
+    return groups;
+  }, [filteredCharacters, shelves, searchQuery]);
+
   async function handleCreate() {
     setShowCreateDialog(true);
   }
 
   async function handleCreateComplete(characterId: string) {
     setShowCreateDialog(false);
+    const unassigned = shelves.find((s) => s.name === 'Unshelved');
+    if (unassigned) {
+      await commands.assignCharacterToShelf(characterId, unassigned.id);
+    }
     await refresh();
     setSelectedCharacterId(characterId);
   }
@@ -177,6 +241,51 @@ export function CharacterList() {
       await refresh();
     } catch (e) {
       console.error('Bulk add-tag failed:', e);
+    }
+  }
+
+  async function handleCreateShelf(name: string, characterIds: string[]) {
+    try {
+      const shelf = await commands.createCharacterShelf(name);
+      if (characterIds.length > 0) {
+        await Promise.all(
+          characterIds.map((id) => commands.assignCharacterToShelf(id, shelf.id)),
+        );
+      }
+      setShowNewShelfInput(false);
+      await refresh();
+    } catch (e) {
+      console.error('Failed to create shelf:', e);
+    }
+  }
+
+  async function handleRenameShelf(shelfId: string) {
+    const name = renameValue.trim();
+    if (!name) { setRenamingShelfId(null); return; }
+    try {
+      await commands.renameCharacterShelf(shelfId, name);
+      setRenamingShelfId(null);
+      await refresh();
+    } catch (e) {
+      console.error('Failed to rename shelf:', e);
+    }
+  }
+
+  async function handleDeleteShelf(shelfId: string) {
+    try {
+      await commands.deleteCharacterShelf(shelfId);
+      await refresh();
+    } catch (e) {
+      console.error('Failed to delete shelf:', e);
+    }
+  }
+
+  async function handleAssignToShelf(characterId: string, shelfId: string | null) {
+    try {
+      await commands.assignCharacterToShelf(characterId, shelfId);
+      await refresh();
+    } catch (e) {
+      console.error('Failed to assign character:', e);
     }
   }
 
@@ -376,13 +485,82 @@ export function CharacterList() {
   const dragEnabled =
     editMode && !searchQuery && activeTags.size === 0 && sortMode === 'manual';
 
+  function renderCard(char: CharacterSummary, index: number) {
+    const isSelected = selectedIds.has(char.id);
+    return (
+      <div
+        key={char.id}
+        className={`character-list__card ${dragIndex === index ? 'character-list__card--dragging' : ''} ${isSelected ? 'character-list__card--selected' : ''}`}
+        onClick={(e) => handleCardClick(e, char, index)}
+        draggable={dragEnabled}
+        onDragStart={(e) => handleDragStart(e, index)}
+        onDragOver={(e) => handleDragOver(e, index)}
+        onDrop={(e) => handleDrop(e, index)}
+        onDragEnd={handleDragEnd}
+      >
+        {char.decorative_ribbon ? (
+          <div
+            className="character-list__card-ribbon"
+            style={{ backgroundColor: char.decorative_ribbon }}
+          />
+        ) : null}
+        {dragEnabled && (
+          <span
+            className="character-list__card-drag-handle"
+            aria-hidden="true"
+            title="Drag to reorder"
+          >
+            ⋮⋮
+          </span>
+        )}
+        <div className="character-list__card-image">
+          {(() => {
+            const url = char.image_asset_id ? getImageUrl(char.image_asset_id) : null;
+            return url ? (
+              <img src={url} alt={char.name} draggable={false} />
+            ) : (
+              <div className="character-list__card-placeholder">{char.name.charAt(0).toUpperCase()}</div>
+            );
+          })()}
+        </div>
+        <div className="character-list__card-info">
+          <span className="character-list__card-name">{char.name}</span>
+          {char.short_role && (
+            <span className="character-list__card-role">{char.short_role}</span>
+          )}
+        </div>
+        {editMode && selectedIds.size === 0 && (
+          <button
+            className="character-list__card-delete"
+            onClick={(e) => {
+              e.stopPropagation();
+              setDeleteTarget(char);
+            }}
+            title="Delete character"
+          >
+            &times;
+          </button>
+        )}
+        {editMode && shelves.length > 0 && (
+          <select
+            className="character-list__card-shelf-select"
+            value={char.shelf_id ?? ''}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => handleAssignToShelf(char.id, e.target.value || null)}
+            title="Move to shelf"
+          >
+            <option value="">Unshelved</option>
+            {shelves.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="character-list" ref={listRef}>
-      <header className="character-list__page-header">
-        <span className="character-list__eyebrow">The Character Codex</span>
-        <span className="character-list__eyebrow-rule" aria-hidden="true" />
-      </header>
-
       <div className="character-list__toolbar">
         <input
           className="character-list__search"
@@ -434,6 +612,29 @@ export function CharacterList() {
           <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path d="M3 5h10M6.5 5V3.5a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1V5M4.5 5l.6 7.4a1 1 0 0 0 1 .9h3.8a1 1 0 0 0 1-.9L11.5 5M7 7.5v4M9 7.5v4"
               stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+        {editMode && (
+          <button
+            className="character-list__icon-btn"
+            onClick={() => setShowNewShelfInput(true)}
+            title="Create Shelf"
+            aria-label="Create shelf for organizing characters"
+          >
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M2 4h12M2 8h12M2 12h8M13 11v4M11 13h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+            </svg>
+          </button>
+        )}
+        <button
+          className={`character-list__icon-btn character-list__edit-toggle ${editMode ? 'character-list__edit-toggle--active' : ''}`}
+          onClick={() => setEditMode(!editMode)}
+          title={editMode ? 'Exit edit mode' : 'Edit mode'}
+          aria-label={editMode ? 'Exit edit mode' : 'Edit mode'}
+        >
+          <svg width="15" height="15" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+            <path d="M13.5 2.5l2 2-9 9H4.5v-2l9-9z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            {editMode && <path d="M11 5l2 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>}
           </svg>
         </button>
         <button className="character-list__primary-btn" onClick={handleCreate}>
@@ -519,67 +720,62 @@ export function CharacterList() {
         </div>
       )}
 
-      <div className="character-list__grid">
-        {filteredCharacters.map((char, index) => {
-          const isSelected = selectedIds.has(char.id);
-          return (
-            <div
-              key={char.id}
-              className={`character-list__card ${dragIndex === index ? 'character-list__card--dragging' : ''} ${isSelected ? 'character-list__card--selected' : ''}`}
-              onClick={(e) => handleCardClick(e, char, index)}
-              draggable={dragEnabled}
-              onDragStart={(e) => handleDragStart(e, index)}
-              onDragOver={(e) => handleDragOver(e, index)}
-              onDrop={(e) => handleDrop(e, index)}
-              onDragEnd={handleDragEnd}
-            >
-              {char.decorative_ribbon && (
-                <div
-                  className="character-list__card-ribbon"
-                  style={{ backgroundColor: char.decorative_ribbon }}
-                />
-              )}
-              {dragEnabled && (
-                <span
-                  className="character-list__card-drag-handle"
-                  aria-hidden="true"
-                  title="Drag to reorder"
-                >
-                  ⋮⋮
-                </span>
-              )}
-              <div className="character-list__card-image">
-                {(() => {
-                  const url = char.image_asset_id ? getImageUrl(char.image_asset_id) : null;
-                  return url ? (
-                    <img src={url} alt={char.name} draggable={false} />
-                  ) : (
-                    <div className="character-list__card-placeholder">&#9823;</div>
-                  );
-                })()}
-              </div>
-              <div className="character-list__card-info">
-                <span className="character-list__card-name">{char.name}</span>
-                {char.short_role && (
-                  <span className="character-list__card-role">{char.short_role}</span>
-                )}
-              </div>
-              {editMode && selectedIds.size === 0 && (
-                <button
-                  className="character-list__card-delete"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setDeleteTarget(char);
-                  }}
-                  title="Delete character"
-                >
-                  &times;
-                </button>
-              )}
+      {shelfGroups.map(({ shelf, chars }) => (
+        <div className="character-list__shelf" key={shelf?.id ?? '__unshelved'}>
+          <div className="character-list__shelf-header">
+            {shelf?.icon_asset_id && (() => {
+              const url = getImageUrl(shelf.icon_asset_id);
+              return url ? (
+                <img className="character-list__shelf-icon" src={url} alt="" draggable={false} />
+              ) : null;
+            })()}
+            {shelf && renamingShelfId === shelf.id ? (
+              <input
+                className="character-list__shelf-rename"
+                value={renameValue}
+                autoFocus
+                onChange={(e) => setRenameValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleRenameShelf(shelf.id);
+                  else if (e.key === 'Escape') setRenamingShelfId(null);
+                }}
+                onBlur={() => handleRenameShelf(shelf.id)}
+              />
+            ) : (
+              <span
+                className="character-list__shelf-label"
+                onDoubleClick={() => {
+                  if (shelf && editMode) {
+                    setRenamingShelfId(shelf.id);
+                    setRenameValue(shelf.name);
+                  }
+                }}
+              >
+                {shelf?.name ?? 'Unshelved'}
+              </span>
+            )}
+            <span className="character-list__shelf-rule" />
+            <span className="character-list__shelf-count">{chars.length}</span>
+            {editMode && shelf && (
+              <button
+                className="character-list__shelf-delete"
+                onClick={() => handleDeleteShelf(shelf.id)}
+                title="Delete shelf"
+              >
+                &times;
+              </button>
+            )}
+          </div>
+          {editMode && shelf && (
+            <ShelfIconPicker shelfId={shelf.id} assetId={shelf.icon_asset_id} onUpdated={refresh} />
+          )}
+          <div className="character-list__shelf-track-wrap">
+            <div className="character-list__shelf-track">
+              {chars.map((char, index) => renderCard(char, index))}
             </div>
-          );
-        })}
-      </div>
+          </div>
+        </div>
+      ))}
 
       {showCreateDialog && (
         <CharacterCreateDialog
@@ -617,6 +813,14 @@ export function CharacterList() {
           onChange={typography.update}
           onReset={typography.reset}
           onClose={() => setShowTypographySettings(false)}
+        />
+      )}
+
+      {showNewShelfInput && (
+        <ShelfCreateDialog
+          characters={characters}
+          onSubmit={handleCreateShelf}
+          onCancel={() => setShowNewShelfInput(false)}
         />
       )}
     </div>

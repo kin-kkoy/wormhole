@@ -3,12 +3,15 @@
   flex-shrink: 0;
 }
 
+/* The character's voice, set as a manuscript quotation: a violet rubric
+   rule down the left, no box, no fill. */
 .card-intro .card-intro__editor {
   font-style: italic;
-  background: rgba(167, 139, 250, 0.05);
-  border-radius: 8px;
-  padding: 12px 16px;
-  border: 1px solid var(--border-subtle);
+  background: transparent;
+  border: none;
+  border-left: 2px solid rgba(var(--accent-characters-rgb), 0.45);
+  border-radius: 0;
+  padding: 2px 0 2px 14px;
 }
 
 .card-intro .card-intro__editor .tiptap {

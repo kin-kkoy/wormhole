@@ -8,7 +8,7 @@ use tauri::Manager;
 
 use commands::{
     assets, character_blocks, character_sections, characters, graph, links, lore,
-    search, worlds,
+    search, shelves, worlds,
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -41,6 +41,7 @@ pub fn run() {
             worlds::list_worlds,
             worlds::open_world,
             worlds::close_world,
+            worlds::update_last_position,
             worlds::delete_world,
             worlds::seed_example_world,
             worlds::update_world,
@@ -67,6 +68,14 @@ pub fn run() {
             characters::reorder_characters,
             characters::list_deleted_characters,
             characters::purge_character,
+            // Character shelves
+            shelves::list_character_shelves,
+            shelves::create_character_shelf,
+            shelves::rename_character_shelf,
+            shelves::delete_character_shelf,
+            shelves::assign_character_to_shelf,
+            shelves::reorder_shelves,
+            shelves::update_shelf_icon,
             // Character card blocks
             character_blocks::list_card_blocks,
             character_blocks::create_card_block,
@@ -92,6 +101,9 @@ pub fn run() {
             lore::get_lore_document,
             lore::update_lore_document,
             lore::update_document_typography,
+            lore::list_read_progress,
+            lore::mark_document_read,
+            lore::toggle_document_bookmark,
             lore::delete_lore_document,
             lore::restore_lore_document,
             lore::move_lore_document,

@@ -11,16 +11,16 @@
   --font-serif-display: 'Iowan Old Style', Palatino, 'Baskerville', Georgia, serif;
 
   /* Paper tokens — light mode warm cream. */
-  --paper-bg: #f6efdf;
-  --paper-bg-edge: #ebe1cb;
-  --paper-ink: #241c12;
-  --paper-ink-muted: #6b5b43;
-  --paper-rule: #cdb98a;
-  --paper-deckle: rgba(120, 92, 50, 0.22);
-  --paper-edge-shadow: inset 0 0 60px rgba(58, 42, 20, 0.06), inset 0 0 0 1px rgba(58, 42, 20, 0.03);
-  --paper-shadow: 0 12px 36px rgba(58, 42, 20, 0.18), 0 2px 6px rgba(58, 42, 20, 0.08);
-  --cover-shadow: 0 6px 18px rgba(40, 28, 10, 0.28), 0 2px 4px rgba(40, 28, 10, 0.18);
-  --cover-shadow-hover: 0 14px 32px rgba(40, 28, 10, 0.32), 0 3px 6px rgba(40, 28, 10, 0.22);
+  --paper-bg: #f7f1e3;
+  --paper-bg-edge: #ebdcb9;
+  --paper-ink: #1f1810;
+  --paper-ink-muted: #6e5c46;
+  --paper-rule: #d4c29c;
+  --paper-deckle: rgba(120, 92, 50, 0.18);
+  --paper-edge-shadow: inset 0 0 60px rgba(58, 42, 20, 0.05), inset 0 0 0 1px rgba(58, 42, 20, 0.02);
+  --paper-shadow: 0 4px 12px rgba(45, 35, 20, 0.05), 0 16px 40px rgba(45, 35, 20, 0.12), 0 32px 80px rgba(45, 35, 20, 0.08), 0 1px 3px rgba(0, 0, 0, 0.02);
+  --cover-shadow: 0 8px 24px rgba(40, 28, 10, 0.22), 0 2px 5px rgba(40, 28, 10, 0.12);
+  --cover-shadow-hover: 0 16px 36px rgba(40, 28, 10, 0.28), 0 4px 8px rgba(40, 28, 10, 0.16);
 
   display: flex;
   flex-direction: column;
@@ -31,16 +31,16 @@
 
 /* Dark-mode paper: warm umber, not black. Feels lamp-lit, not cave-dark. */
 :root[data-theme='dark'] .lore-read-mode {
-  --paper-bg: #1f1a13;
+  --paper-bg: #201b13;
   --paper-bg-edge: #17130d;
-  --paper-ink: #efe6cf;
-  --paper-ink-muted: #a2937a;
-  --paper-rule: #3a2f20;
-  --paper-deckle: rgba(220, 195, 145, 0.14);
-  --paper-edge-shadow: inset 0 0 80px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(0, 0, 0, 0.25);
-  --paper-shadow: 0 12px 36px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.35);
-  --cover-shadow: 0 6px 18px rgba(0, 0, 0, 0.55), 0 2px 4px rgba(0, 0, 0, 0.4);
-  --cover-shadow-hover: 0 14px 32px rgba(0, 0, 0, 0.62), 0 3px 6px rgba(0, 0, 0, 0.45);
+  --paper-ink: #f0e6cf;
+  --paper-ink-muted: #a49479;
+  --paper-rule: #3c2f1f;
+  --paper-deckle: rgba(220, 195, 145, 0.12);
+  --paper-edge-shadow: inset 0 0 80px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(0, 0, 0, 0.22);
+  --paper-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 24px 64px rgba(0, 0, 0, 0.55), 0 48px 110px rgba(0, 0, 0, 0.65);
+  --cover-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 2px 5px rgba(0, 0, 0, 0.25);
+  --cover-shadow-hover: 0 16px 40px rgba(0, 0, 0, 0.55), 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
 /* ─── Mode Toggle (header strip) ────────────────────────────────────────── */
@@ -727,7 +727,7 @@
   position: relative;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 16px 12px;
+  padding: 24px 16px;
   display: flex;
   justify-content: center;
   /* `flex-start` (not `stretch`): in continuous mode the paper must be free
@@ -737,6 +737,12 @@
    * `height` on `.book-page--paginated`, which overrides stretch anyway. */
   align-items: flex-start;
   min-width: 0;
+  background-color: #ebdcb9;
+  transition: background-color 0.2s ease;
+}
+
+:root[data-theme='dark'] .book-reader__stage {
+  background-color: #0d0b09;
 }
 
 .book-reader__rail {
@@ -1090,38 +1096,61 @@
 
 /* ─── Layout toggle (upper-right of paper) ──────────────────────────────── */
 
+/* Labeled two-segment control: "Pages | Scroll". */
 .book-page__layout-toggle {
   position: absolute;
   top: 14px;
   right: 14px;
-  width: 30px;
-  height: 30px;
-  appearance: none;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--paper-ink-muted);
-  border-radius: 6px;
-  cursor: pointer;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+  border: 1px solid var(--paper-rule);
+  border-radius: 7px;
+  overflow: hidden;
   z-index: 2;
 }
 
-.book-page__layout-toggle:hover {
-  color: var(--accent-lore);
-  background: rgba(0, 0, 0, 0.04);
-  border-color: var(--paper-rule);
+.book-page__layout-toggle-seg {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: none;
+  background: transparent;
+  color: var(--paper-ink-muted);
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: color 0.18s ease, background 0.18s ease;
 }
 
-:root[data-theme='dark'] .book-page__layout-toggle:hover {
+.book-page__layout-toggle-seg + .book-page__layout-toggle-seg {
+  border-left: 1px solid var(--paper-rule);
+}
+
+.book-page__layout-toggle-seg:hover {
+  color: var(--paper-ink);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+:root[data-theme='dark'] .book-page__layout-toggle-seg:hover {
   background: rgba(255, 255, 255, 0.04);
 }
 
-.book-page__layout-toggle svg {
-  width: 18px;
-  height: 18px;
+.book-page__layout-toggle-seg--active,
+.book-page__layout-toggle-seg--active:hover {
+  color: var(--accent-lore);
+  background: rgba(240, 168, 48, 0.1);
+}
+
+.book-page__layout-toggle-seg svg {
+  width: 14px;
+  height: 14px;
+}
+
+.book-page__layout-toggle-seg:focus-visible {
+  outline: 2px solid var(--accent-lore);
+  outline-offset: -2px;
 }
 
 /* ─── Paginated viewport & columns ──────────────────────────────────────── */
@@ -1152,11 +1181,14 @@
 .book-page--paginated .book-page__columns .tiptap-editor .ProseMirror > p:first-of-type::first-letter {
   font-family: var(--font-serif-display);
   float: left;
-  font-size: 4.2em;
-  line-height: 0.82;
-  padding: 8px 12px 0 2px;
+  font-size: 3.6em;
+  line-height: 0.85;
+  margin-top: 0.1em;
+  margin-right: 0.12em;
+  margin-left: 0.05em;
   color: var(--accent-lore);
-  font-weight: 600;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 /* Reuse the body prose styles for the columnar TipTap. */
@@ -1365,11 +1397,14 @@
 .book-page__body .tiptap-editor .ProseMirror > p:first-of-type::first-letter {
   font-family: var(--font-serif-display);
   float: left;
-  font-size: 4.2em;
-  line-height: 0.82;
-  padding: 8px 12px 0 2px;
+  font-size: 3.6em;
+  line-height: 0.85;
+  margin-top: 0.1em;
+  margin-right: 0.12em;
+  margin-left: 0.05em;
   color: var(--accent-lore);
-  font-weight: 600;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 .book-page__footer {
@@ -1588,11 +1623,16 @@
 /* ─── Cross-doc confirm popup ──────────────────────────────────────────── */
 
 .book-reader__cross-doc-backdrop {
-  position: absolute;
+  /* Fixed, not absolute: the stage scrolls (continuous layout), so an
+     absolute backdrop only dimmed the stage's top viewport-height and the
+     popup could land off-screen when scrolled. Fixed pins both to the
+     window. z sits above the inline-link hover card (280) and the repair
+     menu (300) — this is a modal moment. */
+  position: fixed;
   inset: 0;
   background: rgba(20, 14, 8, 0.28);
   backdrop-filter: blur(2px);
-  z-index: 40;
+  z-index: 320;
   animation: cross-doc-fade-in 180ms ease-out;
 }
 
@@ -1601,12 +1641,12 @@
 }
 
 .book-reader__cross-doc-popup {
-  position: absolute;
+  position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 41;
-  width: min(380px, calc(100% - 48px));
+  z-index: 321;
+  width: min(380px, calc(100vw - 48px));
   background: var(--paper-bg);
   color: var(--paper-ink);
   border-radius: 10px;
@@ -1689,4 +1729,216 @@
 
 .book-reader__cross-doc-btn--primary:hover {
   filter: brightness(1.06);
+}
+
+/* ─── End-of-book colophon page ──────────────────────────────────────────
+   Rendered by BookColophon.tsx when Next is pressed past the final
+   document. Inherits .book-page paper styling; everything below is the
+   colophon's own body content. */
+
+.lore-read-mode .book-colophon__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  padding: 12px 0 36px;
+  text-align: center;
+}
+
+.lore-read-mode .book-colophon__card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: min(340px, 100%);
+  padding: 18px 22px;
+  border: 1px solid var(--paper-rule);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--paper-ink);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.lore-read-mode .book-colophon__card:hover {
+  border-color: var(--accent-lore);
+  transform: translateY(-2px);
+}
+
+.lore-read-mode .book-colophon__card-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--paper-ink-muted);
+}
+
+.lore-read-mode .book-colophon__card-title {
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.lore-read-mode .book-colophon__card-go {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--accent-lore);
+  font-weight: 500;
+}
+
+.lore-read-mode .book-colophon__rest {
+  max-width: 360px;
+  margin: 0;
+  font-style: italic;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--paper-ink-muted);
+}
+
+.lore-read-mode .book-colophon__link-btn {
+  border: none;
+  background: transparent;
+  padding: 4px 6px;
+  font-family: inherit;
+  font-size: 13.5px;
+  color: var(--paper-ink-muted);
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.lore-read-mode .book-colophon__link-btn:hover {
+  color: var(--paper-ink);
+}
+
+.lore-read-mode .book-colophon__picker {
+  width: min(340px, 100%);
+  border: 1px solid var(--paper-rule);
+  border-radius: 10px;
+  overflow: hidden;
+  text-align: left;
+}
+
+.lore-read-mode .book-colophon__picker-search {
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  border-bottom: 1px solid var(--paper-rule);
+  background: transparent;
+  color: var(--paper-ink);
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+.lore-read-mode .book-colophon__picker-search::placeholder {
+  color: var(--paper-ink-muted);
+}
+
+.lore-read-mode .book-colophon__picker-list {
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.lore-read-mode .book-colophon__picker-item {
+  display: block;
+  width: 100%;
+  padding: 7px 11px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--paper-ink);
+  font-family: inherit;
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lore-read-mode .book-colophon__picker-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme='dark'] .lore-read-mode .book-colophon__picker-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.lore-read-mode .book-colophon__picker-empty {
+  padding: 10px 12px;
+  font-size: 12.5px;
+  font-style: italic;
+  color: var(--paper-ink-muted);
+}
+
+.lore-read-mode .book-colophon__footer-spacer {
+  visibility: hidden;
+}
+
+/* ── Reading progress + bookmarks (Proposal 03) ─────────────────────────── */
+
+/* TOC read-state dots: amber = reading now, dim green = read, faint = unread */
+.lore-read-mode .book-toc__read-dot {
+  flex-shrink: 0;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  margin-left: auto;
+}
+
+.lore-read-mode .book-toc__read-dot--current {
+  background: var(--accent-lore);
+  box-shadow: 0 0 4px rgba(240, 168, 48, 0.45);
+}
+
+.lore-read-mode .book-toc__read-dot--read {
+  background: var(--success, #34d399);
+  opacity: 0.55;
+}
+
+.lore-read-mode .book-toc__read-dot--unread {
+  background: var(--paper-ink-muted, currentColor);
+  opacity: 0.18;
+}
+
+/* Bookmark ribbon hanging from the paper's top-left edge */
+.lore-read-mode .book-page__bookmark {
+  position: absolute;
+  top: 0;
+  left: 26px;
+  width: 26px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.lore-read-mode .book-page__bookmark-ribbon {
+  display: block;
+  width: 14px;
+  height: 26px;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%);
+  background: transparent;
+  border: 1px solid var(--paper-rule);
+  border-top: none;
+  transition: background 0.18s ease, height 0.18s ease;
+}
+
+.lore-read-mode .book-page__bookmark:hover .book-page__bookmark-ribbon {
+  background: rgba(240, 168, 48, 0.25);
+  height: 30px;
+}
+
+.lore-read-mode .book-page__bookmark--set .book-page__bookmark-ribbon {
+  background: var(--accent-lore);
+  border-color: var(--accent-lore);
+  height: 32px;
+  box-shadow: 0 2px 8px rgba(240, 168, 48, 0.3);
 }

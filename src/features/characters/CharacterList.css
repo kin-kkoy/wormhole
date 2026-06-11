@@ -206,10 +206,9 @@
   padding: 10px 12px;
   margin-bottom: 18px;
   flex-shrink: 0;
-  background: rgba(var(--accent-characters-rgb), 0.045);
+  background: rgba(var(--accent-characters-rgb), 0.05);
   border: 1px solid rgba(var(--accent-characters-rgb), 0.12);
-  border-radius: 10px;
-  backdrop-filter: blur(2px);
+  border-radius: var(--radius-md);
 }
 
 .character-list__search {
@@ -311,6 +310,12 @@
 
 .character-list__icon-btn svg {
   display: block;
+}
+
+.character-list__edit-toggle--active {
+  color: var(--accent-characters);
+  background: rgba(var(--accent-characters-rgb), 0.12);
+  border-color: rgba(var(--accent-characters-rgb), 0.3);
 }
 
 /* Icon + label primary button. */
@@ -480,88 +485,115 @@
 
 .character-list__card {
   position: relative;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  border: 1px solid rgba(var(--accent-characters-rgb), 0.22);
+  border-radius: 14px;
   overflow: hidden;
   cursor: pointer;
-  /* Transform gets its own, slightly longer ease so live drag reflow reads
-     smoothly as grid order changes under the cursor. */
+  background:
+    linear-gradient(155deg, rgba(var(--accent-characters-rgb), 0.07), transparent 38%),
+    linear-gradient(335deg, rgba(var(--accent-characters-rgb), 0.05), transparent 42%),
+    var(--bg-secondary);
+  box-shadow:
+    0 20px 40px -18px rgba(0, 0, 0, 0.6),
+    0 0 50px -22px rgba(var(--accent-characters-rgb), 0.25);
   transition:
-    transform 180ms cubic-bezier(.2,.6,.25,1),
-    box-shadow 0.15s,
-    border-color 0.15s;
+    transform var(--duration-normal) var(--ease-out-expo),
+    box-shadow var(--duration-normal) ease,
+    border-color var(--duration-normal) ease;
 }
 
 .character-list__card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-6px);
+  border-color: rgba(var(--accent-characters-rgb), 0.4);
   box-shadow:
-    0 1px 0 rgba(var(--accent-characters-rgb), 0.15) inset,
-    0 8px 20px rgba(var(--accent-characters-rgb), 0.18),
-    0 2px 6px rgba(0, 0, 0, 0.25);
-  border-color: rgba(var(--accent-characters-rgb), 0.55);
+    0 30px 60px -18px rgba(0, 0, 0, 0.7),
+    0 0 70px -20px rgba(var(--accent-characters-rgb), 0.4);
 }
 
 .character-list__card--dragging {
-  /* Fade the source slightly as it's being dragged — just enough that the
-     user reads it as "this is the one moving" without hiding the reflow. */
   opacity: 0.55;
   box-shadow:
-    0 0 0 1px rgba(var(--accent-characters-rgb), 0.6),
-    0 12px 24px rgba(0, 0, 0, 0.35);
+    0 0 0 2px rgba(var(--accent-characters-rgb), 0.6),
+    0 16px 32px rgba(0, 0, 0, 0.4);
   transform: scale(1.02);
   z-index: 2;
 }
 
+/* Plain color ribbon — thin horizontal bar */
 .character-list__card-ribbon {
-  height: 4px;
+  height: 3px;
   width: 100%;
+  mask-image: linear-gradient(to right, #000 30%, transparent);
+  -webkit-mask-image: linear-gradient(to right, #000 30%, transparent);
 }
 
+
 .character-list__card-image {
+  position: relative;
   aspect-ratio: 3 / 4;
   overflow: hidden;
-  background: var(--bg-tertiary);
+  background:
+    radial-gradient(90% 100% at 50% 0%, rgba(var(--accent-characters-rgb), 0.2), transparent 70%),
+    var(--bg-tertiary);
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Bottom vignette — portrait bleeds into the card body */
+.character-list__card-image::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 50px;
+  background: linear-gradient(transparent, var(--bg-secondary));
+  pointer-events: none;
+  z-index: 1;
 }
 
 .character-list__card-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.5s var(--ease-out-expo);
+}
+
+.character-list__card:hover .character-list__card-image img {
+  transform: scale(1.04);
 }
 
 .character-list__card-placeholder {
-  font-size: 48px;
-  opacity: 0.15;
-  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-size: 3rem;
+  opacity: 0.6;
+  color: rgba(var(--accent-characters-rgb), 0.5);
+  text-shadow: 0 0 30px rgba(var(--accent-characters-rgb), 0.5);
 }
 
 .character-list__card-info {
-  padding: 10px 12px;
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 .character-list__card-name {
-  font-family: var(--char-font-heading);
-  font-size: var(--char-size-title);
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 500;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  letter-spacing: 0.005em;
+  letter-spacing: 0.05em;
 }
 
 .character-list__card-role {
-  font-family: var(--char-font-prose);
-  font-size: var(--char-size-meta);
-  color: var(--text-secondary);
   font-style: italic;
+  font-size: var(--char-size-meta);
+  color: var(--accent-characters);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -572,20 +604,24 @@
   top: 8px;
   left: 8px;
   z-index: 1;
-  padding: 2px 5px;
+  padding: 2px 6px;
   border-radius: 4px;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   color: #fff;
-  font-size: 12px;
-  letter-spacing: -2px;
+  font-size: 11px;
+  letter-spacing: -1.5px;
   line-height: 1;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.15s, color 0.15s;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+  transform: translateY(-4px);
 }
 
 .character-list__card:hover .character-list__card-drag-handle {
   opacity: 1;
+  transform: translateY(0);
 }
 
 .character-list__card-delete {
@@ -595,7 +631,9 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   color: #fff;
   border: none;
   cursor: pointer;
@@ -605,13 +643,208 @@
   font-size: 16px;
   line-height: 1;
   opacity: 0;
-  transition: opacity 0.15s;
+  transition: opacity 0.2s ease, transform 0.15s ease, background-color 0.15s ease;
+  transform: translateY(-4px);
 }
 
 .character-list__card:hover .character-list__card-delete {
   opacity: 1;
+  transform: translateY(0);
 }
 
 .character-list__card-delete:hover {
   background: var(--danger);
+  transform: translateY(0) scale(1.1);
+}
+
+.character-list__card-delete:active {
+  transform: translateY(0) scale(0.9);
+}
+
+/* ─── Shelf select (on card, edit mode) ──────────────────────────────────── */
+.character-list__card-shelf-select {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  z-index: 6;
+  padding: 2px 4px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-family: var(--char-font-label);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  max-width: 100px;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.character-list__card:hover .character-list__card-shelf-select {
+  opacity: 1;
+}
+
+.character-list__card-shelf-select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* ─── Shelf layout ───────────────────────────────────────────────────────── */
+.character-list__shelf {
+  flex-shrink: 0;
+  padding: 4px 0;
+}
+
+.character-list__shelf-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px 6px;
+}
+
+.character-list__shelf-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: brightness(1.2) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+.character-list__shelf-label {
+  font-family: var(--char-font-label);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  cursor: default;
+}
+
+.character-list__shelf-rule {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    rgba(var(--accent-characters-rgb), 0.2),
+    transparent
+  );
+}
+
+.character-list__shelf-count {
+  font-family: var(--char-font-label);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.character-list__shelf-delete {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.character-list__shelf-delete:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.character-list__shelf-rename {
+  padding: 2px 8px;
+  border: 1px solid var(--accent-characters);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: var(--char-font-label);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  outline: none;
+  min-width: 120px;
+}
+
+/* ── Horizontal scroll track ─────────────────────────────────────────────── */
+.character-list__shelf-track-wrap {
+  position: relative;
+}
+
+.character-list__shelf-track-wrap::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 48px;
+  background: linear-gradient(to right, transparent, var(--bg-primary));
+  pointer-events: none;
+  z-index: 2;
+}
+
+.character-list__shelf-track {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 4px 12px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.character-list__shelf-track::-webkit-scrollbar {
+  display: none;
+}
+
+.character-list__shelf-track .character-list__card {
+  flex: 0 0 192px;
+}
+
+/* ── Shelf actions row ───────────────────────────────────────────────────── */
+.character-list__shelf-actions {
+  padding: 8px 4px 0;
+  flex-shrink: 0;
+}
+
+.character-list__shelf-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border: 1px dashed rgba(var(--accent-characters-rgb), 0.3);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--char-font-label);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.character-list__shelf-add-btn:hover {
+  color: var(--accent-characters);
+  border-color: var(--accent-characters);
+}
+
+.character-list__shelf-new-row {
+  padding: 0 4px;
 }

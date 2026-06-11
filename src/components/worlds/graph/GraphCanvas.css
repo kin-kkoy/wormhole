@@ -8,3 +8,27 @@
 .graph-canvas:active {
   cursor: grabbing;
 }
+
+/* ── Constellation node styling ─────────────────────────────────────────────
+   Hover feedback is a plain stroke change on the node's own shape. The old
+   blurred halo rings + infinite glow-pulse animations were removed: SVG blur
+   filters repainting every frame made pan/zoom visibly laggy on WebKitGTK,
+   and the circular halo around the square shared nodes read as a "square
+   inside a circle". */
+
+.image-node__border {
+  transition: stroke-opacity 0.15s ease-out, stroke-width 0.15s ease-out;
+}
+
+g:hover > .image-node__border {
+  stroke-opacity: 1;
+  stroke-width: 2;
+}
+
+.shared-node__box {
+  transition: stroke-opacity 0.15s ease-out;
+}
+
+g:hover > .shared-node__box {
+  stroke-opacity: 1;
+}

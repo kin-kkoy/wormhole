@@ -4,7 +4,6 @@ import Placeholder from '@tiptap/extension-placeholder';
 import FontFamily from '@tiptap/extension-font-family';
 import TextAlign from '@tiptap/extension-text-align';
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { createPortal } from 'react-dom';
 import type { LinkableRecord } from '../../lib/commands';
 import { commands } from '../../lib/commands';
 import type { EntityType } from '../linking/LinkPickerDialog';
@@ -13,6 +12,12 @@ import {
   detectBracketTrigger,
   insertInlineLink,
 } from './InlineLinkExtension';
+import {
+  InlineLinkAutocomplete,
+  buildAutocompleteItems,
+  type AcItem,
+} from './InlineLinkAutocomplete';
+import { registerEditor, unregisterEditor } from '../linking/editorRegistry';
 import { TextStyleWithFontSize } from './TextStyleWithFontSize';
 import { EditorBubbleMenu } from './EditorBubbleMenu';
 import './TipTapEditor.css';
@@ -136,7 +141,7 @@ export function TipTapEditor({
     }
   }, [doSearch]);
 
-  const selectResultRef = useRef<(record: LinkableRecord) => void>(() => {});
+  const selectResultRef = useRef<(item: AcItem) => void>(() => {});
 
   const editor = useEditor({
     extensions: [
@@ -168,6 +173,7 @@ export function TipTapEditor({
             handleKeyDown: (_view, event) => {
               const ac = acRef.current;
               if (!ac.visible) return false;
+              const items = buildAutocompleteItems(ac.results, ac.query);
               if (event.key === 'Escape') {
                 hideAutocomplete();
                 return true;
@@ -176,7 +182,7 @@ export function TipTapEditor({
                 event.preventDefault();
                 setAutocomplete((prev) => ({
                   ...prev,
-                  selectedIndex: Math.min(prev.selectedIndex + 1, prev.results.length - 1),
+                  selectedIndex: Math.min(prev.selectedIndex + 1, items.length - 1),
                 }));
                 return true;
               }
@@ -189,7 +195,7 @@ export function TipTapEditor({
                 return true;
               }
               if (event.key === 'Enter' || event.key === 'Tab') {
-                const selected = ac.results[ac.selectedIndex];
+                const selected = items[ac.selectedIndex];
                 if (selected) {
                   event.preventDefault();
                   selectResultRef.current(selected);
@@ -203,19 +209,47 @@ export function TipTapEditor({
       : {}),
   });
 
-  // Define selectResult after editor is available; expose via ref so the
+  // Define activateItem after editor is available; expose via ref so the
   // editorProps.handleKeyDown closure can invoke the latest version.
-  const selectResult = useCallback((record: LinkableRecord) => {
+  const activateItem = useCallback(async (item: AcItem) => {
     if (!editor) return;
     const ac = acRef.current;
-    insertInlineLink(editor.view, ac.startPos, {
-      entityType: record.entity_type,
-      entityId: record.id,
-      label: record.name,
-    });
-    hideAutocomplete();
+
+    if (item.kind === 'record') {
+      insertInlineLink(editor.view, ac.startPos, {
+        entityType: item.record.entity_type,
+        entityId: item.record.id,
+        label: item.record.name,
+      });
+      hideAutocomplete();
+      return;
+    }
+
+    // Create-in-place: make a stub entity, then link to it. Capture the
+    // trigger position before awaiting; verify it survived the round-trip.
+    const name = ac.query.trim();
+    if (!name) return;
+    const startPos = ac.startPos;
+    try {
+      const created =
+        item.entityType === 'lore_document'
+          ? await (async () => {
+              const doc = await commands.createLoreDocument({ title: name });
+              return { entityType: 'lore_document' as const, entityId: doc.id, label: doc.title };
+            })()
+          : await (async () => {
+              const ch = await commands.createCharacter({ name });
+              return { entityType: 'character' as const, entityId: ch.id, label: ch.name };
+            })();
+      const trigger = detectBracketTrigger(editor.state.doc, editor.state.selection.from);
+      if (!trigger || trigger.startPos !== startPos) return;
+      insertInlineLink(editor.view, startPos, created);
+      hideAutocomplete();
+    } catch (e) {
+      console.error('Failed to create linked entity:', e);
+    }
   }, [editor, hideAutocomplete]);
-  selectResultRef.current = selectResult;
+  selectResultRef.current = activateItem;
 
   // Subscribe to editor updates for bracket detection
   useEffect(() => {
@@ -247,6 +281,14 @@ export function TipTapEditor({
     }
   }, [editor, editable]);
 
+  // Expose this editor to global UI (broken-link repair menu). Lookup
+  // filters on isEditable, so registering read-only instances is harmless.
+  useEffect(() => {
+    if (!editor) return;
+    registerEditor(editor);
+    return () => unregisterEditor(editor);
+  }, [editor]);
+
   // Sync content from outside (e.g. switching characters)
   useEffect(() => {
     if (!editor) return;
@@ -269,45 +311,22 @@ export function TipTapEditor({
     <div className={`tiptap-editor ${editable ? 'tiptap-editor--editable' : ''} ${className}`}>
       <EditorContent editor={editor} />
       {editable && <EditorBubbleMenu editor={editor} />}
-      {/* Portal the autocomplete to document.body so it escapes any
+      {/* The dropdown portals itself to document.body so it escapes any
        *  transformed ancestor (e.g. CharacterFlipContainer's rotateY), which
        *  would otherwise re-anchor position:fixed to the transform context
        *  and shift the dropdown far from the caret. */}
-      {autocomplete.visible && autocomplete.results.length > 0 && createPortal(
-        <div
-          ref={autocompleteRef}
-          className="tiptap-editor__autocomplete"
-          style={{
-            left: autocomplete.coords.left,
-            top: autocomplete.coords.bottom + 4,
-          }}
-        >
-          {autocomplete.results.map((record, idx) => (
-            <button
-              key={`${record.entity_type}-${record.id}`}
-              type="button"
-              className={`tiptap-editor__autocomplete-item ${
-                idx === autocomplete.selectedIndex ? 'tiptap-editor__autocomplete-item--selected' : ''
-              }`}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                selectResult(record);
-              }}
-              onMouseEnter={() =>
-                setAutocomplete((prev) => ({ ...prev, selectedIndex: idx }))
-              }
-            >
-              <span
-                className="tiptap-editor__autocomplete-badge"
-                data-type={record.entity_type}
-              >
-                {record.entity_type === 'character' ? 'CHR' : 'DOC'}
-              </span>
-              <span className="tiptap-editor__autocomplete-name">{record.name}</span>
-            </button>
-          ))}
-        </div>,
-        document.body,
+      {autocomplete.visible && (
+        <InlineLinkAutocomplete
+          items={buildAutocompleteItems(autocomplete.results, autocomplete.query)}
+          query={autocomplete.query}
+          selectedIndex={autocomplete.selectedIndex}
+          coords={autocomplete.coords}
+          onSelect={activateItem}
+          onHover={(idx) =>
+            setAutocomplete((prev) => ({ ...prev, selectedIndex: idx }))
+          }
+          dropdownRef={autocompleteRef}
+        />
       )}
     </div>
   );

@@ -5,6 +5,20 @@
   height: 100%;
   min-height: 0;
   overflow: hidden;
+  position: relative;
+  isolation: isolate;
+}
+
+.lore-archive-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.55;
+  background:
+    radial-gradient(ellipse at 15% 0%, rgba(var(--accent-lore-rgb), 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 100%, rgba(var(--accent-lore-rgb), 0.03) 0%, transparent 55%);
 }
 
 /* Detached two-panel layout: folder explorer on the left, content panel
@@ -15,19 +29,34 @@
   flex: 1;
   min-height: 0;
   gap: 16px;
-  padding: 12px 16px 16px;
+  padding: 14px 18px 18px;
   overflow: hidden;
 }
 
 .lore-archive__folder-panel {
-  width: 240px;
+  width: 250px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
+  box-shadow: var(--shadow);
+  position: relative;
+}
+
+/* Inner highlight */
+.lore-archive__folder-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 14px;
+  right: 14px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .lore-archive__content-panel {
@@ -36,8 +65,22 @@
   display: flex;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
+  box-shadow: var(--shadow);
+  position: relative;
+}
+
+.lore-archive__content-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 14px;
+  right: 14px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .lore-archive__editor-pane {
@@ -63,6 +106,125 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  gap: 8px;
+  gap: 10px;
   color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* ── Focus mode (Proposal 02, v2 — actual immersion) ─────────────────────
+   Hides the archive header + side panes, fades the TopDock and editor
+   chrome until hovered, and centers the writing in a reading-width column
+   under a static vignette (pure CSS — WebKitGTK-safe). */
+
+/* Chrome outside the editor disappears from attention… */
+.lore-archive-wrapper--focus .lore-archive__header {
+  display: none;
+}
+
+body.lore-focus-immersive .top-dock {
+  opacity: 0.06;
+  transition: opacity 0.25s ease;
+}
+
+body.lore-focus-immersive .top-dock:hover,
+body.lore-focus-immersive .top-dock:focus-within {
+  opacity: 1;
+}
+
+.lore-archive--focus .lore-archive__folder-panel,
+.lore-archive--focus .lore-archive__links-pane {
+  display: none;
+}
+
+/* …the writing takes the stage. */
+.lore-archive--focus {
+  position: relative;
+  padding-top: 22px;
+}
+
+.lore-archive--focus .lore-archive__content-panel {
+  position: relative;
+  z-index: 2;
+  max-width: 980px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.lore-archive--focus .doc-editor__content {
+  padding-top: 48px;
+}
+
+.lore-archive--focus .doc-editor__content .tiptap {
+  /* Tighter reading measure in focus; normal mode uses the wider 860px. */
+  max-width: 720px;
+  line-height: 1.75;
+}
+
+/* Toolbar + footer recede until the cursor visits them. The title input
+   stays fully visible — only the tool rows fade. */
+.lore-archive--focus .doc-editor__toolbar {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.lore-archive--focus .doc-editor__header:hover .doc-editor__toolbar,
+.lore-archive--focus .doc-editor__header:focus-within .doc-editor__toolbar {
+  opacity: 1;
+}
+
+.lore-archive--focus .doc-editor__footer {
+  opacity: 0.3;
+  transition: opacity 0.2s ease;
+}
+
+.lore-archive--focus .doc-editor__footer:hover {
+  opacity: 1;
+}
+
+.lore-archive--focus::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 55%,
+    rgba(var(--bg-primary-rgb), 0.55) 100%
+  );
+  z-index: 1;
+}
+
+/* ── Responsive behavior (small windows) ────────────────────────────────── */
+
+@media (max-width: 1180px) {
+  .lore-archive__links-pane {
+    width: 220px;
+  }
+}
+
+@media (max-width: 1000px) {
+  /* Linked records yield first — they are reachable from the peek panel and
+     the document's inline links; the tree and editor are the core loop. */
+  .lore-archive__links-pane {
+    display: none;
+  }
+
+  .lore-archive__folder-panel {
+    width: 210px;
+  }
+}
+
+@media (max-width: 760px) {
+  .lore-archive {
+    gap: 10px;
+    padding: 10px 12px 12px;
+  }
+
+  .lore-archive__folder-panel {
+    width: 180px;
+  }
+
+  .doc-editor__content {
+    padding: 16px;
+  }
 }

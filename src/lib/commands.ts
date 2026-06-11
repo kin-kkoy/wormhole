@@ -23,7 +23,18 @@ export interface WorldSummary {
   summary: string | null;
   cover_thumbnail_base64: string | null;
   last_opened: string | null;
+  /** JSON snapshot of the last in-world position (see LastPosition). */
+  last_position: string | null;
   created_at: string;
+}
+
+/** Parsed shape of WorldSummary.last_position. */
+export interface LastPosition {
+  tab: string;
+  entity_type: 'character' | 'lore_document' | null;
+  entity_id: string | null;
+  entity_title: string | null;
+  saved_at: string;
 }
 
 export interface WorldDetail {
@@ -119,6 +130,17 @@ export interface CharacterSummary {
   decorative_ribbon: string | null;
   tags_text: string | null;
   sort_order: number | null;
+  shelf_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CharacterShelf {
+  id: string;
+  world_id: string;
+  name: string;
+  icon_asset_id: string | null;
+  sort_order: number;
   created_at: string;
   updated_at: string;
 }
@@ -192,11 +214,15 @@ export interface LoreFolder {
   updated_at: string;
 }
 
+/** Worldbuilding lifecycle of a lore document (Proposal 01). */
+export type LoreDocStatus = 'stub' | 'draft' | 'wip' | 'done';
+
 export interface LoreDocumentSummary {
   id: string;
   world_id: string;
   folder_id: string | null;
   title: string;
+  status: LoreDocStatus;
   created_at: string;
   updated_at: string;
 }
@@ -206,11 +232,19 @@ export interface LoreDocumentFull {
   world_id: string;
   folder_id: string | null;
   title: string;
+  status: LoreDocStatus;
   content: string;
   /** Packet 10 §4.3 — per-doc typography overrides JSON, or null to inherit. */
   typography_overrides_json: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/** Per-document read state for Read Mode (Proposal 03). */
+export interface ReadProgressEntry {
+  document_id: string;
+  read_at: string | null;
+  bookmarked: boolean;
 }
 
 // ─── Entity Link types ──────────────────────────────────────────────────────
@@ -266,6 +300,7 @@ export interface SearchResult {
   id: string;
   title: string;
   snippet: string;
+  match_field: 'title' | 'content';
 }
 
 export interface DeletedCharacter {
@@ -303,6 +338,19 @@ export const commands = {
     invoke<WorldDetail>('open_world', { worldId }),
 
   closeWorld: () => invoke<void>('close_world'),
+
+  updateLastPosition: (params: {
+    worldId: string;
+    tab: string;
+    entityType?: 'character' | 'lore_document' | null;
+    entityId?: string | null;
+  }) =>
+    invoke<void>('update_last_position', {
+      worldId: params.worldId,
+      tab: params.tab,
+      entityType: params.entityType ?? null,
+      entityId: params.entityId ?? null,
+    }),
 
   deleteWorld: (worldId: string) =>
     invoke<void>('delete_world', { worldId }),
@@ -454,6 +502,29 @@ export const commands = {
   reorderCharacters: (characterIds: string[]) =>
     invoke<void>('reorder_characters', { characterIds }),
 
+  // ─── Character Shelves ──────────────────────────────────────────────────────
+
+  listCharacterShelves: () =>
+    invoke<CharacterShelf[]>('list_character_shelves'),
+
+  createCharacterShelf: (name: string) =>
+    invoke<CharacterShelf>('create_character_shelf', { name }),
+
+  renameCharacterShelf: (shelfId: string, name: string) =>
+    invoke<void>('rename_character_shelf', { shelfId, name }),
+
+  deleteCharacterShelf: (shelfId: string) =>
+    invoke<void>('delete_character_shelf', { shelfId }),
+
+  assignCharacterToShelf: (characterId: string, shelfId: string | null) =>
+    invoke<void>('assign_character_to_shelf', { characterId, shelfId }),
+
+  reorderShelves: (shelfIds: string[]) =>
+    invoke<void>('reorder_shelves', { shelfIds }),
+
+  updateShelfIcon: (shelfId: string, iconAssetId: string | null) =>
+    invoke<void>('update_shelf_icon', { shelfId, iconAssetId }),
+
   // ─── Card Blocks ─────────────────────────────────────────────────────────────
 
   listCardBlocks: (characterId: string) =>
@@ -591,13 +662,25 @@ export const commands = {
     title?: string;
     content?: string;
     folderId?: string;
+    status?: LoreDocStatus;
   }) =>
     invoke<LoreDocumentFull>('update_lore_document', {
       documentId: params.documentId,
       title: params.title ?? null,
       content: params.content ?? null,
       folderId: params.folderId ?? null,
+      status: params.status ?? null,
     }),
+
+  listReadProgress: () =>
+    invoke<ReadProgressEntry[]>('list_read_progress'),
+
+  markDocumentRead: (documentId: string) =>
+    invoke<void>('mark_document_read', { documentId }),
+
+  /** Flip a document's bookmark; resolves to the new state. */
+  toggleDocumentBookmark: (documentId: string) =>
+    invoke<boolean>('toggle_document_bookmark', { documentId }),
 
   /** Set or clear (null) a document's per-doc typography overrides. */
   updateDocumentTypography: (documentId: string, overridesJson: string | null) =>

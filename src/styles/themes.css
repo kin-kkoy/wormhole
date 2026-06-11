@@ -1,51 +1,162 @@
 :root[data-theme="dark"] {
-  --bg-primary: #0f1117;
-  --bg-secondary: #1a1d27;
-  --bg-tertiary: #242836;
-  --bg-elevated: #2a2e3d;
-  --text-primary: #e8e8ed;
-  --text-secondary: #a0a0b0;
-  --text-muted: #6b6b80;
-  --border: #2a2e3d;
-  --border-subtle: #1f2230;
-  --accent-atlas: #4a9eff;
-  --accent-characters: #a78bfa;
-  --accent-characters-rgb: 167, 139, 250;
-  --accent-atlas-rgb: 74, 158, 255;
-  --accent-lore: #f5a623;
-  --accent-lore-rgb: 245, 166, 35;
-  --accent-overview: #4ade80;
-  --danger: #ef4444;
-  --danger-hover: #dc2626;
-  --success: #22c55e;
-  --hover: rgba(255, 255, 255, 0.05);
-  --active: rgba(255, 255, 255, 0.08);
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+  /* ── Surface Palette ─────────────────────────────────────────────────────
+     A deeper, richer ink-blue ramp. Each step gains warmth as it rises
+     so elevated elements feel like they float above the void. */
+  --bg-primary: #08090f;
+  --bg-secondary: #0f1118;
+  --bg-tertiary: #161924;
+  --bg-elevated: #1e2233;
+
+  /* RGB triplets for rgba() usage */
+  --bg-primary-rgb: 8, 9, 15;
+  --bg-secondary-rgb: 15, 17, 24;
+  --bg-tertiary-rgb: 22, 25, 36;
+  --bg-elevated-rgb: 30, 34, 51;
+
+  /* ── Typography ─────────────────────────────────────────────────────────
+     Warm ink hierarchy (Astral Scriptorium): candlelit warm-white for
+     headings, parchment-grey for body, and a recessive sepia muted tier.
+     Never pure #fff — ink, not pixels. */
+  --text-primary: #eae5da;
+  --text-secondary: #a8a092;
+  --text-muted: #6e6759;
+
+  /* ── Borders ────────────────────────────────────────────────────────────
+     Warm gold hairlines, not grey — the scriptorium's brass rules. Subtle
+     uses a barely visible line for panel separators. */
+  --border: rgba(201, 184, 152, 0.13);
+  --border-subtle: rgba(201, 184, 152, 0.06);
+  --border-strong: rgba(201, 184, 152, 0.26);
+
+  /* ── System Accent Palette ──────────────────────────────────────────────
+     Slightly more saturated / luminous versions so they pop against the
+     deep backgrounds without being garish. */
+  --accent-atlas: #4a90ff;
+  --accent-atlas-rgb: 74, 144, 255;
+  --accent-characters: #9b6dff;
+  --accent-characters-rgb: 155, 109, 255;
+  --accent-lore: #f0a830;
+  --accent-lore-rgb: 240, 168, 48;
+  --accent-overview: #3dd68c;
+  --accent-overview-rgb: 61, 214, 140;
+
+  /* ── UI Feedback ────────────────────────────────────────────────────── */
+  --danger: #f87171;
+  --danger-hover: #ef4444;
+  --success: #34d399;
+
+  /* ── Hover & Active States ──────────────────────────────────────────── */
+  --hover: rgba(232, 227, 216, 0.04);
+  --hover-bright: rgba(232, 227, 216, 0.08);
+  --active: rgba(232, 227, 216, 0.07);
+
+  /* ── Shadow System ──────────────────────────────────────────────────────
+     Three-layer shadow system: ambient (wide/soft), key (directional),
+     and inset ring. Creates convincing depth on dark backgrounds. */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow: 0 2px 6px rgba(0, 0, 0, 0.2), 0 8px 24px rgba(0, 0, 0, 0.18);
+  --shadow-lg:
+    0 4px 12px rgba(0, 0, 0, 0.25),
+    0 20px 56px rgba(0, 0, 0, 0.40);
+  --shadow-glass-lg:
+    0 8px 32px rgba(0, 0, 0, 0.50),
+    0 0 1px rgba(255, 255, 255, 0.06);
+
+  /* ── Glassmorphism ──────────────────────────────────────────────────── */
+  --glass-bg: rgba(15, 17, 24, 0.72);
+  --glass-border: rgba(201, 184, 152, 0.10);
+  --glass-blur: blur(16px);
+  --bg-secondary-glass: rgba(15, 17, 24, 0.80);
+  --bg-primary-glass: rgba(8, 9, 15, 0.60);
+
+  /* ── Transition tokens ──────────────────────────────────────────────── */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 0.15s;
+  --duration-normal: 0.22s;
+  --duration-slow: 0.35s;
+
+  /* ── Radius tokens ──────────────────────────────────────────────────── */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-pill: 99px;
 }
 
 :root[data-theme="light"] {
-  --bg-primary: #fafafa;
-  --bg-secondary: #f0f0f5;
-  --bg-tertiary: #e5e5ee;
-  --bg-elevated: #ffffff;
-  --text-primary: #1a1a2e;
-  --text-secondary: #4a4a60;
-  --text-muted: #8a8aa0;
-  --border: #d0d0e0;
-  --border-subtle: #e0e0ea;
+  /* ── Surface Palette ────────────────────────────────────────────────────
+     Paper mode: where dark theme is the void, light theme is the page.
+     Warm parchment surfaces instead of cool greys. */
+  --bg-primary: #f6f2e9;
+  --bg-secondary: #efe9db;
+  --bg-tertiary: #e4dcc8;
+  --bg-elevated: #fffcf4;
+
+  --bg-primary-rgb: 246, 242, 233;
+  --bg-secondary-rgb: 239, 233, 219;
+  --bg-tertiary-rgb: 228, 220, 200;
+  --bg-elevated-rgb: 255, 252, 244;
+
+  /* ── Typography ─────────────────────────────────────────────────────── */
+  --text-primary: #261f12;
+  --text-secondary: #4f4534;
+  --text-muted: #7d735f;
+
+  /* ── Borders ──────────────────────────────────────────────────────────
+     Sepia rules on parchment. */
+  --border: rgba(94, 75, 42, 0.16);
+  --border-subtle: rgba(94, 75, 42, 0.08);
+  --border-strong: rgba(94, 75, 42, 0.26);
+
+  /* ── System Accents (darker for light backgrounds) ──────────────────── */
   --accent-atlas: #2563eb;
   --accent-atlas-rgb: 37, 99, 235;
   --accent-characters: #7c3aed;
   --accent-characters-rgb: 124, 58, 237;
-  --accent-lore: #d97706;
-  --accent-lore-rgb: 217, 119, 6;
-  --accent-overview: #16a34a;
+  --accent-lore: #c27803;
+  --accent-lore-rgb: 194, 120, 3;
+  --accent-overview: #059669;
+  --accent-overview-rgb: 5, 150, 105;
+
+  /* ── UI Feedback ────────────────────────────────────────────────────── */
   --danger: #dc2626;
   --danger-hover: #b91c1c;
   --success: #16a34a;
-  --hover: rgba(0, 0, 0, 0.04);
-  --active: rgba(0, 0, 0, 0.06);
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+  /* ── Hover & Active ─────────────────────────────────────────────────── */
+  --hover: rgba(94, 75, 42, 0.05);
+  --hover-bright: rgba(94, 75, 42, 0.08);
+  --active: rgba(94, 75, 42, 0.07);
+
+  /* ── Shadow System ──────────────────────────────────────────────────── */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow: 0 2px 6px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.06);
+  --shadow-lg:
+    0 4px 12px rgba(0, 0, 0, 0.08),
+    0 20px 56px rgba(0, 0, 0, 0.10);
+  --shadow-glass-lg:
+    0 8px 32px rgba(0, 0, 0, 0.10),
+    0 0 1px rgba(0, 0, 0, 0.08);
+
+  /* ── Glassmorphism ──────────────────────────────────────────────────── */
+  --glass-bg: rgba(255, 252, 244, 0.72);
+  --glass-border: rgba(94, 75, 42, 0.09);
+  --glass-blur: blur(16px);
+  --bg-secondary-glass: rgba(246, 242, 233, 0.82);
+  --bg-primary-glass: rgba(246, 242, 233, 0.60);
+
+  /* ── Transition tokens ──────────────────────────────────────────────── */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 0.15s;
+  --duration-normal: 0.22s;
+  --duration-slow: 0.35s;
+
+  /* ── Radius tokens ──────────────────────────────────────────────────── */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-pill: 99px;
 }

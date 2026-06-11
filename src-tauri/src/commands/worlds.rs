@@ -18,6 +18,9 @@ pub struct WorldSummary {
     pub summary: Option<String>,
     pub cover_thumbnail_base64: Option<String>,
     pub last_opened: Option<String>,
+    /// JSON snapshot {tab, entity_type, entity_id, entity_title, saved_at}
+    /// written by `update_last_position`; powers the index resume pill.
+    pub last_position: Option<String>,
     pub created_at: String,
 }
 
@@ -110,6 +113,7 @@ pub fn create_world(
         summary,
         cover_thumbnail_base64: None,
         last_opened: Some(now.clone()),
+        last_position: None,
         created_at: now,
     })
 }
@@ -121,7 +125,7 @@ pub fn list_worlds(state: State<Mutex<AppDatabase>>) -> Result<Vec<WorldSummary>
     let mut stmt = db
         .registry
         .prepare(
-            "SELECT id, title, world_type, summary, cover_thumbnail, last_opened, created_at \
+            "SELECT id, title, world_type, summary, cover_thumbnail, last_opened, last_position, created_at \
              FROM registry_worlds ORDER BY last_opened DESC",
         )
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
@@ -140,7 +144,8 @@ pub fn list_worlds(state: State<Mutex<AppDatabase>>) -> Result<Vec<WorldSummary>
                 summary: row.get(3)?,
                 cover_thumbnail_base64,
                 last_opened: row.get(5)?,
-                created_at: row.get(6)?,
+                last_position: row.get(6)?,
+                created_at: row.get(7)?,
             })
         })
         .map_err(|e| format!("Failed to query worlds: {}", e))?
@@ -148,6 +153,64 @@ pub fn list_worlds(state: State<Mutex<AppDatabase>>) -> Result<Vec<WorldSummary>
         .collect();
 
     Ok(worlds)
+}
+
+/// Snapshot the user's current position inside the open world so the world
+/// index can offer "Resume". Resolves the entity's display title from the
+/// active world DB (the world must still be open); a vanished or deleted
+/// entity downgrades the snapshot to tab-only.
+#[tauri::command]
+pub fn update_last_position(
+    world_id: String,
+    tab: String,
+    entity_type: Option<String>,
+    entity_id: Option<String>,
+    state: State<Mutex<AppDatabase>>,
+) -> Result<(), String> {
+    let db = state.lock().map_err(|e| format!("Lock error: {}", e))?;
+
+    let mut resolved: Option<(String, String, String)> = None;
+    if let (Some(etype), Some(eid)) = (entity_type.as_deref(), entity_id.as_deref()) {
+        if let Some((_, conn)) = db.active_world.as_ref() {
+            let title: Option<String> = match etype {
+                "character" => conn
+                    .query_row(
+                        "SELECT name FROM characters WHERE id = ?1 AND deleted_at IS NULL",
+                        [eid],
+                        |row| row.get(0),
+                    )
+                    .ok(),
+                "lore_document" => conn
+                    .query_row(
+                        "SELECT title FROM lore_documents WHERE id = ?1 AND deleted_at IS NULL",
+                        [eid],
+                        |row| row.get(0),
+                    )
+                    .ok(),
+                _ => None,
+            };
+            if let Some(title) = title {
+                resolved = Some((etype.to_string(), eid.to_string(), title));
+            }
+        }
+    }
+
+    let position = serde_json::json!({
+        "tab": tab,
+        "entity_type": resolved.as_ref().map(|r| r.0.clone()),
+        "entity_id": resolved.as_ref().map(|r| r.1.clone()),
+        "entity_title": resolved.as_ref().map(|r| r.2.clone()),
+        "saved_at": chrono::Utc::now().to_rfc3339(),
+    });
+
+    db.registry
+        .execute(
+            "UPDATE registry_worlds SET last_position = ?1 WHERE id = ?2",
+            rusqlite::params![position.to_string(), world_id],
+        )
+        .map_err(|e| format!("Failed to update last_position: {}", e))?;
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -464,6 +527,7 @@ pub fn seed_example_world(
         summary: Some(seed_summary.to_string()),
         cover_thumbnail_base64: None,
         last_opened: Some(now.clone()),
+        last_position: None,
         created_at: now,
     })
 }

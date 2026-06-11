@@ -12,6 +12,7 @@ export type FontFamilyKey =
   | 'caveat'
   | 'special-elite'
   | 'inter'
+  | 'ia-quattro'
   | 'jetbrains-mono'
   | 'system-serif'
   | 'system-sans';
@@ -26,6 +27,7 @@ export const FONT_LABELS: Record<FontFamilyKey, string> = {
   caveat: 'Caveat',
   'special-elite': 'Special Elite',
   inter: 'Inter',
+  'ia-quattro': 'iA Writer Quattro',
   'jetbrains-mono': 'JetBrains Mono',
   'system-serif': 'System Serif',
   'system-sans': 'System Sans',
@@ -47,6 +49,7 @@ export const FONT_STACKS: Record<FontFamilyKey, string> = {
   caveat: `'Caveat', 'Segoe Script', 'Bradley Hand', cursive`,
   'special-elite': `'Special Elite', 'Courier New', ${MONO_FALLBACK}`,
   inter: `'Inter', ${SANS_FALLBACK}`,
+  'ia-quattro': `'iA Writer Quattro', ${SANS_FALLBACK}`,
   'jetbrains-mono': `'JetBrains Mono', ${MONO_FALLBACK}`,
   'system-serif': SERIF_FALLBACK,
   'system-sans': SANS_FALLBACK,
@@ -62,7 +65,7 @@ export const FONT_CATEGORIES: FontCategory[] = [
   { label: 'Serif', fonts: ['cormorant', 'crimson', 'eb-garamond'] },
   { label: 'Display', fonts: ['cinzel', 'cormorant-unicase'] },
   { label: 'Decorative', fonts: ['unifraktur', 'caveat', 'special-elite'] },
-  { label: 'Sans', fonts: ['inter'] },
+  { label: 'Sans', fonts: ['inter', 'ia-quattro'] },
   { label: 'Mono', fonts: ['jetbrains-mono'] },
   { label: 'System', fonts: ['system-serif', 'system-sans'] },
 ];

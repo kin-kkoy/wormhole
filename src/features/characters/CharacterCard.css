@@ -8,6 +8,9 @@
   /* card body + dock side by side */
 }
 
+/* ── The relic frame ──────────────────────────────────────────────────────
+   The card face is an artifact: violet-lit edges, layered accent gradients,
+   and a deep glow shadow lifting it off the void. */
 .character-card__body {
   flex: 1;
   min-width: 0;
@@ -16,7 +19,17 @@
   grid-template-columns: 35% 1fr;
   grid-template-rows: 1fr;
   gap: 20px;
-  padding: 20px;
+  padding: 24px;
+  margin: 14px 20px 22px;
+  position: relative;
+  border: 1px solid rgba(var(--accent-characters-rgb), 0.35);
+  border-radius: var(--radius-xl);
+  background: var(--bg-secondary);
+  box-shadow:
+    0 30px 60px -28px rgba(0, 0, 0, 0.7),
+    0 0 40px -12px rgba(var(--accent-characters-rgb), 0.3),
+    0 0 80px -20px rgba(var(--accent-characters-rgb), 0.15),
+    inset 0 0 0 1px rgba(var(--accent-characters-rgb), 0.08);
 }
 
 /* Left column — image stretches to span the full height of the row */

@@ -145,7 +145,7 @@ export function CharactersGraph({ searchQuery }: CharactersGraphProps) {
 
           {data.characters.map((char) => { const pos = positions.get(char.id); if (!pos) return null; return (
             <g key={char.id} data-draggable onPointerDown={(e) => { if (!linkModeTarget) startDrag(e, char.id); }} style={{ cursor: linkModeTarget ? 'crosshair' : 'grab' }}>
-              <ImageNode x={pos.x} y={pos.y} radius={28} imageUrl={getImageUrl(char.image_asset_id)} fallbackType="character" dimmed={dimmedIds.has(char.id)} onClick={linkModeTarget ? () => handleNodeClickInLinkMode(char.id) : undefined} onHoverStart={(e) => setHover({ x: e.clientX, y: e.clientY, name: char.name })} onHoverEnd={() => setHover(null)} />
+              <ImageNode x={pos.x} y={pos.y} radius={28} imageUrl={getImageUrl(char.image_asset_id)} fallbackType="character" accentColor="var(--accent-characters)" dimmed={dimmedIds.has(char.id)} onClick={linkModeTarget ? () => handleNodeClickInLinkMode(char.id) : undefined} onHoverStart={(e) => setHover({ x: e.clientX, y: e.clientY, name: char.name })} onHoverEnd={() => setHover(null)} />
             </g>); })}
         </GraphCanvas>
         {hover && <HoverLabel x={hover.x} y={hover.y} name={hover.name} count={hover.count} subtitle={hover.subtitle} />}

@@ -11,6 +11,12 @@ import {
   detectBracketTrigger,
   insertInlineLink,
 } from '../editor/InlineLinkExtension';
+import {
+  InlineLinkAutocomplete,
+  buildAutocompleteItems,
+  type AcItem,
+} from '../editor/InlineLinkAutocomplete';
+import { registerEditor, unregisterEditor } from '../linking/editorRegistry';
 import { TextStyleWithFontSize } from '../editor/TextStyleWithFontSize';
 import { EditorBubbleMenu } from '../editor/EditorBubbleMenu';
 import { NextPagePicker } from './NextPagePicker';
@@ -31,6 +37,9 @@ interface DocumentEditorProps {
   /** Incremented whenever an external surface (LinkedRecordsPanel) mutates
    *  an entity link for this doc, so the NextPagePicker can re-read. */
   linkRefreshToken?: number;
+  /** Focus mode (Proposal 02): toggle button state + handler. */
+  focusMode?: boolean;
+  onToggleFocus?: () => void;
 }
 
 interface AutocompleteState {
@@ -56,6 +65,8 @@ export function DocumentEditor({
   onDocumentUpdated,
   worldLoreSettings,
   linkRefreshToken,
+  focusMode = false,
+  onToggleFocus,
 }: DocumentEditorProps) {
   const [title, setTitle] = useState(document.title);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -114,17 +125,67 @@ export function DocumentEditor({
     }
   }, [doSearch]);
 
-  const selectResult = useCallback((record: LinkableRecord) => {
+  const activateItem = useCallback(async (item: AcItem) => {
     if (!editor) return;
     const ac = acRef.current;
-    insertInlineLink(editor.view, ac.startPos, {
-      entityType: record.entity_type,
-      entityId: record.id,
-      label: record.name,
-    });
-    hideAutocomplete();
+
+    if (item.kind === 'record') {
+      insertInlineLink(editor.view, ac.startPos, {
+        entityType: item.record.entity_type,
+        entityId: item.record.id,
+        label: item.record.name,
+      });
+      hideAutocomplete();
+      return;
+    }
+
+    // Create-in-place: make a stub entity, then link to it. Capture the
+    // trigger position before awaiting; verify it survived the round-trip.
+    const name = ac.query.trim();
+    if (!name) return;
+    const startPos = ac.startPos;
+    try {
+      const created =
+        item.entityType === 'lore_document'
+          ? await (async () => {
+              const doc = await commands.createLoreDocument({ title: name });
+              return { entityType: 'lore_document' as const, entityId: doc.id, label: doc.title };
+            })()
+          : await (async () => {
+              const ch = await commands.createCharacter({ name });
+              return { entityType: 'character' as const, entityId: ch.id, label: ch.name };
+            })();
+      const trigger = detectBracketTrigger(editor.state.doc, editor.state.selection.from);
+      if (!trigger || trigger.startPos !== startPos) return;
+      insertInlineLink(editor.view, startPos, created);
+      hideAutocomplete();
+      // New root doc should show up in the folder tree immediately.
+      if (created.entityType === 'lore_document') onDocumentUpdated();
+    } catch (e) {
+      console.error('Failed to create linked entity:', e);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hideAutocomplete]);
+  }, [hideAutocomplete, onDocumentUpdated]);
+
+  const [wordCount, setWordCount] = useState({ words: 0, chars: 0 });
+  // Words on the page when this document was opened — the session delta is
+  // measured against it. Null = capture on the next count.
+  const sessionBaselineRef = useRef<number | null>(null);
+  const [sessionDelta, setSessionDelta] = useState(0);
+  // True while there are unsaved keystrokes (pending content not yet flushed).
+  const [dirty, setDirty] = useState(false);
+
+  const updateWordCount = useCallback((ed: { getText: () => string }) => {
+    const text = ed.getText();
+    const words = text.split(/\s+/).filter(Boolean).length;
+    setWordCount({ words, chars: text.length });
+    if (sessionBaselineRef.current === null) {
+      sessionBaselineRef.current = words;
+      setSessionDelta(0);
+    } else {
+      setSessionDelta(words - sessionBaselineRef.current);
+    }
+  }, []);
 
   const editor = useEditor({
     extensions: [
@@ -138,13 +199,19 @@ export function DocumentEditor({
     ],
     content: parseContent(document.content),
     editable: true,
+    onCreate: ({ editor: ed }) => {
+      updateWordCount(ed);
+    },
     onUpdate: ({ editor: ed }) => {
       pendingContentRef.current = JSON.stringify(ed.getJSON());
+      setDirty(true);
+      updateWordCount(ed);
     },
     editorProps: {
       handleKeyDown: (_view, event) => {
         const ac = acRef.current;
         if (!ac.visible) return false;
+        const items = buildAutocompleteItems(ac.results, ac.query);
 
         if (event.key === 'Escape') {
           hideAutocomplete();
@@ -154,7 +221,7 @@ export function DocumentEditor({
           event.preventDefault();
           setAutocomplete((prev) => ({
             ...prev,
-            selectedIndex: Math.min(prev.selectedIndex + 1, prev.results.length - 1),
+            selectedIndex: Math.min(prev.selectedIndex + 1, items.length - 1),
           }));
           return true;
         }
@@ -167,10 +234,10 @@ export function DocumentEditor({
           return true;
         }
         if (event.key === 'Enter' || event.key === 'Tab') {
-          const selected = ac.results[ac.selectedIndex];
+          const selected = items[ac.selectedIndex];
           if (selected) {
             event.preventDefault();
-            selectResult(selected);
+            activateItem(selected);
             return true;
           }
         }
@@ -178,6 +245,13 @@ export function DocumentEditor({
       },
     },
   });
+
+  // Expose this editor to global UI (broken-link repair menu).
+  useEffect(() => {
+    if (!editor) return;
+    registerEditor(editor);
+    return () => unregisterEditor(editor);
+  }, [editor]);
 
   // Check for [[ trigger on every editor update (selection or content change)
   useEffect(() => {
@@ -208,6 +282,8 @@ export function DocumentEditor({
     setOverrides(parseLoreOverrides(document.typography_overrides_json));
     pendingContentRef.current = null;
     hideAutocomplete();
+    // New document → new writing session.
+    sessionBaselineRef.current = null;
 
     const parsed = parseContent(document.content);
     const current = JSON.stringify(editor.getJSON());
@@ -215,6 +291,13 @@ export function DocumentEditor({
     if (current !== incoming) {
       editor.commands.setContent(parsed);
     }
+    // setContent fires onUpdate, which marks dirty and queues a pointless
+    // save of the just-loaded content — clear both after the swap. Also
+    // capture the baseline here in case setContent was skipped (identical
+    // content) and onUpdate never ran.
+    pendingContentRef.current = null;
+    setDirty(false);
+    updateWordCount(editor);
     setSaveStatus('idle');
   }, [document.id, document.content, editor, hideAutocomplete]);
 
@@ -249,7 +332,10 @@ export function DocumentEditor({
     if (pendingContentRef.current !== null) {
       const content = pendingContentRef.current;
       pendingContentRef.current = null;
-      commands.updateLoreDocument({ documentId: targetDocId, content }).catch(console.error);
+      commands
+        .updateLoreDocument({ documentId: targetDocId, content })
+        .then(() => setDirty(false))
+        .catch((e) => console.error('Background save failed:', e));
     }
   }
 
@@ -260,6 +346,7 @@ export function DocumentEditor({
     try {
       await commands.updateLoreDocument({ documentId: document.id, content: json });
       pendingContentRef.current = null;
+      setDirty(false);
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 1500);
     } catch (e) {
@@ -422,6 +509,21 @@ export function DocumentEditor({
             refreshToken={linkRefreshToken}
           />
           <div className="doc-editor__toolbar-right">
+            {onToggleFocus && (
+              <button
+                type="button"
+                className={`doc-editor__tool-btn doc-editor__focus-btn${
+                  focusMode ? ' doc-editor__tool-btn--active' : ''
+                }`}
+                onClick={onToggleFocus}
+                title={focusMode ? 'Exit focus mode (Esc)' : 'Focus mode (Ctrl+Shift+F)'}
+                aria-pressed={focusMode}
+              >
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
+                  <path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4" />
+                </svg>
+              </button>
+            )}
             <button
               className="btn btn--lore-primary doc-editor__save-btn"
               onClick={handleSave}
@@ -441,38 +543,45 @@ export function DocumentEditor({
       </div>
       <EditorBubbleMenu editor={editor} />
 
-      {/* Autocomplete dropdown */}
-      {autocomplete.visible && autocomplete.results.length > 0 && (
-        <div
-          ref={autocompleteRef}
-          className="doc-editor__autocomplete"
-          style={{
-            left: autocomplete.coords.left,
-            top: autocomplete.coords.bottom + 4,
-          }}
+      <div className="doc-editor__footer">
+        <span
+          className="doc-editor__word-count"
+          title={`${wordCount.chars.toLocaleString()} ${wordCount.chars === 1 ? 'character' : 'characters'}`}
         >
-          {autocomplete.results.map((record, idx) => (
-            <button
-              key={`${record.entity_type}-${record.id}`}
-              className={`doc-editor__autocomplete-item ${idx === autocomplete.selectedIndex ? 'doc-editor__autocomplete-item--selected' : ''}`}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                selectResult(record);
-              }}
-              onMouseEnter={() =>
-                setAutocomplete((prev) => ({ ...prev, selectedIndex: idx }))
-              }
-            >
-              <span
-                className="doc-editor__autocomplete-badge"
-                data-type={record.entity_type}
-              >
-                {record.entity_type === 'character' ? 'CHR' : 'DOC'}
-              </span>
-              <span className="doc-editor__autocomplete-name">{record.name}</span>
-            </button>
-          ))}
-        </div>
+          {wordCount.words.toLocaleString()} {wordCount.words === 1 ? 'word' : 'words'}
+          {wordCount.words > 0 && <> · ~{Math.max(1, Math.ceil(wordCount.words / 225))} min read</>}
+        </span>
+        {sessionDelta !== 0 && (
+          <span
+            className={`doc-editor__session-delta${
+              sessionDelta < 0 ? ' doc-editor__session-delta--negative' : ''
+            }`}
+          >
+            {sessionDelta > 0 ? `+${sessionDelta.toLocaleString()}` : sessionDelta.toLocaleString()} this session
+          </span>
+        )}
+        <span
+          className={`doc-editor__save-state${
+            dirty || saveStatus === 'saving' ? ' doc-editor__save-state--editing' : ''
+          }`}
+        >
+          {dirty ? 'Editing…' : saveStatus === 'saving' ? 'Saving…' : 'Saved'}
+        </span>
+      </div>
+
+      {/* Autocomplete dropdown */}
+      {autocomplete.visible && (
+        <InlineLinkAutocomplete
+          items={buildAutocompleteItems(autocomplete.results, autocomplete.query)}
+          query={autocomplete.query}
+          selectedIndex={autocomplete.selectedIndex}
+          coords={autocomplete.coords}
+          onSelect={activateItem}
+          onHover={(idx) =>
+            setAutocomplete((prev) => ({ ...prev, selectedIndex: idx }))
+          }
+          dropdownRef={autocompleteRef}
+        />
       )}
     </div>
   );

@@ -4,8 +4,10 @@
   overflow: hidden;
   position: relative;
   z-index: 1;
-  border-radius: 10px;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  border-radius: var(--radius-md);
+  transition:
+    border-color var(--duration-fast),
+    box-shadow var(--duration-fast);
 }
 
 /* Edit-mode blocks have a visible frame so you can see + manipulate them. */
@@ -25,7 +27,7 @@
 
 .card-block--selected {
   border-color: var(--accent-characters);
-  box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.3);
+  box-shadow: 0 0 0 2px rgba(var(--accent-characters-rgb), 0.30);
 }
 
 /* While being dragged, the source block fades so the ghost preview
@@ -109,7 +111,7 @@
   gap: 2px;
   flex-shrink: 0;
   opacity: 0;
-  transition: opacity 0.12s ease;
+  transition: opacity var(--duration-fast) ease;
   /* Controls sit above the resize handles so clicking the hamburger / delete
      doesn't get captured by the right-edge resize strip underneath. */
   position: relative;
@@ -225,7 +227,7 @@
 }
 
 .card-block__resize-handle:hover {
-  background: rgba(167, 139, 250, 0.35);
+  background: rgba(var(--accent-characters-rgb), 0.30);
 }
 
 .card-block__resize-handle--right {

@@ -6,6 +6,8 @@ interface BookTableOfContentsProps {
   book: BookNode;
   selectedDocumentId: string | null;
   onSelectDocument: (id: string) => void;
+  /** Doc ids the reader has opened before (read_progress.read_at set). */
+  readDocIds: Set<string>;
 }
 
 /** Collect every folder id on the path from the book root down to the folder
@@ -34,6 +36,7 @@ export function BookTableOfContents({
   book,
   selectedDocumentId,
   onSelectDocument,
+  readDocIds,
 }: BookTableOfContentsProps) {
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
 
@@ -91,6 +94,7 @@ export function BookTableOfContents({
           docs={book.looseDocs}
           selectedDocumentId={selectedDocumentId}
           onSelectDocument={onSelectDocument}
+          readDocIds={readDocIds}
         />
       )}
 
@@ -102,6 +106,7 @@ export function BookTableOfContents({
           toggle={toggle}
           selectedDocumentId={selectedDocumentId}
           onSelectDocument={onSelectDocument}
+          readDocIds={readDocIds}
         />
       ))}
     </div>
@@ -112,10 +117,12 @@ function ForewordSection({
   docs,
   selectedDocumentId,
   onSelectDocument,
+  readDocIds,
 }: {
   docs: LoreDocumentSummary[];
   selectedDocumentId: string | null;
   onSelectDocument: (id: string) => void;
+  readDocIds: Set<string>;
 }) {
   return (
     <div className="book-toc__section">
@@ -130,6 +137,7 @@ function ForewordSection({
             depth={0}
             active={doc.id === selectedDocumentId}
             onSelect={onSelectDocument}
+            read={readDocIds.has(doc.id)}
           />
         ))}
       </div>
@@ -143,12 +151,14 @@ function ChapterSection({
   toggle,
   selectedDocumentId,
   onSelectDocument,
+  readDocIds,
 }: {
   chapter: ChapterNode;
   expanded: Set<string>;
   toggle: (id: string) => void;
   selectedDocumentId: string | null;
   onSelectDocument: (id: string) => void;
+  readDocIds: Set<string>;
 }) {
   const isEmpty = chapter.docs.length === 0 && chapter.pockets.length === 0;
   const isOpen = expanded.has(chapter.folder.id);
@@ -190,6 +200,7 @@ function ChapterSection({
               depth={1}
               active={doc.id === selectedDocumentId}
               onSelect={onSelectDocument}
+              read={readDocIds.has(doc.id)}
             />
           ))}
           {chapter.pockets.map((p) => (
@@ -200,6 +211,7 @@ function ChapterSection({
               toggle={toggle}
               selectedDocumentId={selectedDocumentId}
               onSelectDocument={onSelectDocument}
+              readDocIds={readDocIds}
             />
           ))}
         </div>
@@ -214,12 +226,14 @@ function PocketEntry({
   toggle,
   selectedDocumentId,
   onSelectDocument,
+  readDocIds,
 }: {
   chapter: ChapterNode;
   expanded: Set<string>;
   toggle: (id: string) => void;
   selectedDocumentId: string | null;
   onSelectDocument: (id: string) => void;
+  readDocIds: Set<string>;
 }) {
   const isOpen = expanded.has(chapter.folder.id);
   const depth = chapter.depth;
@@ -264,6 +278,7 @@ function PocketEntry({
               depth={depth + 1}
               active={doc.id === selectedDocumentId}
               onSelect={onSelectDocument}
+              read={readDocIds.has(doc.id)}
             />
           ))}
           {chapter.pockets.map((p) => (
@@ -274,6 +289,7 @@ function PocketEntry({
               toggle={toggle}
               selectedDocumentId={selectedDocumentId}
               onSelectDocument={onSelectDocument}
+              readDocIds={readDocIds}
             />
           ))}
         </>
@@ -287,11 +303,13 @@ function PageEntry({
   depth,
   active,
   onSelect,
+  read,
 }: {
   doc: LoreDocumentSummary;
   depth: number;
   active: boolean;
   onSelect: (id: string) => void;
+  read: boolean;
 }) {
   return (
     <button
@@ -311,6 +329,18 @@ function PageEntry({
         <path d="M8 1v2h2" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" />
       </svg>
       <span className="book-toc__page-label">{doc.title}</span>
+      <span
+        className={
+          'book-toc__read-dot' +
+          (active
+            ? ' book-toc__read-dot--current'
+            : read
+              ? ' book-toc__read-dot--read'
+              : ' book-toc__read-dot--unread')
+        }
+        title={active ? 'Reading now' : read ? 'Read' : 'Unread'}
+        aria-hidden="true"
+      />
     </button>
   );
 }

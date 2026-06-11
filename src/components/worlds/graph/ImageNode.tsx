@@ -8,26 +8,23 @@ interface ImageNodeProps {
   fallbackType: 'map' | 'character' | 'document';
   dimmed: boolean;
   selected?: boolean;
+  accentColor?: string;
   onClick?: () => void;
   onContextMenu?: (e: React.MouseEvent) => void;
   onHoverStart?: (e: React.MouseEvent) => void;
   onHoverEnd?: () => void;
 }
 
-const FALLBACK_ICONS: Record<string, string> = {
-  map: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5',
-  character: 'M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v2h20v-2c0-3.3-6.7-5-10-5z',
-  document: 'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 2l5 5h-5V4zM8 13h8v2H8v-2zm0 4h5v2H8v-2z',
-};
 
 export function ImageNode({
   x,
   y,
   radius,
   imageUrl,
-  fallbackType,
+  fallbackType: _fallbackType,
   dimmed,
   selected,
+  accentColor = 'var(--border)',
   onClick,
   onContextMenu,
   onHoverStart,
@@ -51,16 +48,24 @@ export function ImageNode({
         </clipPath>
       </defs>
 
-      {/* Background circle */}
+      {/* Background circle — constellation star */}
       <circle
         r={radius}
         fill="var(--bg-secondary)"
-        stroke={selected ? 'var(--accent-overview)' : 'var(--border)'}
-        strokeWidth={selected ? 2.5 : 1.5}
+        stroke={selected ? 'var(--accent-overview)' : accentColor}
+        strokeWidth={selected ? 2.5 : 1.3}
+        strokeOpacity={selected ? 1 : 0.6}
         className="image-node__border"
       />
 
-      {imageUrl ? (
+      {/* Core dot — the star's bright center */}
+      <circle
+        r={Math.max(3, radius * 0.14)}
+        fill={accentColor}
+        className="image-node__core"
+      />
+
+      {imageUrl && (
         <image
           href={imageUrl}
           x={-(radius - 2)}
@@ -70,14 +75,6 @@ export function ImageNode({
           clipPath={`url(#${clipId})`}
           preserveAspectRatio="xMidYMid slice"
         />
-      ) : (
-        <g transform={`translate(${-radius * 0.4}, ${-radius * 0.4}) scale(${(radius * 0.8) / 24})`}>
-          <path
-            d={FALLBACK_ICONS[fallbackType]}
-            fill="var(--text-muted)"
-            opacity={0.5}
-          />
-        </g>
       )}
     </g>
   );

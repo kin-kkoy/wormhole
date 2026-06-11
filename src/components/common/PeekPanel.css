@@ -1,18 +1,19 @@
 .peek-panel {
   position: fixed;
-  top: var(--top-dock-height, 56px);
+  top: var(--top-dock-height, 54px);
   right: 0;
   bottom: 0;
   width: 40%;
   min-width: 380px;
   max-width: 720px;
   background: var(--bg-secondary);
-  border-left: 1px solid var(--border);
-  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.25);
+  border-left: 1px solid var(--border-strong);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.30);
   display: flex;
   flex-direction: column;
   z-index: 120;
-  animation: peek-slide-in 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: peek-slide-in 0.4s var(--ease-out-expo) forwards;
+  will-change: transform;
 }
 
 @keyframes peek-slide-in {
@@ -27,7 +28,7 @@
 /* "Open Full" transition: panel slides left and fades while the underlying
  * tab swap happens. The swap fires after 300ms via setTimeout in PeekPanel. */
 .peek-panel--leaving {
-  animation: peek-slide-out 300ms cubic-bezier(0.4, 0, 0.6, 1) forwards;
+  animation: peek-slide-out var(--duration-slow) var(--ease-out-expo) forwards;
   pointer-events: none;
 }
 
@@ -37,7 +38,7 @@
     opacity: 1;
   }
   to {
-    transform: translateX(-32%);
+    transform: translateX(-30px);
     opacity: 0;
   }
 }
@@ -51,73 +52,82 @@
 
 .peek-panel[data-entity-type="character"] {
   --peek-accent: var(--accent-characters);
+  --peek-accent-rgb: var(--accent-characters-rgb);
 }
 .peek-panel[data-entity-type="lore_document"] {
   --peek-accent: var(--accent-lore);
+  --peek-accent-rgb: var(--accent-lore-rgb);
 }
 
 .peek-panel__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
+  padding: 12px 20px;
   border-bottom: 1px solid var(--border);
-  background: var(--bg-primary);
-  border-top: 2px solid var(--peek-accent);
+  background: rgba(var(--bg-primary-rgb), 0.75);
+  border-top: 3px solid var(--peek-accent);
 }
 
 .peek-panel__type-label {
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.08em;
   color: var(--peek-accent);
 }
 
 .peek-panel__actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .peek-panel__open-full {
-  font-size: 12px;
-  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 5px 12px;
 }
 
 .peek-panel__close {
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  font-size: 22px;
+  font-size: 20px;
   line-height: 1;
   width: 28px;
   height: 28px;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.1s, color 0.1s;
+  transition: background-color 0.15s, color 0.15s, transform 0.1s;
+  border: 1px solid transparent;
 }
 
 .peek-panel__close:hover {
   background: var(--hover);
   color: var(--text-primary);
+  border-color: var(--border-subtle);
+}
+
+.peek-panel__close:active {
+  transform: scale(0.92);
 }
 
 .peek-panel__body {
   flex: 1;
   overflow-y: auto;
-  padding: 18px 20px 32px;
+  padding: 20px 24px 32px;
 }
 
 .peek-panel__loading,
 .peek-panel__unavailable {
-  padding: 32px 12px;
+  padding: 48px 16px;
   text-align: center;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 13.5px;
 }
 
 .peek-panel__unavailable-sub {
@@ -131,11 +141,22 @@
 .peek-character__image {
   width: 100%;
   height: 240px;
-  border-radius: 8px;
-  border: 2px solid var(--accent-characters);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   overflow: hidden;
-  margin-bottom: 14px;
+  margin-bottom: 18px;
   background: var(--bg-primary);
+  position: relative;
+}
+
+.peek-character__image::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 0 1px rgba(var(--accent-characters-rgb), 0.3);
+  pointer-events: none;
+  border-radius: 10px;
 }
 
 .peek-character__image img {
@@ -146,8 +167,6 @@
   display: block;
 }
 
-/* Portrait placeholder used when the character has no image_asset_id —
-   mirrors the empty-state chess glyph on the character list cards. */
 .peek-character__image--placeholder {
   display: flex;
   align-items: center;
@@ -156,57 +175,70 @@
 }
 
 .peek-character__image-glyph {
-  font-size: 72px;
+  font-size: 64px;
   color: var(--text-muted);
-  opacity: 0.3;
+  opacity: 0.25;
 }
 
 .peek-character__name {
-  margin: 0 0 16px;
-  font-size: 22px;
+  margin: 0 0 20px;
+  font-family: var(--font-serif-display, inherit);
+  font-size: 24px;
   font-weight: 600;
   color: var(--text-primary);
-  padding-bottom: 6px;
-  border-bottom: 2px solid var(--accent-characters);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+
+.peek-character__name::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 60px;
+  height: 2px;
+  background: var(--accent-characters);
+  border-radius: 99px;
 }
 
 .peek-character__section {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .peek-character__section-title {
-  margin: 0 0 6px;
+  margin: 0 0 8px;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.08em;
   color: var(--text-muted);
 }
 
 .peek-character__intro {
   margin: 0;
   font-size: 14px;
-  line-height: 1.55;
+  line-height: 1.6;
   color: var(--text-primary);
   border-left: 3px solid var(--accent-characters);
-  padding: 6px 12px;
-  background: var(--bg-primary);
+  padding: 10px 14px;
+  background: var(--bg-primary-glass, rgba(10, 12, 18, 0.4));
+  border-radius: 0 8px 8px 0;
   font-style: italic;
 }
 
-/* Nested TipTap editor inside the peek's Objective / Intro sections —
-   strip the default editor chrome so paragraphs blend into the section. */
+/* TipTap editor override */
 .peek-character__tt .tiptap {
   border: none;
   padding: 0;
   background: transparent;
   font-size: 14px;
-  line-height: 1.55;
+  line-height: 1.6;
   color: var(--text-primary);
 }
 
 .peek-character__tt p {
-  margin: 0 0 6px;
+  margin: 0 0 8px;
 }
 
 .peek-character__tt p:last-child {
@@ -216,9 +248,13 @@
 .peek-character__details {
   display: grid;
   grid-template-columns: minmax(80px, max-content) 1fr;
-  gap: 4px 14px;
+  gap: 6px 16px;
   margin: 0;
-  font-size: 13px;
+  font-size: 13.5px;
+  background: var(--bg-primary-glass, rgba(10, 12, 18, 0.3));
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
 }
 
 .peek-character__detail-row {
@@ -227,7 +263,7 @@
 
 .peek-character__detail-row dt {
   color: var(--text-muted);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .peek-character__detail-row dd {
@@ -238,33 +274,46 @@
 /* ── Lore renderer ───────────────────────────────────────────────────── */
 
 .peek-lore__title {
-  margin: 0 0 12px;
-  font-size: 22px;
+  margin: 0 0 16px;
+  font-family: var(--font-serif-display, inherit);
+  font-size: 24px;
   font-weight: 600;
   color: var(--text-primary);
-  border-bottom: 2px solid var(--accent-lore);
-  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+  position: relative;
+}
+
+.peek-lore__title::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 60px;
+  height: 2px;
+  background: var(--accent-lore);
+  border-radius: 99px;
 }
 
 .peek-lore__content .ProseMirror {
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 14.5px;
+  line-height: 1.65;
 }
 
 /* ── Linked records summary ──────────────────────────────────────────── */
 
 .peek-panel__linked {
-  margin-top: 22px;
-  padding-top: 14px;
+  margin-top: 28px;
+  padding-top: 18px;
   border-top: 1px solid var(--border);
 }
 
 .peek-panel__linked-title {
-  margin: 0 0 8px;
+  margin: 0 0 10px;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.08em;
   color: var(--text-muted);
 }
 
@@ -274,26 +323,27 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .peek-panel__linked-item {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   width: 100%;
-  background: var(--bg-primary);
+  background: var(--bg-primary-glass, rgba(10, 12, 18, 0.3));
   border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 6px 10px;
+  border-radius: 6px;
+  padding: 8px 12px;
   text-align: left;
   cursor: pointer;
-  transition: background 0.1s, border-color 0.1s;
+  transition: background-color 0.18s, border-color 0.18s, transform 0.12s;
 }
 
 .peek-panel__linked-item:hover {
   background: var(--hover);
   border-color: var(--peek-accent);
+  transform: translateX(-2px);
 }
 
 .peek-panel__linked-item[data-entity-type="character"]:hover {
@@ -303,13 +353,20 @@
   border-color: var(--accent-lore);
 }
 
+.peek-panel__linked-item:active {
+  transform: translateX(-2px) scale(0.98);
+}
+
 .peek-panel__linked-name {
   font-size: 13px;
   color: var(--text-primary);
+  font-weight: 500;
 }
 
 .peek-panel__linked-type {
-  font-size: 11px;
+  font-size: 10.5px;
   color: var(--text-muted);
   font-family: var(--font-mono, monospace);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
 }

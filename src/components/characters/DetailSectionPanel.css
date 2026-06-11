@@ -36,4 +36,12 @@
 
 .detail-section-panel__body {
   min-height: 0;
+  border: 1px solid rgba(var(--accent-characters-rgb), 0.12);
+  border-top: 2px solid rgba(var(--accent-characters-rgb), 0.4);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  padding: 20px 24px;
+  box-shadow:
+    0 8px 30px -12px rgba(0, 0, 0, 0.5),
+    0 0 40px -20px rgba(var(--accent-characters-rgb), 0.1);
 }

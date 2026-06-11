@@ -1,0 +1,52 @@
+.ribbon-icon-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.ribbon-icon-picker__label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.ribbon-icon-picker__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ribbon-icon-picker__preview {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  object-fit: contain;
+  background: var(--bg-tertiary);
+}
+
+.ribbon-icon-picker__btn {
+  font-size: 10px;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast),
+    color var(--duration-fast);
+}
+
+.ribbon-icon-picker__btn:hover {
+  background: var(--hover);
+  color: var(--text-primary);
+}
+
+.ribbon-icon-picker__btn--remove:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}

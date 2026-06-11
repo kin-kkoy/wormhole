@@ -63,12 +63,12 @@ export function CardHeader({ character, onUpdate, editMode }: CardHeaderProps) {
           </h1>
         )}
 
-        {character.decorative_ribbon && (
+        {character.decorative_ribbon ? (
           <div
             className="card-header__ribbon"
             style={{ backgroundColor: character.decorative_ribbon }}
           />
-        )}
+        ) : null}
 
         {editMode && (
           <RibbonColorPicker

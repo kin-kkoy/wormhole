@@ -54,6 +54,8 @@ interface ReadModeShellProps {
    *  default flat-order next. */
   nextPageMap: Map<string, string>;
   onSwitchToWrite: () => void;
+  /** Bubbles up from the reader's colophon when a next_page_link changes. */
+  onNextPageLinksChanged?: () => void;
 }
 
 export function ReadModeShell({
@@ -61,6 +63,7 @@ export function ReadModeShell({
   documents,
   nextPageMap,
   onSwitchToWrite,
+  onNextPageLinksChanged,
 }: ReadModeShellProps) {
   const activeFolderPath = useAppStore((s) => s.activeFolderPath);
   const setActiveFolderPath = useAppStore((s) => s.setActiveFolderPath);
@@ -202,6 +205,7 @@ export function ReadModeShell({
           nextPageMap={nextPageMap}
           selectedDocumentId={selectedDocumentId}
           onSelectDocument={setSelectedDocumentId}
+          onNextPageLinksChanged={onNextPageLinksChanged}
         />
       )}
     </div>

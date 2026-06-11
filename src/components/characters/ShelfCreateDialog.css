@@ -1,0 +1,89 @@
+/* Register the characters accent for this dialog */
+.dialog-overlay:has(.shelf-create-dialog) {
+  --dialog-accent: var(--accent-characters);
+  --dialog-accent-rgb: var(--accent-characters-rgb);
+}
+
+.shelf-create-dialog {
+  max-width: 480px;
+}
+
+/* ── Character roster grid ───────────────────────────────────────────── */
+.shelf-create-dialog__roster {
+  max-height: 260px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  padding: 4px;
+}
+
+.shelf-create-dialog__char {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast),
+    border-color var(--duration-fast);
+  border: 1px solid transparent;
+  text-align: left;
+}
+
+.shelf-create-dialog__char:hover {
+  background: var(--hover);
+}
+
+.shelf-create-dialog__char--active {
+  background: rgba(var(--accent-characters-rgb), 0.10);
+  border-color: rgba(var(--accent-characters-rgb), 0.25);
+}
+
+.shelf-create-dialog__char--active:hover {
+  background: rgba(var(--accent-characters-rgb), 0.15);
+}
+
+/* ── Avatar ──────────────────────────────────────────────────────────── */
+.shelf-create-dialog__char-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shelf-create-dialog__char-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.shelf-create-dialog__char-initial {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.shelf-create-dialog__char-name {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shelf-create-dialog__check {
+  flex-shrink: 0;
+  color: var(--accent-characters);
+}

@@ -7,6 +7,8 @@ import { TopDock } from '../../components/common/TopDock';
 import { PeekPanel } from '../../components/common/PeekPanel';
 import { useInlineLinkClicks } from '../../components/linking/useInlineLinkClicks';
 import { useBrokenLinkResolver } from '../../components/linking/useBrokenLinkResolver';
+import { BrokenLinkRepairMenu } from '../../components/linking/BrokenLinkRepairMenu';
+import { InlineLinkHoverCard } from '../../components/linking/InlineLinkHoverCard';
 import { clearImageCache } from '../../hooks/useImageCache';
 import { WorldOverview } from './WorldOverview';
 import { AtlasUnderConstruction } from '../atlas/AtlasUnderConstruction';
@@ -50,6 +52,9 @@ export function WorldShell() {
     (async () => {
       try {
         const detail = await commands.openWorld(worldId);
+        // setActiveWorld consumes a fresh pendingResume internally (see
+        // store.ts) — no separate application step, so StrictMode's double
+        // open can't clobber the staged destination.
         setActiveWorld(detail);
       } catch (e) {
         setError(String(e));
@@ -59,11 +64,39 @@ export function WorldShell() {
     return () => {
       commands.closeWorld().catch(console.error);
       setActiveWorld(null);
+      // (pendingResume is deliberately NOT cleared here: StrictMode runs this
+      // cleanup between its double mount, which would wipe a staged resume
+      // before it ever applied. The worldId scoping above prevents leaks.)
       // Revoke every Blob URL held by the image cache — the next world
       // opens into a fresh cache instead of inheriting stale blobs.
       clearImageCache();
     };
   }, [worldId]);
+
+  // Snapshot the current position (tab + selected entity) to the registry,
+  // debounced, so the world index can offer "Resume where you left off".
+  // Written on change rather than on unmount — survives hard app quits.
+  const selectedCharacterId = useAppStore((s) => s.selectedCharacterId);
+  const selectedDocumentId = useAppStore((s) => s.selectedDocumentId);
+  useEffect(() => {
+    if (!worldId || !activeWorld) return;
+    const t = window.setTimeout(() => {
+      const entityType = selectedCharacterId
+        ? ('character' as const)
+        : selectedDocumentId
+          ? ('lore_document' as const)
+          : null;
+      commands
+        .updateLastPosition({
+          worldId,
+          tab: activeTab,
+          entityType,
+          entityId: selectedCharacterId ?? selectedDocumentId ?? null,
+        })
+        .catch(console.error);
+    }, 800);
+    return () => window.clearTimeout(t);
+  }, [worldId, activeWorld, activeTab, selectedCharacterId, selectedDocumentId]);
 
   function handleBack() {
     navigate(ROUTES.worldIndex);
@@ -123,6 +156,8 @@ export function WorldShell() {
         )}
       </main>
       <PeekPanel />
+      <BrokenLinkRepairMenu />
+      <InlineLinkHoverCard />
     </div>
   );
 }

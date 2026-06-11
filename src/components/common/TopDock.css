@@ -2,26 +2,77 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 56px;
+  height: 54px;
   padding: 0 16px;
   flex-shrink: 0;
   user-select: none;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur) saturate(1.3);
+  -webkit-backdrop-filter: var(--glass-blur) saturate(1.3);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03), 0 4px 20px rgba(0, 0, 0, 0.12);
+  position: relative;
+  z-index: 100;
 }
 
-/* Floating pill — transparent; button hover states supply affordance */
+/* Top-edge light line */
+.top-dock::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 20%,
+    rgba(255, 255, 255, 0.06) 80%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+/* Floating cluster panel style */
 .top-dock__cluster {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 5px 8px;
-  border-radius: 14px;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-lg);
 }
 
 .top-dock__divider {
   width: 1px;
-  height: 22px;
+  height: 18px;
   background: var(--border);
-  margin: 0 4px;
+  margin: 0 8px;
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+/* ── World name — the tome you're inside, in the display voice ────────── */
+.top-dock__world {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: var(--text-primary);
+  padding: 0 6px 0 10px;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.top-dock__world-sigil {
+  font-size: 8px;
+  color: var(--accent-characters);
+  text-shadow: 0 0 8px rgba(var(--accent-characters-rgb), 0.7);
   flex-shrink: 0;
 }
 
@@ -31,14 +82,24 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   color: var(--text-secondary);
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background-color var(--duration-fast),
+    color var(--duration-fast),
+    transform var(--duration-fast) var(--ease-out-expo);
+  border: 1px solid transparent;
 }
 
 .top-dock__back:hover {
-  background: var(--hover);
+  background: var(--hover-bright);
   color: var(--text-primary);
+  border-color: var(--border-subtle);
+  transform: translateX(-2px);
+}
+
+.top-dock__back:active {
+  transform: translateX(-2px) scale(0.93);
 }
 
 .top-dock__tabs {
@@ -46,86 +107,99 @@
   gap: 2px;
 }
 
+/* ── Tab Button ───────────────────────────────────────────────────────────
+   Observatory rail: quiet mono micro-labels, each lit from beneath by its
+   sun when active. */
 .top-dock__tab {
-  padding: 6px 14px;
-  border-radius: 8px;
-  font-size: 13px;
+  padding: 7px 13px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-micro);
+  font-size: 10px;
   font-weight: 500;
-  color: var(--text-secondary);
-  transition: background 0.15s, color 0.15s;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--text-muted);
+  transition:
+    background-color var(--duration-fast),
+    color var(--duration-fast),
+    transform var(--duration-fast) var(--ease-out-expo);
   position: relative;
+  border: 1px solid transparent;
 }
 
 .top-dock__tab:hover {
   background: var(--hover);
-  color: var(--text-primary);
+  color: var(--text-secondary);
 }
 
 .top-dock__tab--active {
-  color: var(--text-primary);
-  background: var(--active);
+  /* The label itself takes the sun's color; the underline + glow borrow it
+     via currentColor so every tab glows in its own accent. */
+  color: var(--tab-accent, var(--text-primary));
+  background: none;
+  border-color: transparent;
+  font-weight: 500;
+}
+
+.top-dock__tab--active:hover {
+  background: none;
+  color: var(--tab-accent, var(--text-primary));
 }
 
 .top-dock__tab--active::after {
   content: '';
   position: absolute;
-  bottom: 2px;
-  left: 14px;
-  right: 14px;
+  bottom: 0;
+  left: 50%;
+  width: 26px;
   height: 2px;
-  background: var(--tab-accent, var(--text-primary));
-  border-radius: 1px;
+  margin-left: -13px;
+  background: currentColor;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 0 10px currentColor, 0 0 24px currentColor;
+  animation: tab-slide-in 0.25s var(--ease-out-expo) forwards;
 }
 
+@keyframes tab-slide-in {
+  from {
+    transform: scaleX(0.5);
+    opacity: 0;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+/* ── Shared icon button base ──────────────────────────────────────────── */
 .top-dock__icon-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   color: var(--text-secondary);
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background-color var(--duration-fast),
+    color var(--duration-fast),
+    border-color var(--duration-fast),
+    transform var(--duration-fast) var(--ease-out-expo);
+  border: 1px solid transparent;
 }
 
 .top-dock__icon-btn:hover {
-  background: var(--hover);
+  background: var(--hover-bright);
   color: var(--text-primary);
+  border-color: var(--border-subtle);
 }
 
-.top-dock__edit-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  color: var(--text-secondary);
-  transition: background 0.15s, color 0.15s;
+.top-dock__icon-btn:active {
+  transform: scale(0.93);
 }
 
-.top-dock__edit-toggle:hover {
-  background: var(--hover);
-  color: var(--text-primary);
-}
-
-.top-dock__edit-toggle--active {
-  color: var(--accent-overview);
-  background: var(--active);
-}
-
-.top-dock__theme-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  color: var(--text-secondary);
-  transition: background 0.15s, color 0.15s;
-}
-
-.top-dock__theme-toggle:hover {
-  background: var(--hover);
-  color: var(--text-primary);
+@media (prefers-reduced-motion: reduce) {
+  .top-dock__tab--active::after {
+    animation: none;
+  }
 }

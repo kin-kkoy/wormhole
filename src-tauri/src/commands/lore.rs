@@ -22,6 +22,8 @@ pub struct LoreDocumentSummary {
     pub world_id: String,
     pub folder_id: Option<String>,
     pub title: String,
+    /// Worldbuilding lifecycle: stub | draft | wip | done.
+    pub status: String,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -32,6 +34,7 @@ pub struct LoreDocumentFull {
     pub world_id: String,
     pub folder_id: Option<String>,
     pub title: String,
+    pub status: String,
     pub content: String,
     pub typography_overrides_json: Option<String>,
     pub created_at: String,
@@ -58,8 +61,9 @@ fn row_to_doc_summary(row: &rusqlite::Row) -> rusqlite::Result<LoreDocumentSumma
         world_id: row.get(1)?,
         folder_id: row.get(2)?,
         title: row.get(3)?,
-        created_at: row.get(4)?,
-        updated_at: row.get(5)?,
+        status: row.get(4)?,
+        created_at: row.get(5)?,
+        updated_at: row.get(6)?,
     })
 }
 
@@ -69,19 +73,20 @@ fn row_to_doc_full(row: &rusqlite::Row) -> rusqlite::Result<LoreDocumentFull> {
         world_id: row.get(1)?,
         folder_id: row.get(2)?,
         title: row.get(3)?,
-        content: row.get(4)?,
-        typography_overrides_json: row.get(5)?,
-        created_at: row.get(6)?,
-        updated_at: row.get(7)?,
+        status: row.get(4)?,
+        content: row.get(5)?,
+        typography_overrides_json: row.get(6)?,
+        created_at: row.get(7)?,
+        updated_at: row.get(8)?,
     })
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const FOLDER_COLUMNS: &str = "id, world_id, parent_folder_id, title, sort_order, created_at, updated_at";
-const DOC_SUMMARY_COLUMNS: &str = "id, world_id, folder_id, title, created_at, updated_at";
+const DOC_SUMMARY_COLUMNS: &str = "id, world_id, folder_id, title, status, created_at, updated_at";
 const DOC_FULL_COLUMNS: &str =
-    "id, world_id, folder_id, title, content, typography_overrides_json, created_at, updated_at";
+    "id, world_id, folder_id, title, status, content, typography_overrides_json, created_at, updated_at";
 
 fn query_folder(conn: &rusqlite::Connection, folder_id: &str) -> Result<LoreFolder, String> {
     conn.query_row(
@@ -504,8 +509,15 @@ pub fn update_lore_document(
     title: Option<String>,
     content: Option<String>,
     folder_id: Option<String>,
+    status: Option<String>,
     state: State<Mutex<AppDatabase>>,
 ) -> Result<LoreDocumentFull, String> {
+    if let Some(ref s) = status {
+        if !matches!(s.as_str(), "stub" | "draft" | "wip" | "done") {
+            return Err(format!("Invalid document status: {}", s));
+        }
+    }
+
     let db = state.lock().map_err(|e| format!("Lock error: {}", e))?;
     let (_, conn) = db
         .active_world
@@ -531,6 +543,7 @@ pub fn update_lore_document(
     add_field!("title", title);
     add_field!("content", content);
     add_field!("folder_id", folder_id);
+    add_field!("status", status);
 
     let _ = idx;
 
@@ -547,6 +560,94 @@ pub fn update_lore_document(
         .map_err(|e| format!("Failed to update document: {}", e))?;
 
     query_document_full(conn, &document_id)
+}
+
+// ─── Read progress + bookmarks (Proposal 03) ────────────────────────────────
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ReadProgressEntry {
+    pub document_id: String,
+    pub read_at: Option<String>,
+    pub bookmarked: bool,
+}
+
+#[tauri::command]
+pub fn list_read_progress(
+    state: State<Mutex<AppDatabase>>,
+) -> Result<Vec<ReadProgressEntry>, String> {
+    let db = state.lock().map_err(|e| format!("Lock error: {}", e))?;
+    let (_, conn) = db
+        .active_world
+        .as_ref()
+        .ok_or("No world is currently open")?;
+
+    let mut stmt = conn
+        .prepare("SELECT document_id, read_at, bookmarked FROM read_progress")
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+    let entries = stmt
+        .query_map([], |row| {
+            Ok(ReadProgressEntry {
+                document_id: row.get(0)?,
+                read_at: row.get(1)?,
+                bookmarked: row.get::<_, i64>(2)? != 0,
+            })
+        })
+        .map_err(|e| format!("Failed to query read progress: {}", e))?
+        .filter_map(|r| r.ok())
+        .collect();
+    Ok(entries)
+}
+
+#[tauri::command]
+pub fn mark_document_read(
+    document_id: String,
+    state: State<Mutex<AppDatabase>>,
+) -> Result<(), String> {
+    let db = state.lock().map_err(|e| format!("Lock error: {}", e))?;
+    let (world_id, conn) = db
+        .active_world
+        .as_ref()
+        .ok_or("No world is currently open")?;
+
+    let now = chrono::Utc::now().to_rfc3339();
+    conn.execute(
+        "INSERT INTO read_progress (document_id, world_id, read_at, bookmarked) \
+         VALUES (?1, ?2, ?3, 0) \
+         ON CONFLICT(document_id) DO UPDATE SET read_at = ?3",
+        rusqlite::params![document_id, world_id, now],
+    )
+    .map_err(|e| format!("Failed to mark document read: {}", e))?;
+    Ok(())
+}
+
+/// Flip a document's bookmark; returns the new state.
+#[tauri::command]
+pub fn toggle_document_bookmark(
+    document_id: String,
+    state: State<Mutex<AppDatabase>>,
+) -> Result<bool, String> {
+    let db = state.lock().map_err(|e| format!("Lock error: {}", e))?;
+    let (world_id, conn) = db
+        .active_world
+        .as_ref()
+        .ok_or("No world is currently open")?;
+
+    conn.execute(
+        "INSERT INTO read_progress (document_id, world_id, read_at, bookmarked) \
+         VALUES (?1, ?2, NULL, 1) \
+         ON CONFLICT(document_id) DO UPDATE SET bookmarked = 1 - bookmarked",
+        rusqlite::params![document_id, world_id],
+    )
+    .map_err(|e| format!("Failed to toggle bookmark: {}", e))?;
+
+    let bookmarked: i64 = conn
+        .query_row(
+            "SELECT bookmarked FROM read_progress WHERE document_id = ?1",
+            [&document_id],
+            |row| row.get(0),
+        )
+        .map_err(|e| format!("Failed to read bookmark state: {}", e))?;
+    Ok(bookmarked != 0)
 }
 
 /// Packet 10 §4.3 — set or clear a document's per-doc typography overrides.

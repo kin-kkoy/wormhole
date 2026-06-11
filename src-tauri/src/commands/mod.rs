@@ -2,6 +2,7 @@ pub mod worlds;
 pub mod characters;
 pub mod character_blocks;
 pub mod character_sections;
+pub mod shelves;
 pub mod lore;
 pub mod links;
 pub mod assets;

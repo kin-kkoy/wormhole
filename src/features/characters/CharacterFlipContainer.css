@@ -3,71 +3,205 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* Gentle entrance when a character is opened from the list — previously
+     the whole view appeared with no transition at all. */
+  animation: char-view-open 0.28s var(--ease-out-expo) both;
 }
 
+@keyframes char-view-open {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Compact icon bar ────────────────────────────────────────────────── */
 .flip-toolbar {
   display: flex;
-  align-items: flex-end;
-  gap: 16px;
-  padding: 10px 24px 0;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 
-.flip-toolbar__back,
-.flip-toolbar__toggle,
-.flip-toolbar__cine-preview,
-.flip-toolbar__cine-lock {
-  align-self: center;
-  flex-shrink: 0;
-}
-
+/* Back — icon-only rounded square */
 .flip-toolbar__back {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
 
-.flip-toolbar__toggle,
-.flip-toolbar__cine-preview,
-.flip-toolbar__cine-lock {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
+.flip-toolbar__back:hover {
+  border-color: rgba(var(--accent-characters-rgb), 0.3);
+  color: var(--text-secondary);
+  background: var(--hover);
 }
 
-.flip-toolbar__toggle--flipped,
-.flip-toolbar__cine-preview--active,
-.flip-toolbar__cine-lock--active {
+/* Character identity — name · role */
+.flip-toolbar__char-name {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  color: var(--text-primary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.flip-toolbar__char-sep {
+  color: var(--text-muted);
+  opacity: 0.5;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.flip-toolbar__char-role {
+  font-style: italic;
+  font-size: 12px;
   color: var(--accent-characters);
-  border-color: var(--accent-characters);
+  opacity: 0.8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1;
 }
 
-/* Slot where CharacterDetails portals its tab bar. Takes middle space,
-   tabs sit visually along the bottom of the toolbar row so they feel
-   anchored (even though there is no content panel directly beneath). */
+/* Pill switch — Card / Details */
+.flip-toolbar__pill {
+  display: flex;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.flip-toolbar__pill-seg {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 4px 12px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  transition: background 0.15s, color 0.15s;
+}
+
+.flip-toolbar__pill-seg:first-child {
+  border-right: 1px solid var(--border);
+}
+
+.flip-toolbar__pill-seg--active {
+  background: rgba(var(--accent-characters-rgb), 0.12);
+  color: var(--accent-characters);
+}
+
+.flip-toolbar__pill-seg:hover:not(.flip-toolbar__pill-seg--active) {
+  color: var(--text-secondary);
+  background: var(--hover);
+}
+
+/* Separator dot */
+.flip-toolbar__sep {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  opacity: 0.35;
+  flex-shrink: 0;
+}
+
+/* Icon buttons — Showcase & Lock */
+.flip-toolbar__icon-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.flip-toolbar__icon-btn:hover {
+  border-color: rgba(var(--accent-characters-rgb), 0.3);
+  color: var(--text-secondary);
+  background: var(--hover);
+}
+
+.flip-toolbar__icon-btn--active {
+  border-color: var(--accent-characters);
+  color: var(--accent-characters);
+  background: rgba(var(--accent-characters-rgb), 0.08);
+}
+
+.flip-toolbar__icon-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.flip-toolbar__icon-btn:disabled:hover {
+  border-color: var(--border);
+  color: var(--text-muted);
+  background: transparent;
+}
+
+/* ── Tab slot row ────────────────────────────────────────────────────────
+   Collapses smoothly instead of toggling display:none — the instant
+   appearance/disappearance of this row was what made the card↔details
+   crossfade look like parts "popped" (the whole layout below jumped). */
+.flip-toolbar__tab-row {
+  display: flex;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  max-height: 56px;
+  opacity: 1;
+  overflow: hidden;
+  transition:
+    max-height 0.35s ease,
+    opacity 0.25s ease 0.1s,
+    border-color 0.35s ease;
+}
+
 .flip-toolbar__tab-slot {
   flex: 1;
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
   min-width: 0;
 }
 
-/* Only show the tab bar when we're on the Details face.
-   Using opacity + pointer-events rather than `visibility: hidden` because a
-   focused input inside the slot (e.g. a leftover tab rename caret) can still
-   render its blinking caret through `visibility: hidden` in some WebViews.
-   `opacity: 0` hides the rendering layer entirely — caret included — while
-   preserving layout so Back / Details stay in their positions. */
-.flip-toolbar[data-face="card"] .flip-toolbar__tab-slot {
+.flip-toolbar__tab-row[data-face="card"] {
+  max-height: 0;
   opacity: 0;
+  border-bottom-color: transparent;
   pointer-events: none;
+  transition:
+    max-height 0.35s ease,
+    opacity 0.15s ease,
+    border-color 0.35s ease;
 }
 
+/* ── Flip container ──────────────────────────────────────────────────── */
 .flip-container {
-  perspective: 2000px;
+  position: relative;
   width: 80%;
   margin: 0 auto;
   flex: 1;
@@ -80,46 +214,55 @@
   }
 }
 
+/* (The former "void pulse" darkening overlay during the crossfade was
+   removed — combined with the scale mismatch it made the transition feel
+   like a flicker rather than a fade.) */
+
 .flip-inner {
   position: relative;
   width: 100%;
   height: 100%;
-  transition: transform 400ms ease-in-out;
-  transform-style: preserve-3d;
 }
 
-.flip-container[data-flipped="true"] .flip-inner {
-  transform: rotateY(180deg);
-}
-
+/* Pure crossfade between faces. No scale: the old 0.97 ↔ 1.015 zoom made
+   the two faces visibly resize against each other mid-fade ("pops out then
+   pops up"). Opacity-only reads as one surface changing content. */
 .flip-front,
 .flip-back {
   position: absolute;
   inset: 0;
   background: var(--bg-primary);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  /* The real fix for backface bleed: manually toggle `visibility` on the
-     non-visible face with a delay equal to half the flip duration. At
-     200ms / 400ms, both faces are edge-on (90°) so the hard visibility
-     cutover is imperceptible. backface-visibility is kept as a safety net
-     but this WebView leaks descendant layers through the hidden face,
-     so we can't rely on it alone. */
-  transition: visibility 0s ease 200ms;
+  transition: opacity 0.3s ease;
 }
 
-.flip-container:not([data-flipped="true"]) .flip-back {
-  visibility: hidden;
-}
-
-.flip-container[data-flipped="true"] .flip-front {
-  visibility: hidden;
+.flip-front {
+  opacity: 1;
+  z-index: 2;
 }
 
 .flip-back {
-  transform: rotateY(180deg);
+  opacity: 0;
+  z-index: 1;
 }
 
-/* Note: do NOT put `overflow: auto/hidden` on .flip-front / .flip-back —
-   that flattens the 3D context in some WebViews. The inner CharacterCard /
-   CharacterDetails handle their own internal scrolling. */
+.flip-container[data-flipped="true"] .flip-front {
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.flip-container[data-flipped="true"] .flip-back {
+  opacity: 1;
+  z-index: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flip-outer {
+    animation: none;
+  }
+  .flip-front,
+  .flip-back,
+  .flip-toolbar__tab-row {
+    transition: none;
+  }
+}

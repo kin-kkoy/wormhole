@@ -32,6 +32,7 @@ export function LoreArchive() {
   const [loading, setLoading] = useState(true);
   const [showRecycleBin, setShowRecycleBin] = useState(false);
   const [nextPageMap, setNextPageMap] = useState<Map<string, string>>(new Map());
+  const [focusMode, setFocusMode] = useState(false);
   // Bumped whenever a mutation happens that peer panels need to react to
   // (e.g. NextPagePicker changing a link → LinkedRecordsPanel should reload).
   const [linkRefreshToken, setLinkRefreshToken] = useState(0);
@@ -103,6 +104,44 @@ export function LoreArchive() {
     setLinkRefreshToken((n) => n + 1);
   }
 
+  const isRead = loreMode === 'read';
+
+  // Focus mode (Proposal 02): hide tree + links panes, center the editor.
+  // Local state — LoreArchive stays mounted across tab switches (TabPane).
+  // NOTE: hooks must stay ABOVE the early returns below, or the hook count
+  // changes between renders and React tears the whole tab down.
+  useEffect(() => {
+    if (isRead) return;
+    function onKey(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        setFocusMode((f) => !f);
+      } else if (e.key === 'Escape' && !e.defaultPrevented) {
+        // Escape's first job is closing whatever is on top. Dialogs register
+        // their own window listeners AFTER this one (they mount later), so
+        // defaultPrevented can't protect us — check the DOM instead.
+        if (document.querySelector('.dialog-overlay')) return;
+        setFocusMode(false);
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isRead]);
+
+  // Focus mode is meaningless without a document — and leaving it on while
+  // the empty state shows just dims an already-sparse screen.
+  useEffect(() => {
+    if (!activeDocument) setFocusMode(false);
+  }, [activeDocument]);
+
+  // Immersion flag on <body>: lets focus mode quiet chrome that lives
+  // outside this component (the TopDock). Always cleaned up on unmount.
+  const immersive = focusMode && !isRead;
+  useEffect(() => {
+    document.body.classList.toggle('lore-focus-immersive', immersive);
+    return () => document.body.classList.remove('lore-focus-immersive');
+  }, [immersive]);
+
   if (loading) {
     return (
       <div className="lore-archive__empty">
@@ -125,15 +164,19 @@ export function LoreArchive() {
     );
   }
 
-  const isRead = loreMode === 'read';
-
   // Breadcrumb in Read Mode: full drill-down path. Clickable segments pop
   // the path back to that depth. Rendered only when there's somewhere to
   // navigate back to (path depth > 0). In Write mode the row is empty.
   const showBreadcrumb = isRead && activeFolderPath.length > 0;
 
   return (
-    <div className={'lore-archive-wrapper' + (isRead ? ' lore-read-mode' : '')}>
+    <div
+      className={
+        'lore-archive-wrapper' +
+        (isRead ? ' lore-read-mode' : '') +
+        (immersive ? ' lore-archive-wrapper--focus' : '')
+      }
+    >
       <div className="lore-archive__header">
         <div className="lore-archive__breadcrumb">
           {showBreadcrumb ? (
@@ -211,6 +254,7 @@ export function LoreArchive() {
           documents={documents}
           nextPageMap={nextPageMap}
           onSwitchToWrite={() => setLoreMode('edit')}
+          onNextPageLinksChanged={refresh}
         />
       ) : (
         <EditLayout
@@ -227,6 +271,8 @@ export function LoreArchive() {
             setLinkRefreshToken((n) => n + 1);
           }}
           linkRefreshToken={linkRefreshToken}
+          focusMode={focusMode}
+          onToggleFocus={() => setFocusMode((f) => !f)}
         />
       )}
 
@@ -290,6 +336,8 @@ interface EditLayoutProps {
   onDocumentUpdated: () => void;
   onLinkMutated: () => void;
   linkRefreshToken: number;
+  focusMode: boolean;
+  onToggleFocus: () => void;
 }
 
 function EditLayout({
@@ -303,9 +351,11 @@ function EditLayout({
   onDocumentUpdated,
   onLinkMutated,
   linkRefreshToken,
+  focusMode,
+  onToggleFocus,
 }: EditLayoutProps) {
   return (
-    <div className="lore-archive">
+    <div className={'lore-archive' + (focusMode ? ' lore-archive--focus' : '')}>
       <div className="lore-archive__folder-panel">
         <FolderTree
           folders={folders}
@@ -324,6 +374,8 @@ function EditLayout({
               onDocumentUpdated={onDocumentUpdated}
               worldLoreSettings={worldLoreSettings}
               linkRefreshToken={linkRefreshToken}
+              focusMode={focusMode}
+              onToggleFocus={onToggleFocus}
             />
           ) : (
             <div className="lore-archive__empty">

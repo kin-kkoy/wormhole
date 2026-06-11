@@ -1,7 +1,6 @@
 .linked-records {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border-subtle);
+  margin-top: 12px;
+  padding: 12px 0;
   flex-shrink: 0;
 }
 

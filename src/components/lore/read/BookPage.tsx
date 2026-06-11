@@ -38,6 +38,9 @@ interface BookPageProps {
    *  new BookPage starts on its last sub-page once columns are measured.
    *  Defaults to 'start'. Only honoured in paginated layout. */
   initialSubPagePosition?: AdjacentDocPosition;
+  /** Bookmark ribbon state + toggle (Proposal 03). Omitted = ribbon hidden. */
+  bookmarked?: boolean;
+  onToggleBookmark?: () => void;
 }
 
 export function BookPage({
@@ -52,6 +55,8 @@ export function BookPage({
   layout,
   onLayoutChange,
   initialSubPagePosition = 'start',
+  bookmarked = false,
+  onToggleBookmark,
 }: BookPageProps) {
   // Sub-page state lives here so the footer can display and control it.
   const [subPage, setSubPage] = useState(0);
@@ -118,6 +123,23 @@ export function BookPage({
   return (
     <article className={'book-page' + (isPaginated ? ' book-page--paginated' : ' book-page--continuous')} key={document.id}>
       <LayoutToggle layout={layout} onChange={onLayoutChange} />
+
+      {/* Bookmark ribbon — top-left of the paper (the layout toggle owns the
+       *  top-right corner). Anchored to the article so it stays visible on
+       *  every sub-page. */}
+      {onToggleBookmark && (
+        <button
+          type="button"
+          className={
+            'book-page__bookmark' + (bookmarked ? ' book-page__bookmark--set' : '')
+          }
+          onClick={onToggleBookmark}
+          title={bookmarked ? 'Remove bookmark' : 'Bookmark this page'}
+          aria-pressed={bookmarked}
+        >
+          <span className="book-page__bookmark-ribbon" aria-hidden="true" />
+        </button>
+      )}
 
       {/* Title block only on the opening page. In paginated mode, sub-pages
        *  past the first hide the header so the body fills the paper —

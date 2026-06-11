@@ -1,0 +1,111 @@
+/* ─── Shared [[ inline-link autocomplete dropdown ───────────────────────
+   Used by DocumentEditor (lore) and TipTapEditor (character prose).
+   Grouped by target system with a create-in-place section at the bottom. */
+
+.il-ac {
+  position: fixed;
+  z-index: 200;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px;
+  min-width: 240px;
+  max-width: 340px;
+  max-height: 320px;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+}
+
+.il-ac__header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px 3px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.il-ac__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.il-ac__dot[data-type='character'] {
+  background: var(--accent-characters);
+}
+
+.il-ac__dot[data-type='lore_document'] {
+  background: var(--accent-lore);
+}
+
+.il-ac__divider {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border);
+}
+
+.il-ac__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.il-ac__item:hover,
+.il-ac__item--selected {
+  background: var(--hover);
+}
+
+.il-ac__badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.il-ac__badge[data-type='character'] {
+  background: rgba(var(--accent-characters-rgb), 0.15);
+  color: var(--accent-characters);
+}
+
+.il-ac__badge[data-type='lore_document'] {
+  background: rgba(var(--accent-lore-rgb), 0.15);
+  color: var(--accent-lore);
+}
+
+.il-ac__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.il-ac__item--create {
+  color: var(--text-secondary);
+}
+
+.il-ac__item--create .il-ac__name {
+  white-space: normal;
+}
+
+.il-ac__plus {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--accent-lore);
+}

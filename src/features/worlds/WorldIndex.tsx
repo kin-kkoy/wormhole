@@ -1,16 +1,37 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { open } from '@tauri-apps/plugin-dialog';
-import { commands, type WorldSummary } from '../../lib/commands';
+import { commands, type WorldSummary, type LastPosition } from '../../lib/commands';
 import { ROUTES } from '../../app/routes';
+import { useAppStore, type TabId } from '../../state/store';
+import { useTheme } from '../../app/providers';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
+import { ContextMenu } from '../../components/common/ContextMenu';
 import { WorldFormDialog } from '../../components/worlds/WorldFormDialog';
 import './WorldIndex.css';
 
 type SetupState = 'loading' | 'needs-setup' | 'ready';
 
+const VALID_TABS: TabId[] = ['overview', 'atlas', 'characters', 'lore'];
+
+/** Parse a world's last_position snapshot; only positions that point at a
+ *  real entity earn a resume pill (a bare tab isn't worth one — the card
+ *  already opens to Overview). */
+function parseResumable(json: string | null): LastPosition | null {
+  if (!json) return null;
+  try {
+    const pos = JSON.parse(json) as LastPosition;
+    if (!pos.entity_id || !pos.entity_title || !pos.entity_type) return null;
+    if (!VALID_TABS.includes(pos.tab as TabId)) return null;
+    return pos;
+  } catch {
+    return null;
+  }
+}
+
 export function WorldIndex() {
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
   const [setupState, setSetupState] = useState<SetupState>('loading');
   const [worlds, setWorlds] = useState<WorldSummary[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -19,6 +40,23 @@ export function WorldIndex() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingWorld, setEditingWorld] = useState<WorldSummary | null>(null);
   const [deletingWorld, setDeletingWorld] = useState<WorldSummary | null>(null);
+
+  // Kebab menu state
+  const [menuWorld, setMenuWorld] = useState<{ world: WorldSummary; x: number; y: number } | null>(null);
+
+  // Ripple transition state
+  const [ripple, setRipple] = useState<{ x: number; y: number; worldId: string } | null>(null);
+
+  // Safety net: navigation is normally triggered by the ripple's
+  // animationend, but WebKitGTK is documented (CLAUDE.md §gotchas) to stall
+  // CSS animations on non-composited surfaces — without this fallback a
+  // stalled ripple would leave the user stuck on the index forever.
+  useEffect(() => {
+    if (!ripple) return;
+    const t = window.setTimeout(() => navigate(ROUTES.world(ripple.worldId)), 900);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ripple]);
 
   useEffect(() => {
     (async () => {
@@ -156,8 +194,33 @@ export function WorldIndex() {
     }
   }
 
-  function openWorld(worldId: string) {
+  function resumeWorld(worldId: string, pos: LastPosition) {
+    // Stage the destination for WorldShell to apply AFTER the world opens —
+    // setActiveWorld resets tab/selection state on open, so writing the tab
+    // and selection here directly would be wiped before the user saw them.
+    useAppStore.getState().setPendingResume({
+      worldId,
+      tab: pos.tab as TabId,
+      entityType: pos.entity_type,
+      entityId: pos.entity_id,
+      stagedAt: Date.now(),
+    });
     navigate(ROUTES.world(worldId));
+  }
+
+  function openWorld(worldId: string, e: React.MouseEvent) {
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reducedMotion) {
+      navigate(ROUTES.world(worldId));
+      return;
+    }
+    const sphere = (e.currentTarget as HTMLElement).querySelector('.world-card__sphere');
+    if (sphere) {
+      const rect = sphere.getBoundingClientRect();
+      setRipple({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, worldId });
+    } else {
+      navigate(ROUTES.world(worldId));
+    }
   }
 
   const filteredWorlds = searchQuery
@@ -200,6 +263,22 @@ export function WorldIndex() {
       <header className="world-index__header">
         <h1 className="world-index__heading">Wormhole</h1>
         <div className="world-index__header-actions">
+          <button
+            className="world-index__theme-toggle"
+            onClick={toggleTheme}
+            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+          >
+            {theme === 'dark' ? (
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <circle cx="9" cy="9" r="3.5" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M9 2V3.5M9 14.5V16M16 9H14.5M3.5 9H2M13.95 4.05L12.89 5.11M5.11 12.89L4.05 13.95M13.95 13.95L12.89 12.89M5.11 5.11L4.05 4.05" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M15.5 10.4a6.5 6.5 0 01-7.9-7.9A6.5 6.5 0 1015.5 10.4z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+          </button>
           {import.meta.env.DEV && (
             <button className="btn btn--ghost" onClick={handleSeedWorld}>
               Seed Example
@@ -256,22 +335,30 @@ export function WorldIndex() {
               className="world-card"
               role="button"
               tabIndex={0}
-              onClick={() => openWorld(world.id)}
+              onClick={(e) => openWorld(world.id, e)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
-                  openWorld(world.id);
+                  openWorld(world.id, e as unknown as React.MouseEvent);
                 }
               }}
             >
-              <div className="world-card__cover">
+              <div className="world-card__sphere">
+                <div className="world-card__ring" />
+                <div className="world-card__core" />
                 {world.cover_thumbnail_base64 ? (
-                  <img
-                    className="world-card__cover-img"
-                    src={`data:image/png;base64,${world.cover_thumbnail_base64}`}
-                    alt=""
-                  />
-                ) : null}
+                  <div className="world-card__cover">
+                    <img
+                      className="world-card__cover-img"
+                      src={`data:image/png;base64,${world.cover_thumbnail_base64}`}
+                      alt=""
+                    />
+                  </div>
+                ) : (
+                  <div className="world-card__glyph">
+                    {world.title.charAt(0).toUpperCase()}
+                  </div>
+                )}
               </div>
               <div className="world-card__info">
                 <div className="world-card__top-row">
@@ -286,33 +373,47 @@ export function WorldIndex() {
                     Last opened {new Date(world.last_opened).toLocaleDateString()}
                   </span>
                 )}
+                {(() => {
+                  const pos = parseResumable(world.last_position);
+                  if (!pos) return null;
+                  return (
+                    <button
+                      type="button"
+                      className="world-card__resume"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        resumeWorld(world.id, pos);
+                      }}
+                      title={`Jump back to “${pos.entity_title}”`}
+                    >
+                      <span className="world-card__resume-icon" aria-hidden="true">⤷</span>
+                      <span
+                        className="world-card__resume-dot"
+                        data-type={pos.entity_type}
+                        aria-hidden="true"
+                      />
+                      <span className="world-card__resume-text">
+                        Resume “{pos.entity_title}”
+                      </span>
+                    </button>
+                  );
+                })()}
               </div>
-              <div className="world-card__actions">
-                <button
-                  className="world-card__action-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setEditingWorld(world);
-                  }}
-                  title="Edit world"
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M10 2l2 2-7 7H3v-2l7-7z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-                <button
-                  className="world-card__action-btn world-card__action-btn--danger"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setDeletingWorld(world);
-                  }}
-                  title="Delete world"
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M11 3L3 11M3 3L11 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                  </svg>
-                </button>
-              </div>
+              <button
+                className="world-card__kebab"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  setMenuWorld({ world, x: rect.right + 4, y: rect.top });
+                }}
+                title="World options"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+                  <circle cx="7" cy="3" r="1.2"/>
+                  <circle cx="7" cy="7" r="1.2"/>
+                  <circle cx="7" cy="11" r="1.2"/>
+                </svg>
+              </button>
             </div>
           ))}
         </div>
@@ -350,6 +451,29 @@ export function WorldIndex() {
           confirmDanger
           onConfirm={handleDeleteWorld}
           onCancel={() => setDeletingWorld(null)}
+        />
+      )}
+
+      {menuWorld && (
+        <ContextMenu
+          x={menuWorld.x}
+          y={menuWorld.y}
+          items={[
+            { label: 'Edit', onClick: () => setEditingWorld(menuWorld.world) },
+            { label: 'Delete', onClick: () => setDeletingWorld(menuWorld.world), danger: true },
+          ]}
+          onClose={() => setMenuWorld(null)}
+        />
+      )}
+
+      {ripple && (
+        <div
+          className="world-index__ripple"
+          style={{
+            '--ripple-x': `${ripple.x}px`,
+            '--ripple-y': `${ripple.y}px`,
+          } as React.CSSProperties}
+          onAnimationEnd={() => navigate(ROUTES.world(ripple.worldId))}
         />
       )}
     </div>

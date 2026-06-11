@@ -3,6 +3,49 @@
   flex-direction: column;
   height: 100%;
   overflow-y: auto;
+  background: var(--bg-primary);
+  position: relative;
+}
+
+/* Ambient glow at top of page */
+.world-index::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 420px;
+  background:
+    radial-gradient(ellipse at 30% 0%, rgba(var(--accent-overview-rgb), 0.07) 0%, transparent 60%),
+    radial-gradient(ellipse at 70% 0%, rgba(var(--accent-atlas-rgb), 0.04) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Star grain — the void is never flat. A handful of pin-prick stars in the
+   four suns' colors, tiled as a static (cheap, never-repainting) layer.
+   Hidden in light/paper mode: paper has grain, not stars. */
+.world-index::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 12% 22%, rgba(234, 229, 218, 0.5) 50%, transparent 51%),
+    radial-gradient(1px 1px at 68% 9%, rgba(234, 229, 218, 0.35) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 84% 64%, rgba(var(--accent-characters-rgb), 0.4) 50%, transparent 51%),
+    radial-gradient(1px 1px at 31% 78%, rgba(var(--accent-atlas-rgb), 0.35) 50%, transparent 51%),
+    radial-gradient(1px 1px at 92% 31%, rgba(234, 229, 218, 0.3) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 47% 45%, rgba(var(--accent-lore-rgb), 0.25) 50%, transparent 51%),
+    radial-gradient(1px 1px at 7% 56%, rgba(var(--accent-overview-rgb), 0.3) 50%, transparent 51%),
+    radial-gradient(1px 1px at 56% 91%, rgba(234, 229, 218, 0.4) 50%, transparent 51%);
+  background-size: 880px 680px;
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 0;
+}
+
+:root[data-theme="light"] .world-index::after {
+  display: none;
 }
 
 .world-index__loading {
@@ -14,265 +57,536 @@
   font-size: 15px;
 }
 
-/* Setup screen */
+/* ── Setup screen ─────────────────────────────────────────────────────── */
 .world-index__setup {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100%;
-  gap: 16px;
-  padding: 32px;
+  gap: 18px;
+  padding: 40px;
+  position: relative;
+  z-index: 1;
 }
 
 .world-index__setup-title {
-  font-size: 28px;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 500;
   color: var(--text-primary);
+  letter-spacing: 0.12em;
+  line-height: 1.15;
+}
+
+.world-index__setup-subtitle {
+  font-family: var(--font-voice-body);
+  font-style: italic;
+  font-size: 16px;
 }
 
 .world-index__setup-subtitle {
   font-size: 15px;
   color: var(--text-secondary);
-  max-width: 400px;
+  max-width: 420px;
   text-align: center;
+  line-height: 1.65;
 }
 
 .world-index__setup-actions {
   display: flex;
   gap: 12px;
-  margin-top: 16px;
+  margin-top: 20px;
 }
 
-/* Header */
+/* ── Header ───────────────────────────────────────────────────────────── */
 .world-index__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24px 32px 16px;
+  padding: 32px 36px 18px;
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .world-index__heading {
+  /* The wordmark: engraved, tracked wide, all caps. */
+  font-family: var(--font-display);
   font-size: 24px;
-  font-weight: 700;
+  font-weight: 500;
+  text-transform: uppercase;
   color: var(--text-primary);
+  letter-spacing: 0.28em;
+  line-height: 1.15;
+  text-shadow: 0 0 32px rgba(234, 229, 218, 0.25);
 }
 
 .world-index__header-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
 }
 
-/* Search */
+.world-index__theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  transition:
+    background-color var(--duration-fast),
+    color var(--duration-fast),
+    border-color var(--duration-fast),
+    transform var(--duration-fast) var(--ease-out-expo);
+  border: 1px solid transparent;
+}
+
+.world-index__theme-toggle:hover {
+  background: var(--hover-bright);
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+  transform: rotate(15deg) scale(1.05);
+}
+
+.world-index__theme-toggle:active {
+  transform: scale(0.93);
+}
+
+/* ── Search ───────────────────────────────────────────────────────────── */
 .world-index__search {
   position: relative;
-  padding: 0 32px 12px;
+  padding: 0 36px 16px;
   flex-shrink: 0;
+  z-index: 1;
 }
 
 .world-index__search-icon {
   position: absolute;
-  left: 44px;
+  left: 48px;
   top: 50%;
-  transform: translateY(calc(-50% - 6px));
+  transform: translateY(calc(-50% - 8px));
   color: var(--text-muted);
   pointer-events: none;
 }
 
 .world-index__search-input {
   width: 100%;
-  padding: 8px 12px 8px 36px;
-  border-radius: 6px;
+  padding: 11px 14px 11px 38px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border);
   background: var(--bg-secondary);
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 13.5px;
   outline: none;
-  transition: border-color 0.15s;
+  transition:
+    border-color var(--duration-normal),
+    box-shadow var(--duration-normal),
+    background-color var(--duration-normal);
 }
 
 .world-index__search-input:focus {
   border-color: var(--accent-overview);
+  box-shadow: 0 0 0 3px rgba(var(--accent-overview-rgb), 0.12);
+  background: var(--bg-primary);
 }
 
 .world-index__search-input::placeholder {
   color: var(--text-muted);
 }
 
-/* Empty state */
+/* ── Empty state ──────────────────────────────────────────────────────── */
 .world-index__empty {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   flex: 1;
-  gap: 12px;
-  padding: 32px;
+  gap: 14px;
+  padding: 56px 36px;
+  position: relative;
+  z-index: 1;
 }
 
 .world-index__empty-icon {
   color: var(--text-muted);
   margin-bottom: 8px;
+  animation: bounce-slow 4s infinite ease-in-out;
+}
+
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }
 
 .world-index__empty-title {
-  font-size: 20px;
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 500;
   color: var(--text-primary);
+  letter-spacing: 0.08em;
 }
 
 .world-index__empty-subtitle {
-  font-size: 14px;
+  font-family: var(--font-voice-body);
+  font-style: italic;
+  font-size: 16px;
   color: var(--text-secondary);
   margin-bottom: 8px;
 }
 
-/* World grid */
+/* ── World grid — orbs ────────────────────────────────────────────────── */
 .world-index__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 16px;
-  padding: 8px 32px 32px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 48px;
+  padding: 16px 36px 48px;
+  position: relative;
+  z-index: 1;
 }
 
-/* World card */
+/* ── World orb — a living sphere ─────────────────────────────────────────
+   Each world is a glowing portal: conic-gradient ring, dark core with
+   accent glow, center glyph. Name sits below as plain text. */
 .world-card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  border-radius: 10px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  overflow: hidden;
+  align-items: center;
+  width: 200px;
   cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  text-align: center;
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+/* The sphere container — scales on hover */
+.world-card__sphere {
   position: relative;
-  text-align: left;
+  width: 180px;
+  height: 180px;
+  transition: transform 0.55s var(--ease-out-expo);
 }
 
-.world-card:hover {
-  border-color: var(--accent-overview);
-  box-shadow: var(--shadow);
+.world-card:hover .world-card__sphere {
+  transform: scale(1.08);
 }
 
+/* Conic-gradient ring */
+.world-card__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  padding: 1.5px;
+  background: conic-gradient(
+    from 0deg,
+    var(--accent-overview),
+    rgba(234, 229, 218, 0.12) 25%,
+    var(--accent-overview) 50%,
+    rgba(234, 229, 218, 0.12) 75%,
+    var(--accent-overview)
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  animation: world-orb-spin 40s linear infinite;
+  opacity: 0.5;
+  transition: opacity 0.55s var(--ease-out-expo);
+}
+
+.world-card:hover .world-card__ring {
+  opacity: 1;
+}
+
+/* Continuous color morph on hover */
+.world-card:hover .world-card__sphere {
+  animation: world-orb-color-morph 6s linear infinite;
+}
+
+@keyframes world-orb-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes world-orb-color-morph {
+  0%   { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+/* Core — dark sphere with accent glow */
+.world-card__core {
+  position: absolute;
+  inset: 14px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 38% 32%, rgba(var(--accent-overview-rgb), 0.22), transparent 55%),
+    radial-gradient(circle at 65% 70%, rgba(234, 229, 218, 0.05), transparent 55%),
+    radial-gradient(circle, var(--bg-tertiary), var(--bg-primary) 75%);
+  box-shadow:
+    inset 0 0 36px rgba(0, 0, 0, 0.7),
+    0 0 44px -10px rgba(var(--accent-overview-rgb), 0.15);
+  transition: box-shadow 0.55s var(--ease-out-expo);
+}
+
+.world-card:hover .world-card__core {
+  box-shadow:
+    inset 0 0 36px rgba(0, 0, 0, 0.55),
+    0 0 60px -10px rgba(var(--accent-overview-rgb), 0.3),
+    0 0 100px -20px rgba(var(--accent-overview-rgb), 0.15);
+}
+
+/* Center glyph — first letter of world name */
+.world-card__glyph {
+  position: absolute;
+  inset: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 2.6rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-shadow: 0 0 24px rgba(234, 229, 218, 0.35);
+  z-index: 2;
+  animation: world-orb-breathe 6s ease-in-out infinite;
+}
+
+@keyframes world-orb-breathe {
+  50% { text-shadow: 0 0 44px rgba(234, 229, 218, 0.6); }
+}
+
+/* Cover image inside the core (if present) */
 .world-card__cover {
-  height: 120px;
-  background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+  position: absolute;
+  inset: 14px;
+  border-radius: 50%;
   overflow: hidden;
+  z-index: 1;
 }
 
 .world-card__cover-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.5s var(--ease-out-expo);
 }
 
+.world-card:hover .world-card__cover-img {
+  transform: scale(1.06);
+}
+
+/* Info below the sphere */
 .world-card__info {
-  padding: 12px 14px;
+  margin-top: 14px;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 4px;
+  max-width: 200px;
 }
 
 .world-card__top-row {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 5px;
 }
 
 .world-card__title {
+  font-family: var(--font-display);
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-primary);
-  flex: 1;
-  min-width: 0;
+  letter-spacing: 0.06em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.world-card__badge {
+  font-family: var(--font-micro);
+  font-size: 8px;
+  font-weight: 500;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: transparent;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  letter-spacing: 0.14em;
+}
+
+.world-card__summary {
+  font-family: var(--font-voice-body);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-align: center;
+}
+
+.world-card__meta {
+  font-family: var(--font-micro);
+  font-size: 8px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  margin-top: 2px;
+}
+
+/* Resume pill — sits below the card's existing text; never touches the
+   sphere or the info above it. Amber thread back to the last-touched
+   entity (dot colored by the target's system). */
+.world-card__resume {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 6px;
+  max-width: 200px;
+  padding: 4px 12px;
+  border: 1px solid rgba(var(--accent-lore-rgb), 0.3);
+  border-radius: var(--radius-pill);
+  background: rgba(var(--accent-lore-rgb), 0.08);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.world-card__resume:hover {
+  background: rgba(var(--accent-lore-rgb), 0.16);
+  border-color: rgba(var(--accent-lore-rgb), 0.5);
+}
+
+.world-card__resume-icon {
+  color: var(--accent-lore);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.world-card__resume-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.world-card__resume-dot[data-type='character'] {
+  background: var(--accent-characters);
+}
+
+.world-card__resume-dot[data-type='lore_document'] {
+  background: var(--accent-lore);
+}
+
+.world-card__resume-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.world-card__badge {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-muted);
-  background: var(--bg-tertiary);
-  padding: 2px 8px;
-  border-radius: 4px;
-  flex-shrink: 0;
-}
-
-.world-card__summary {
-  font-size: 12px;
-  color: var(--text-secondary);
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.world-card__meta {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.world-card__actions {
+/* Kebab menu trigger */
+.world-card__kebab {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  display: flex;
-  gap: 4px;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-
-.world-card:hover .world-card__actions {
-  opacity: 1;
-}
-
-.world-card__action-btn {
+  top: 2px;
+  right: -2px;
   width: 28px;
   height: 28px;
-  border-radius: 6px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-muted);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  transition: color 0.15s, background 0.15s;
-}
-
-.world-card__action-btn:hover {
-  color: var(--text-primary);
+  color: var(--text-secondary);
   background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-xs);
+  opacity: 0;
+  transition:
+    opacity var(--duration-normal) ease,
+    color var(--duration-fast),
+    background var(--duration-fast),
+    border-color var(--duration-fast),
+    transform var(--duration-fast);
+  z-index: 10;
 }
 
-.world-card__action-btn--danger:hover {
-  color: var(--danger);
+.world-card:hover .world-card__kebab {
+  opacity: 1;
 }
 
-/* Buttons */
+.world-card__kebab:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border-color: var(--border-strong);
+}
+
+.world-card__kebab:active {
+  transform: scale(0.92);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .world-card__ring {
+    animation: none;
+  }
+  .world-card__glyph {
+    animation: none;
+  }
+  .world-card:hover .world-card__sphere {
+    animation: none;
+  }
+}
+
+/* ── Buttons — inscriptions, not chrome: micro voice, tracked caps ────── */
 .btn {
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 13px;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-micro);
+  font-size: 10.5px;
   font-weight: 500;
-  transition: background 0.15s, opacity 0.15s;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  transition:
+    background var(--duration-fast),
+    color var(--duration-fast),
+    border-color var(--duration-fast),
+    box-shadow var(--duration-normal),
+    opacity var(--duration-fast),
+    transform var(--duration-fast);
+  border: 1px solid transparent;
 }
 
 .btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
 .btn--primary {
   background: var(--accent-overview);
-  color: #fff;
+  color: #0a0c12;
+  font-weight: 600;
+}
+
+:root[data-theme="light"] .btn--primary {
+  color: #ffffff;
 }
 
 .btn--primary:hover:not(:disabled) {
-  opacity: 0.9;
+  box-shadow: 0 2px 12px rgba(var(--accent-overview-rgb), 0.30);
+  filter: brightness(1.05);
+}
+
+.btn--primary:active:not(:disabled) {
+  filter: brightness(0.95);
+  box-shadow: 0 1px 4px rgba(var(--accent-overview-rgb), 0.20);
 }
 
 .btn--secondary {
@@ -281,102 +595,54 @@
   border: 1px solid var(--border);
 }
 
-.btn--secondary:hover {
+.btn--secondary:hover:not(:disabled) {
   background: var(--bg-elevated);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-xs);
 }
 
 .btn--ghost {
   color: var(--text-secondary);
 }
 
-.btn--ghost:hover {
-  background: var(--hover);
+.btn--ghost:hover:not(:disabled) {
+  background: var(--hover-bright);
   color: var(--text-primary);
 }
 
 .btn--danger {
   background: var(--danger);
   color: #fff;
+  font-weight: 600;
 }
 
 .btn--danger:hover:not(:disabled) {
   background: var(--danger-hover);
+  box-shadow: 0 2px 12px rgba(239, 68, 68, 0.30);
 }
 
-/* Dialog */
-.dialog-overlay {
+/* ── Ripple transition — expands from orb center to fill viewport ──── */
+.world-index__ripple {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-}
-
-.dialog {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 24px;
-  width: 100%;
-  max-width: 420px;
-  box-shadow: var(--shadow-lg);
-}
-
-.dialog__title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 20px;
-}
-
-.dialog__field {
-  margin-bottom: 16px;
-}
-
-.dialog__label {
-  display: block;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  margin-bottom: 6px;
-}
-
-.dialog__required {
-  color: var(--danger);
-}
-
-.dialog__input,
-.dialog__select {
-  width: 100%;
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
+  z-index: 200;
   background: var(--bg-primary);
-  color: var(--text-primary);
-  font-size: 14px;
-  outline: none;
-  transition: border-color 0.15s;
+  clip-path: circle(0% at var(--ripple-x) var(--ripple-y));
+  animation: ripple-expand 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-.dialog__input:focus,
-.dialog__select:focus {
-  border-color: var(--accent-overview);
+@keyframes ripple-expand {
+  to {
+    clip-path: circle(150% at var(--ripple-x) var(--ripple-y));
+  }
 }
 
-.dialog__select {
-  cursor: pointer;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%236b6b80' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  padding-right: 32px;
-}
-
-.dialog__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 24px;
+@media (prefers-reduced-motion: reduce) {
+  .world-index__empty-icon {
+    animation: none;
+  }
+  .world-index__ripple {
+    animation: none;
+    clip-path: none;
+  }
 }

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { commands } from '../../lib/commands';
 import type { DeletedCharacter } from '../../lib/commands';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
+import { relativeTime, absoluteTime, purgeCountdown } from '../../lib/recycleTime';
 import './CharacterRecycleBin.css';
 
 interface CharacterRecycleBinProps {
@@ -10,27 +11,18 @@ interface CharacterRecycleBinProps {
   onChanged: () => void;
 }
 
-const RTF = typeof Intl !== 'undefined' && 'RelativeTimeFormat' in Intl
-  ? new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' })
-  : null;
-
-function relativeTime(iso: string): string {
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return iso;
-  const diffMs = then - Date.now();
-  const absSec = Math.abs(diffMs) / 1000;
-  if (!RTF) return new Date(iso).toLocaleString();
-  if (absSec < 60) return RTF.format(Math.round(diffMs / 1000), 'second');
-  if (absSec < 3600) return RTF.format(Math.round(diffMs / 60000), 'minute');
-  if (absSec < 86400) return RTF.format(Math.round(diffMs / 3600000), 'hour');
-  return RTF.format(Math.round(diffMs / 86400000), 'day');
-}
-
 export function CharacterRecycleBin({ onBack, onChanged }: CharacterRecycleBinProps) {
   const [items, setItems] = useState<DeletedCharacter[]>([]);
   const [loading, setLoading] = useState(true);
   const [purgeTarget, setPurgeTarget] = useState<DeletedCharacter | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [restoringAll, setRestoringAll] = useState(false);
+  // Tick every minute so the purge countdown chips stay fresh.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(t);
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
@@ -73,6 +65,25 @@ export function CharacterRecycleBin({ onBack, onChanged }: CharacterRecycleBinPr
     }
   }
 
+  async function handleRestoreAll() {
+    if (restoringAll || items.length === 0) return;
+    setRestoringAll(true);
+    try {
+      // Sequential on purpose: avoids SQLite write contention and keeps
+      // partial failures unambiguous (everything before the error restored).
+      for (const item of items) {
+        await commands.restoreCharacter(item.id);
+      }
+    } catch (e) {
+      console.error('Failed to restore all characters:', e);
+      setError(String(e));
+    } finally {
+      setRestoringAll(false);
+      await refresh();
+      onChanged();
+    }
+  }
+
   return (
     <div className="character-recycle-bin">
       <div className="character-recycle-bin__header">
@@ -81,8 +92,18 @@ export function CharacterRecycleBin({ onBack, onChanged }: CharacterRecycleBinPr
         </button>
         <span className="character-recycle-bin__title">Recycle Bin</span>
         <span className="character-recycle-bin__hint">
-          Auto-purges after 24 hours.
+          Items purge 24 hours after deletion — cleanup runs on app launch.
         </span>
+        {items.length > 0 && (
+          <button
+            type="button"
+            className="btn btn--ghost character-recycle-bin__restore-all"
+            onClick={handleRestoreAll}
+            disabled={restoringAll}
+          >
+            {restoringAll ? 'Restoring…' : 'Restore all'}
+          </button>
+        )}
       </div>
 
       {error && (
@@ -105,13 +126,16 @@ export function CharacterRecycleBin({ onBack, onChanged }: CharacterRecycleBinPr
             <li key={item.id} className="character-recycle-bin__row">
               <div className="character-recycle-bin__row-main">
                 <span className="character-recycle-bin__row-name">{item.name}</span>
-                <span
-                  className="character-recycle-bin__row-meta"
-                  title={new Date(item.deleted_at).toLocaleString()}
-                >
-                  Deleted {relativeTime(item.deleted_at)}
+                <span className="character-recycle-bin__row-meta">
+                  Deleted {relativeTime(item.deleted_at)} · {absoluteTime(item.deleted_at)}
                 </span>
               </div>
+              {(() => {
+                const cd = purgeCountdown(item.deleted_at, now);
+                return (
+                  <span className={`recycle-chip recycle-chip--${cd.state}`}>{cd.label}</span>
+                );
+              })()}
               <div className="character-recycle-bin__row-actions">
                 <button
                   type="button"

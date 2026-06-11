@@ -25,7 +25,9 @@ export const ROLE_CONFIG: Record<RoleKey, RoleConfig> = {
     description: 'Character names, empty-state titles',
     fontVar: '--char-font-heading',
     sizeVar: '--char-size-heading',
-    defaultFamily: 'cormorant',
+    /* Scriptorium default: engraved display serif. Still fully
+       user-overridable via the Characters typography gear. */
+    defaultFamily: 'cinzel',
     defaultSizeRem: 1.5,
     scaleMin: 0.7,
     scaleMax: 1.5,
@@ -45,7 +47,8 @@ export const ROLE_CONFIG: Record<RoleKey, RoleConfig> = {
     description: 'Eyebrows, uppercase card-block titles, dates',
     fontVar: '--char-font-key',
     sizeVar: '--char-size-label',
-    defaultFamily: 'inter',
+    /* Scriptorium default: the mono "micro" voice for plaque labels. */
+    defaultFamily: 'jetbrains-mono',
     defaultSizeRem: 0.6875,
     scaleMin: 0.85,
     scaleMax: 1.5,

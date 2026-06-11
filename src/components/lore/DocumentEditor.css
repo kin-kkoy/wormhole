@@ -47,15 +47,17 @@
   min-width: 28px;
   height: 28px;
   padding: 0 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-size: 12px;
   font-weight: 600;
   color: var(--text-secondary);
-  transition: background 0.1s, color 0.1s;
+  transition:
+    background var(--duration-fast),
+    color var(--duration-fast);
 }
 
 .doc-editor__tool-btn:hover:not(:disabled) {
-  background: var(--hover);
+  background: var(--hover-bright);
   color: var(--text-primary);
 }
 
@@ -78,7 +80,12 @@
 }
 
 .doc-editor__toolbar-right {
+  /* Side-by-side cluster (focus toggle + Save), never stacked. */
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 .doc-editor__save-btn {
@@ -103,7 +110,10 @@
   font-size: var(--lore-size-body);
   line-height: 1.7;
   color: var(--text-primary);
-  max-width: 720px;
+  /* A readable measure that actually uses wide windows: the column grows to
+     860px and CENTERS in the pane instead of hugging the left edge. */
+  max-width: 860px;
+  margin: 0 auto;
 }
 
 .doc-editor__content .tiptap:focus {
@@ -188,67 +198,6 @@
 
 .doc-editor__content .inline-link:hover {
   text-decoration-style: solid;
-}
-
-/* ─── Autocomplete dropdown ───────────────────────────────────────── */
-
-.doc-editor__autocomplete {
-  position: fixed;
-  z-index: 200;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 4px;
-  min-width: 220px;
-  max-width: 320px;
-  max-height: 300px;
-  overflow-y: auto;
-  box-shadow: var(--shadow-lg);
-}
-
-.doc-editor__autocomplete-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 6px 10px;
-  border-radius: 4px;
-  font-size: 13px;
-  color: var(--text-primary);
-  text-align: left;
-  transition: background 0.1s;
-}
-
-.doc-editor__autocomplete-item:hover,
-.doc-editor__autocomplete-item--selected {
-  background: var(--hover);
-}
-
-.doc-editor__autocomplete-badge {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  padding: 1px 5px;
-  border-radius: 3px;
-  flex-shrink: 0;
-}
-
-.doc-editor__autocomplete-badge[data-type="character"] {
-  background: rgba(167, 139, 250, 0.15);
-  color: var(--accent-characters);
-}
-
-.doc-editor__autocomplete-badge[data-type="lore_document"] {
-  background: rgba(245, 166, 35, 0.15);
-  color: var(--accent-lore);
-}
-
-.doc-editor__autocomplete-name {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* ─── Next-page picker (Continue to…) — inline in the toolbar ──────────── */
@@ -397,4 +346,60 @@
   font-size: 12px;
   font-style: italic;
   text-align: center;
+}
+
+/* ─── Word count footer ──────────────────────────────────────────── */
+
+.doc-editor__footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 6px 24px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+
+.doc-editor__word-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.doc-editor__session-delta {
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--success);
+}
+
+.doc-editor__session-delta--negative {
+  color: var(--text-muted);
+}
+
+.doc-editor__save-state {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary);
+}
+
+.doc-editor__save-state::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 6px var(--success);
+}
+
+.doc-editor__save-state--editing {
+  color: var(--text-muted);
+}
+
+.doc-editor__save-state--editing::before {
+  background: var(--text-muted);
+  box-shadow: none;
 }

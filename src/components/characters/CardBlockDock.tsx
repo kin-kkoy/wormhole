@@ -48,6 +48,10 @@ interface CardBlockDockProps {
   presetDragRef: PresetDragRef;
 }
 
+const GRID_COLS = 3;
+const GRID_ROWS = 7;
+const GRID_GAP = 8;
+
 export function CardBlockDock({ blocks, presetDragRef }: CardBlockDockProps) {
   const [customTitle, setCustomTitle] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
@@ -64,12 +68,13 @@ export function CardBlockDock({ blocks, presetDragRef }: CardBlockDockProps) {
       blockType: BlockType,
       presetUnique: boolean,
     ) => {
+      e.dataTransfer.setData('text/plain', label);
       e.dataTransfer.setData('text/block-title', title);
       e.dataTransfer.setData('text/block-cols', String(cols));
       e.dataTransfer.setData('text/block-rows', String(rows));
       e.dataTransfer.setData('text/block-type', blockType);
       e.dataTransfer.setData('text/block-unique', presetUnique ? '1' : '0');
-      e.dataTransfer.effectAllowed = 'copy';
+      e.dataTransfer.effectAllowed = 'move';
       // Mirror cols/rows/title/type into the shared ref so CardGrid's dragover
       // preview can size + label the ghost (dataTransfer values aren't
       // readable in dragover events, only the type list is). Use the palette
@@ -77,10 +82,7 @@ export function CardBlockDock({ blocks, presetDragRef }: CardBlockDockProps) {
       // read as something during drag.
       presetDragRef.current = { cols, rows, title: label, blockType };
 
-      // Build a block-shaped drag image so the floating cursor ghost looks
-      // like the real block, not the tiny palette row. We attach it off-screen,
-      // let the browser snapshot it for the drag preview, then remove it on
-      // the next tick.
+      // Build a block-shaped drag image sized to the actual grid cells.
       const ghost = document.createElement('div');
       ghost.className = 'card-block-preset-ghost';
       const header = document.createElement('div');
@@ -90,10 +92,17 @@ export function CardBlockDock({ blocks, presetDragRef }: CardBlockDockProps) {
       body.className = 'card-block-preset-ghost__body';
       ghost.appendChild(header);
       ghost.appendChild(body);
-      // Approximate block dimensions — grid is responsive so we can't match
-      // exactly, but this is close enough to read as a block.
-      ghost.style.width = `${cols * 180}px`;
-      ghost.style.height = `${rows * 120}px`;
+
+      let cellW = 100;
+      let cellH = 56;
+      const gridEl = document.querySelector('.card-grid--editing');
+      if (gridEl) {
+        const rect = gridEl.getBoundingClientRect();
+        cellW = (rect.width - GRID_GAP * (GRID_COLS - 1)) / GRID_COLS;
+        cellH = (rect.height - GRID_GAP * (GRID_ROWS - 1)) / GRID_ROWS;
+      }
+      ghost.style.width = `${cols * cellW + (cols - 1) * GRID_GAP}px`;
+      ghost.style.height = `${rows * cellH + (rows - 1) * GRID_GAP}px`;
       document.body.appendChild(ghost);
       e.dataTransfer.setDragImage(ghost, 20, 20);
       setTimeout(() => ghost.remove(), 0);

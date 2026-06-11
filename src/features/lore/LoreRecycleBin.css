@@ -177,3 +177,40 @@
   border-color: var(--danger);
   color: var(--danger);
 }
+
+/* ── Purge countdown chips + Restore all ─────────────────────────────── */
+
+.lore-recycle-bin__restore-all {
+  margin-left: 10px;
+  font-size: 11px;
+  font-weight: 400;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.recycle-chip {
+  flex-shrink: 0;
+  align-self: center;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.recycle-chip--normal {
+  color: var(--accent-lore);
+  border: 1px solid rgba(var(--accent-lore-rgb), 0.4);
+}
+
+.recycle-chip--urgent {
+  color: var(--danger);
+  border: 1px solid color-mix(in srgb, var(--danger) 45%, transparent);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+
+.recycle-chip--expired {
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}

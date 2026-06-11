@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { commands } from '../../lib/commands';
 import type { DeletedLoreDocument, DeletedLoreFolder } from '../../lib/commands';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
+import { relativeTime, absoluteTime, purgeCountdown } from '../../lib/recycleTime';
 import './LoreRecycleBin.css';
 
 interface LoreRecycleBinProps {
@@ -9,23 +10,6 @@ interface LoreRecycleBinProps {
   /** Called after a restore or purge so the lore archive can refresh
    *  whatever listing it's currently showing. */
   onChanged: () => void;
-}
-
-const RTF =
-  typeof Intl !== 'undefined' && 'RelativeTimeFormat' in Intl
-    ? new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' })
-    : null;
-
-function relativeTime(iso: string): string {
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return iso;
-  const diffMs = then - Date.now();
-  const absSec = Math.abs(diffMs) / 1000;
-  if (!RTF) return new Date(iso).toLocaleString();
-  if (absSec < 60) return RTF.format(Math.round(diffMs / 1000), 'second');
-  if (absSec < 3600) return RTF.format(Math.round(diffMs / 60000), 'minute');
-  if (absSec < 86400) return RTF.format(Math.round(diffMs / 3600000), 'hour');
-  return RTF.format(Math.round(diffMs / 86400000), 'day');
 }
 
 type PurgeTarget =
@@ -39,6 +23,13 @@ export function LoreRecycleBin({ onBack, onChanged }: LoreRecycleBinProps) {
   const [loading, setLoading] = useState(true);
   const [purgeTarget, setPurgeTarget] = useState<PurgeTarget>(null);
   const [error, setError] = useState<string | null>(null);
+  const [restoringSection, setRestoringSection] = useState<'docs' | 'folders' | null>(null);
+  // Tick every minute so the purge countdown chips stay fresh.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(t);
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
@@ -100,6 +91,27 @@ export function LoreRecycleBin({ onBack, onChanged }: LoreRecycleBinProps) {
     }
   }
 
+  async function handleRestoreAll(kind: 'docs' | 'folders') {
+    if (restoringSection) return;
+    setRestoringSection(kind);
+    try {
+      // Sequential on purpose: avoids SQLite write contention and keeps
+      // partial failures unambiguous (everything before the error restored).
+      if (kind === 'docs') {
+        for (const doc of docs) await commands.restoreLoreDocument(doc.id);
+      } else {
+        for (const folder of folders) await commands.restoreLoreFolder(folder.id);
+      }
+    } catch (e) {
+      console.error('Failed to restore all lore items:', e);
+      setError(String(e));
+    } finally {
+      setRestoringSection(null);
+      await refresh();
+      onChanged();
+    }
+  }
+
   const isEmpty = docs.length === 0 && folders.length === 0;
 
   return (
@@ -109,7 +121,9 @@ export function LoreRecycleBin({ onBack, onChanged }: LoreRecycleBinProps) {
           ← Back to lore
         </button>
         <span className="lore-recycle-bin__title">Lore Recycle Bin</span>
-        <span className="lore-recycle-bin__hint">Auto-purges after 24 hours.</span>
+        <span className="lore-recycle-bin__hint">
+          Items purge 24 hours after deletion — cleanup runs on app launch.
+        </span>
       </div>
 
       {error && <div className="lore-recycle-bin__error">{error}</div>}
@@ -129,19 +143,32 @@ export function LoreRecycleBin({ onBack, onChanged }: LoreRecycleBinProps) {
         <div className="lore-recycle-bin__sections">
           {docs.length > 0 && (
             <section className="lore-recycle-bin__section">
-              <h3 className="lore-recycle-bin__section-title">Documents</h3>
+              <h3 className="lore-recycle-bin__section-title">
+                Documents
+                <button
+                  type="button"
+                  className="btn btn--ghost lore-recycle-bin__restore-all"
+                  onClick={() => handleRestoreAll('docs')}
+                  disabled={restoringSection !== null}
+                >
+                  {restoringSection === 'docs' ? 'Restoring…' : 'Restore all'}
+                </button>
+              </h3>
               <ul className="lore-recycle-bin__list">
                 {docs.map((doc) => (
                   <li key={doc.id} className="lore-recycle-bin__row">
                     <div className="lore-recycle-bin__row-main">
                       <span className="lore-recycle-bin__row-name">{doc.title}</span>
-                      <span
-                        className="lore-recycle-bin__row-meta"
-                        title={new Date(doc.deleted_at).toLocaleString()}
-                      >
-                        Deleted {relativeTime(doc.deleted_at)}
+                      <span className="lore-recycle-bin__row-meta">
+                        Deleted {relativeTime(doc.deleted_at)} · {absoluteTime(doc.deleted_at)}
                       </span>
                     </div>
+                    {(() => {
+                      const cd = purgeCountdown(doc.deleted_at, now);
+                      return (
+                        <span className={`recycle-chip recycle-chip--${cd.state}`}>{cd.label}</span>
+                      );
+                    })()}
                     <div className="lore-recycle-bin__row-actions">
                       <button
                         type="button"
@@ -166,19 +193,32 @@ export function LoreRecycleBin({ onBack, onChanged }: LoreRecycleBinProps) {
 
           {folders.length > 0 && (
             <section className="lore-recycle-bin__section">
-              <h3 className="lore-recycle-bin__section-title">Folders</h3>
+              <h3 className="lore-recycle-bin__section-title">
+                Folders
+                <button
+                  type="button"
+                  className="btn btn--ghost lore-recycle-bin__restore-all"
+                  onClick={() => handleRestoreAll('folders')}
+                  disabled={restoringSection !== null}
+                >
+                  {restoringSection === 'folders' ? 'Restoring…' : 'Restore all'}
+                </button>
+              </h3>
               <ul className="lore-recycle-bin__list">
                 {folders.map((folder) => (
                   <li key={folder.id} className="lore-recycle-bin__row">
                     <div className="lore-recycle-bin__row-main">
                       <span className="lore-recycle-bin__row-name">{folder.title}</span>
-                      <span
-                        className="lore-recycle-bin__row-meta"
-                        title={new Date(folder.deleted_at).toLocaleString()}
-                      >
-                        Deleted {relativeTime(folder.deleted_at)}
+                      <span className="lore-recycle-bin__row-meta">
+                        Deleted {relativeTime(folder.deleted_at)} · {absoluteTime(folder.deleted_at)}
                       </span>
                     </div>
+                    {(() => {
+                      const cd = purgeCountdown(folder.deleted_at, now);
+                      return (
+                        <span className={`recycle-chip recycle-chip--${cd.state}`}>{cd.label}</span>
+                      );
+                    })()}
                     <div className="lore-recycle-bin__row-actions">
                       <button
                         type="button"

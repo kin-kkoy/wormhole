@@ -1,5 +1,6 @@
 use crate::db::AppDatabase;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::sync::Mutex;
 use tauri::State;
 
@@ -9,14 +10,12 @@ pub struct SearchResult {
     pub id: String,
     pub title: String,
     pub snippet: String,
+    pub match_field: String,
 }
 
 const MAX_RESULTS: usize = 50;
-const SNIPPET_LEN: usize = 50;
+const SNIPPET_LEN: usize = 120;
 
-// Best-effort plain-text extraction from TipTap/ProseMirror JSON. If the value
-// is not valid JSON, treat it as plain text. We walk the doc tree and join any
-// string values under a `text` key, trimmed to SNIPPET_LEN chars.
 fn extract_snippet(raw: &str) -> String {
     let trimmed = raw.trim();
     if trimmed.is_empty() {
@@ -87,8 +86,9 @@ pub fn search_world(
 
     let like_pattern = format!("%{}%", trimmed.to_lowercase());
     let mut results: Vec<SearchResult> = Vec::new();
+    let mut seen: HashSet<(String, String)> = HashSet::new();
 
-    // Characters
+    // Characters — title match (high priority)
     {
         let mut stmt = conn
             .prepare(
@@ -107,16 +107,95 @@ pub fn search_world(
             .map_err(|e| format!("Character search failed: {}", e))?;
         for r in rows.flatten() {
             let (id, title, summary) = r;
+            seen.insert(("character".to_string(), id.clone()));
             results.push(SearchResult {
                 record_type: "character".to_string(),
                 id,
                 title,
                 snippet: summary.map(|s| extract_snippet(&s)).unwrap_or_default(),
+                match_field: "title".to_string(),
             });
         }
     }
 
-    // Lore documents
+    // Characters — content match (objective_summary, in_character_intro)
+    {
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, name, objective_summary, in_character_intro FROM characters \
+                 WHERE deleted_at IS NULL AND LOWER(name) NOT LIKE ?1 \
+                 AND (LOWER(COALESCE(objective_summary, '')) LIKE ?1 \
+                      OR LOWER(COALESCE(in_character_intro, '')) LIKE ?1) \
+                 ORDER BY LOWER(name) ASC",
+            )
+            .map_err(|e| format!("Failed to prepare character content search: {}", e))?;
+        let rows = stmt
+            .query_map([&like_pattern], |row| {
+                let id: String = row.get(0)?;
+                let title: String = row.get(1)?;
+                let summary: Option<String> = row.get(2)?;
+                let intro: Option<String> = row.get(3)?;
+                Ok((id, title, summary, intro))
+            })
+            .map_err(|e| format!("Character content search failed: {}", e))?;
+        for r in rows.flatten() {
+            let (id, title, summary, intro) = r;
+            let key = ("character".to_string(), id.clone());
+            if seen.contains(&key) {
+                continue;
+            }
+            seen.insert(key);
+            let snippet = summary
+                .map(|s| extract_snippet(&s))
+                .filter(|s| !s.is_empty())
+                .or_else(|| intro.map(|s| extract_snippet(&s)))
+                .unwrap_or_default();
+            results.push(SearchResult {
+                record_type: "character".to_string(),
+                id,
+                title,
+                snippet,
+                match_field: "content".to_string(),
+            });
+        }
+    }
+
+    // Character detail sections — content match
+    {
+        let mut stmt = conn
+            .prepare(
+                "SELECT ds.character_id, c.name, ds.content FROM character_detail_sections ds \
+                 JOIN characters c ON c.id = ds.character_id AND c.deleted_at IS NULL \
+                 WHERE LOWER(COALESCE(ds.content, '')) LIKE ?1 \
+                 ORDER BY LOWER(c.name) ASC",
+            )
+            .map_err(|e| format!("Failed to prepare section search: {}", e))?;
+        let rows = stmt
+            .query_map([&like_pattern], |row| {
+                let char_id: String = row.get(0)?;
+                let char_name: String = row.get(1)?;
+                let content: Option<String> = row.get(2)?;
+                Ok((char_id, char_name, content))
+            })
+            .map_err(|e| format!("Section search failed: {}", e))?;
+        for r in rows.flatten() {
+            let (char_id, char_name, content) = r;
+            let key = ("character".to_string(), char_id.clone());
+            if seen.contains(&key) {
+                continue;
+            }
+            seen.insert(key);
+            results.push(SearchResult {
+                record_type: "character".to_string(),
+                id: char_id,
+                title: char_name,
+                snippet: content.map(|s| extract_snippet(&s)).unwrap_or_default(),
+                match_field: "content".to_string(),
+            });
+        }
+    }
+
+    // Lore documents — title match (high priority)
     {
         let mut stmt = conn
             .prepare(
@@ -135,18 +214,59 @@ pub fn search_world(
             .map_err(|e| format!("Lore document search failed: {}", e))?;
         for r in rows.flatten() {
             let (id, title, content) = r;
-            // `extract_snippet` already understands TipTap JSON and falls back
-            // to plain text for legacy content.
+            seen.insert(("lore_document".to_string(), id.clone()));
             results.push(SearchResult {
                 record_type: "lore_document".to_string(),
                 id,
                 title,
                 snippet: content.map(|s| extract_snippet(&s)).unwrap_or_default(),
+                match_field: "title".to_string(),
             });
         }
     }
 
-    results.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+    // Lore documents — content match
+    {
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, title, content FROM lore_documents \
+                 WHERE deleted_at IS NULL AND LOWER(title) NOT LIKE ?1 \
+                 AND LOWER(COALESCE(content, '')) LIKE ?1 \
+                 ORDER BY LOWER(title) ASC",
+            )
+            .map_err(|e| format!("Failed to prepare lore content search: {}", e))?;
+        let rows = stmt
+            .query_map([&like_pattern], |row| {
+                let id: String = row.get(0)?;
+                let title: String = row.get(1)?;
+                let content: Option<String> = row.get(2)?;
+                Ok((id, title, content))
+            })
+            .map_err(|e| format!("Lore content search failed: {}", e))?;
+        for r in rows.flatten() {
+            let (id, title, content) = r;
+            let key = ("lore_document".to_string(), id.clone());
+            if seen.contains(&key) {
+                continue;
+            }
+            seen.insert(key);
+            results.push(SearchResult {
+                record_type: "lore_document".to_string(),
+                id,
+                title,
+                snippet: content.map(|s| extract_snippet(&s)).unwrap_or_default(),
+                match_field: "content".to_string(),
+            });
+        }
+    }
+
+    results.sort_by(|a, b| {
+        let pri_a = if a.match_field == "title" { 0 } else { 1 };
+        let pri_b = if b.match_field == "title" { 0 } else { 1 };
+        pri_a
+            .cmp(&pri_b)
+            .then_with(|| a.title.to_lowercase().cmp(&b.title.to_lowercase()))
+    });
     results.truncate(MAX_RESULTS);
     Ok(results)
 }

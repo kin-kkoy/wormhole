@@ -12,6 +12,7 @@ pub struct CharacterSummary {
     pub decorative_ribbon: Option<String>,
     pub tags_text: Option<String>,
     pub sort_order: Option<i64>,
+    pub shelf_id: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -46,8 +47,9 @@ fn row_to_summary(row: &rusqlite::Row) -> rusqlite::Result<CharacterSummary> {
         decorative_ribbon: row.get(4)?,
         tags_text: row.get(5)?,
         sort_order: row.get(6)?,
-        created_at: row.get(7)?,
-        updated_at: row.get(8)?,
+        shelf_id: row.get(7)?,
+        created_at: row.get(8)?,
+        updated_at: row.get(9)?,
     })
 }
 
@@ -71,8 +73,8 @@ fn row_to_full(row: &rusqlite::Row) -> rusqlite::Result<CharacterFull> {
 }
 
 const FULL_COLUMNS: &str = "id, world_id, image_asset_id, name, short_role, objective_summary, \
-    in_character_intro, decorative_ribbon, brief_details_json, tags_text, sort_order, \
-    locked_face, created_at, updated_at";
+    in_character_intro, decorative_ribbon, brief_details_json, tags_text, \
+    sort_order, locked_face, created_at, updated_at";
 
 fn query_character_full(
     conn: &rusqlite::Connection,
@@ -100,7 +102,7 @@ pub fn list_characters(state: State<Mutex<AppDatabase>>) -> Result<Vec<Character
     let mut stmt = conn
         .prepare(
             "SELECT id, name, short_role, image_asset_id, decorative_ribbon, \
-             tags_text, sort_order, created_at, updated_at \
+             tags_text, sort_order, shelf_id, created_at, updated_at \
              FROM characters WHERE deleted_at IS NULL \
              ORDER BY sort_order ASC NULLS LAST, name ASC",
         )

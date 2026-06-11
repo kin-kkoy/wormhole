@@ -1,0 +1,99 @@
+/* ── Inline glossary hover card (Proposal 04) ───────────────────────────── */
+
+.il-hover-card {
+  position: fixed;
+  z-index: 280;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--glass-bg, rgba(15, 17, 24, 0.92));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+  pointer-events: none;
+  animation: il-hover-card-in 0.15s ease-out;
+}
+
+@keyframes il-hover-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+.il-hover-card__header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.il-hover-card__avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid rgba(var(--accent-characters-rgb), 0.35);
+}
+
+.il-hover-card__avatar--mono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--accent-characters-rgb), 0.12);
+  color: var(--accent-characters);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.il-hover-card__avatar--doc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(var(--accent-lore-rgb), 0.12);
+  border-color: rgba(var(--accent-lore-rgb), 0.35);
+  color: var(--accent-lore);
+}
+
+.il-hover-card__avatar--doc svg {
+  width: 16px;
+  height: 16px;
+}
+
+.il-hover-card__id {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.il-hover-card__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.il-hover-card__type {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+.il-hover-card__excerpt {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

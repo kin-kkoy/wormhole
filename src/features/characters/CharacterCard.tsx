@@ -68,6 +68,9 @@ export function CharacterCard({ characterId }: CharacterCardProps) {
   return (
     <div className={`character-card ${editMode ? 'character-card--editing' : ''}`}>
       <div className="character-card__body">
+        {/* Foil shine layer — its own overflow-hidden box so the sweep is
+            clipped to the card without putting overflow:hidden on the body
+            (which would clip edit-mode popovers). Purely decorative. */}
         <div className="character-card__image-col">
           <CardImage character={character} onUpdate={handleCharacterUpdate} editMode={editMode} />
         </div>
